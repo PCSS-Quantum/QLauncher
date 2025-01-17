@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from functools import wraps
 import pickle
 from typing import Any, Callable, Dict, Optional, Literal
+import logging
 
 
 AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'none', 'fn']
@@ -70,6 +71,10 @@ class Backend:
         self.name: str = name
         self.path: str | None = None
         self.parameters = parameters if parameters is not None else []
+        self.logger:Optional[logging.Logger] = None
+
+    def set_logger(self, logger:logging.Logger):
+        self.logger = logger
 
     def _get_path(self):
         return f'{self.name}'
@@ -192,23 +197,6 @@ class Problem(ABC):
             result: The result.
 
         """
-
-    def output(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            if wrapper.__solved:
-                return wrapper.__solved
-            wrapper.__solved = func(*args, **kwargs)
-            return wrapper.__solved
-        wrapper._is_output = True
-        wrapper.__solved = False
-        return wrapper
-
-    def prepare_methods(self):
-        for attr_name in dir(self):
-            attr = getattr(self, attr_name)
-            if callable(attr) and hasattr(attr, '_is_output'):
-                attr()
 
 
 class Algorithm(ABC):
