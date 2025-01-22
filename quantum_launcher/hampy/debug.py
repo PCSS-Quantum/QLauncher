@@ -1,4 +1,4 @@
-# Done in 3.10.4
+""" Module with functionalities for debugging hamiltonians and checking their boolean properties """
 from qiskit.quantum_info import SparsePauliOp
 from typing import Callable
 from itertools import combinations, product
@@ -8,7 +8,7 @@ from numpy import zeros, ones
 
 # To Change
 def Ham_to_truth(H: SparsePauliOp, output: type = list) -> list | dict:
-    '''
+    """
     Method that transforms Hamiltonian into a truth table respresented as a list with outputs
 
     ### Parameters
@@ -17,7 +17,7 @@ def Ham_to_truth(H: SparsePauliOp, output: type = list) -> list | dict:
     *output: type == list
         if it's change into a set method will give output as a dict
     
-    '''
+    """
     l = [[str(H.paulis[i]), H.coeffs[i]] for i in range(len(H.paulis))]
     for k in l:
         k[0] = [1 if s == 'I' else -1 for s in reversed(k[0])]
@@ -38,14 +38,14 @@ def Ham_to_truth(H: SparsePauliOp, output: type = list) -> list | dict:
     return truth_table
 
 def check_Hamiltonian(H: SparsePauliOp) -> bool:
-    '''
+    """
     Checks if Hamiltonian is a boolean function
     returns False if Hamiltonian is not a boolean function
     return True if Hamiltonian is a boolean function
     ### Parameters
     H: SparsePauliOp
         Hamiltonian function we want to check
-    '''
+    """
     truth = Ham_to_truth(H)
     for el in truth:
         if not el in [0, 1]:
@@ -53,7 +53,7 @@ def check_Hamiltonian(H: SparsePauliOp) -> bool:
     return True
 
 def truth_to_com(truth: list[int], output: type = list) -> list | dict:
-    '''
+    """
     Method that changes truth table into a commutative table
     Returns False if function from thuth table is not commutative
 
@@ -64,7 +64,7 @@ def truth_to_com(truth: list[int], output: type = list) -> list | dict:
         Can be changed to set in order to get set as an output
         which for every number of positive values returns their output
 
-    '''
+    """
     perms = list(product([0, 1], repeat= int(log2(len(truth)))))
     com = {} # Creating variable
     for i in range(len(truth)):
@@ -75,7 +75,7 @@ def truth_to_com(truth: list[int], output: type = list) -> list | dict:
     return list(com.values()) # changing type to list, if not specified otherwise
 
 def com_to_truth(com: list[int], mode: type = list) -> list | dict:
-    '''
+    """
     Method that changes commutative table into a truth table
 
     ### Parameters
@@ -85,7 +85,7 @@ def com_to_truth(com: list[int], mode: type = list) -> list | dict:
         Can be changed to dict in order to get set as an output
         which for every combination written as a string returns their output
 
-    '''
+    """
     perms = product([0, 1], repeat= len(com) - 1)
     if mode == dict:
         truth = {}
@@ -94,10 +94,10 @@ def com_to_truth(com: list[int], mode: type = list) -> list | dict:
     return truth
 
 def func_to_truth(func: Callable[[list], bool] , n: int, output: type = list) -> list | dict:
-    '''
+    """
     Method takes a function that takes n element list as an argument and returns boolean
     and changes it into a truth table
-    '''
+    """
     perm = product([0, 1], repeat= n)
     if output == list: 
         truth = []
@@ -108,7 +108,7 @@ def func_to_truth(func: Callable[[list], bool] , n: int, output: type = list) ->
     return truth
 
 def create_ham(truth: Callable[[list[bool]],bool], k: int = -1) -> SparsePauliOp:
-    '''
+    """
     Function that creates a hamiltonian from truth table
     Suggested to be used with functions func_to_truth and com_to_truth
 
@@ -118,7 +118,7 @@ def create_ham(truth: Callable[[list[bool]],bool], k: int = -1) -> SparsePauliOp
     k: (if non-specified it takes the smallest possible value)
         Size of Hamiltonian
         Will be ignored if size of required Hamiltonian will be bigger
-    '''
+    """
     from numpy.linalg import solve
     # Creating Option Matrix
     matrix = ones((len(truth), len(truth)))
@@ -143,11 +143,11 @@ def create_ham(truth: Callable[[list[bool]],bool], k: int = -1) -> SparsePauliOp
     return ham
 
 def com_to_ham(com: list[int], k: int = -1) -> SparsePauliOp:
-    '''
+    """
     Function that changes commutative truth table into a hamiltonian
     It solves coefficients in polynomial time
     Because of binomial coefficients in some cases value is accurate only to some decimal point
-    '''
+    """
 
     from numpy.linalg import solve
     n = len(com) - 1

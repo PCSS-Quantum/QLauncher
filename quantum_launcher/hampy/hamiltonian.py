@@ -1,8 +1,4 @@
-'''
-#### Main file with generators of hamiltonians (H) and operators on hamiltonians (Ham)
-python 3.10.4
-qiskit 0.43.3
-'''
+""" Here are implementation of default logical operations as a hamiltonians """
 from itertools import combinations
 from qiskit.quantum_info import SparsePauliOp
 
@@ -36,7 +32,7 @@ def int_to_ham(Hs: tuple, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_x(k: int = 0, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Hamiltonian function of "f(x) = x" operator for 1 value
     Currently works only on 1 Qubit
 
@@ -49,7 +45,7 @@ def H_x(k: int = 0, size: int = -1) -> SparsePauliOp:
     ### Errors
     if n <= max(s):
         QiskitError: The number of qubits (n) is smaller than a required index k.
-    '''
+    """
     if isinstance(k, list):
         k = k[0] # Changing type to single value
     if size == -1:
@@ -62,7 +58,7 @@ def H_x(k: int = 0, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_not(k: int, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Hamiltonian function of not operator for 1 value
     Currently works only on 1 Qubit
 
@@ -75,7 +71,7 @@ def H_not(k: int, size: int = -1) -> SparsePauliOp:
     ### Errors
     if n <= max(s):
         QiskitError: The number of qubits (n) is smaller than a required index k.
-    '''
+    """
     # Changing type to single value
     if type(k) == list: k = k[0]
     # Auto adjusting size if not specified
@@ -88,7 +84,7 @@ def H_not(k: int, size: int = -1) -> SparsePauliOp:
 @H_func
 def H_imp(s: list, size: int = -1) -> SparsePauliOp:
 
-    '''Hamiltonian function of operator implication (⇒) 
+    """Hamiltonian function of operator implication (⇒) 
     Currently works only on 2 Qubit
 
     ### Parameters
@@ -99,7 +95,7 @@ def H_imp(s: list, size: int = -1) -> SparsePauliOp:
     
     ### Errors
       if some of qubits have the same value:
-           QiskitError: 'Input indices are duplicated.'''
+           QiskitError: 'Input indices are duplicated."""
     if type(s) != list: s = list(s) # Changing type into a list
     if size == -1: size = max(s) + 1 # Auto adjusting size if not specified
     sparse_list = []
@@ -115,7 +111,7 @@ def H_imp(s: list, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_lin3(s: list, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Hamiltonian function of operator lin3
     Currently works only on 3 Qubit
 
@@ -128,7 +124,7 @@ def H_lin3(s: list, size: int = -1) -> SparsePauliOp:
     ### Errors
       if some of qubits have the same value:
            QiskitError: 'Input indices are duplicated.
-    '''
+    """
     if type(s) != list: s = list(s) # Changing type into a list
     if size == -1: size = max(s) + 1 # Auto adjusting size if not specified
 
@@ -150,7 +146,7 @@ def H_lin3(s: list, size: int = -1) -> SparsePauliOp:
 @H_func
 def H_maj(s: list, size: int = -1) -> SparsePauliOp:
 
-    '''Hamiltonian function of operator MAJ
+    """Hamiltonian function of operator MAJ
     Currently works only on 3 Qubit
 
     ### Parameters
@@ -161,7 +157,7 @@ def H_maj(s: list, size: int = -1) -> SparsePauliOp:
     
     ### Errors
       if some of qubits have the same value:
-           QiskitError: 'Input indices are duplicated.'''
+           QiskitError: 'Input indices are duplicated."""
     if type(s) != list: s = list(s) # Changing type into a list
     if size == -1: size = max(s) + 1 # Auto adjusting size if not specified
     sparse_list = [] 
@@ -174,7 +170,7 @@ def H_maj(s: list, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_and(s: list, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Function create and reduces hamiltonian based on logical AND
 
     ### Parameters
@@ -186,7 +182,7 @@ def H_and(s: list, size: int = -1) -> SparsePauliOp:
     ### Errors
     if n <= max(s):
         QiskitError: The number of qubits (n) is smaller than a required index max(s).
-    '''
+    """
     if type(s) != list: s = list(s) # Changing type into a list
     # Auto adjusting size if not specified
     if size == -1: size = max(s) + 1
@@ -206,7 +202,7 @@ def H_and(s: list, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_nand(s: list, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Function create and reduces hamiltonian based on logical NAND
 
     ### Parameters
@@ -218,7 +214,7 @@ def H_nand(s: list, size: int = -1) -> SparsePauliOp:
     ### Errors
     if n <= max(s):
         QiskitError: The number of qubits (n) is smaller than a required index max(s).
-    '''
+    """
     if type(s) != list: s = list(s) # Changing type into a list
     if size == -1: size = max(s) + 1 # Auto adjusting size if not specified
 
@@ -239,7 +235,7 @@ def H_nand(s: list, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_or(s: list, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Function create and reduces hamiltonian based on logical OR
 
     ### Parameters
@@ -251,7 +247,7 @@ def H_or(s: list, size: int = -1) -> SparsePauliOp:
     ### Errors
     if n <= max(s):
         QiskitError: The number of qubits (n) is smaller than a required index max(s).
-    '''
+    """
     if type(s) != list: s = list(s) # Changing type into a list
     if size == -1:
         size = max(s) + 1 # Auto adjusting size if not specified
@@ -276,7 +272,7 @@ def H_or(s: list, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_nor(s: list, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Function create and reduces hamiltonian based on logical NOR
 
     ### Parameters
@@ -288,7 +284,7 @@ def H_nor(s: list, size: int = -1) -> SparsePauliOp:
     ### Errors
     if n <= max(s):
         QiskitError: The number of qubits (n) is smaller than a required index max(s).
-    '''
+    """
     if type(s) != list: s = list(s) # Changing type into a list
     if size == -1:
         size = max(s) + 1 # Auto adjusting size if not specified
@@ -312,7 +308,7 @@ def H_nor(s: list, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_xor(s: list, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Function create and reduces hamiltonian based on logical XOR
 
     ### Parameters
@@ -324,7 +320,7 @@ def H_xor(s: list, size: int = -1) -> SparsePauliOp:
     ### Errors
     if n <= max(s):
         QiskitError: The number of qubits (n) is smaller than a required index max(s).
-    '''
+    """
     if type(s) != list: s = list(s) # Changing type into a list
     if size == -1: size = max(s) + 1 # Auto adjusting size if not specified
 
@@ -335,7 +331,7 @@ def H_xor(s: list, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_nae(s: list, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Function create and reduces hamiltonian based logical NAE (not all equal)
 
     ### Parameters
@@ -347,7 +343,7 @@ def H_nae(s: list, size: int = -1) -> SparsePauliOp:
     ### Errors
     if size <= max(s):
         QiskitError: The number of qubits (n) is smaller than a required index max(s).
-    '''
+    """
     s = list(dict.fromkeys(s)) # Removing duplicates
     if size == -1: size = max(s) + 1 # Auto adjusting size
 
@@ -366,7 +362,7 @@ def H_nae(s: list, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_mod(s: list, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Function create and reduces hamiltonian based logical mod (every one is equal, non of them are)
 
     ### Parameters
@@ -378,7 +374,7 @@ def H_mod(s: list, size: int = -1) -> SparsePauliOp:
     ### Errors
     if size <= max(s):
         QiskitError: The number of qubits (n) is smaller than a required index max(s).
-    '''
+    """
     s = list(dict.fromkeys(s)) # Removing duplicates
     if size == -1: size = max(s) + 1 # Auto adjusting size
     k, z, ls = 2, 'ZZ', len(s) # Creating variables
@@ -396,7 +392,7 @@ def H_mod(s: list, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def H_one_in_n(s: list, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Function create and reduces hamiltonian based logical (one in n) 
     Which returns True if exactly one element is True
 
@@ -409,7 +405,7 @@ def H_one_in_n(s: list, size: int = -1) -> SparsePauliOp:
     ### Errors
     if size <= max(s):
         QiskitError: The number of qubits (n) is smaller than a required index max(s).
-    '''
+    """
     if type(s) != list: s = list(s) # Changing type into a list
     if size == -1: size = max(s) + 1 # Auto adjusting size
     onehot = None
@@ -426,7 +422,7 @@ def H_one_in_n(s: list, size: int = -1) -> SparsePauliOp:
 
 @Ham_func
 def Ham_not(H: SparsePauliOp) -> SparsePauliOp:
-    '''
+    """
     Returns negated Hamiltonian (not H)
     Hamiltonian functions that return 0 rather than 1 and 1 rather than 0
     
@@ -434,7 +430,7 @@ def Ham_not(H: SparsePauliOp) -> SparsePauliOp:
     H : SparsePauliOp
         Hamiltonian function that we want to negate
     
-    '''
+    """
     n = H.num_qubits
     sparse_list = []
     sparse_list.append((('I', [0], 1)))
@@ -443,7 +439,7 @@ def Ham_not(H: SparsePauliOp) -> SparsePauliOp:
 
 @Ham_func
 def Ham_and(Hs: list[SparsePauliOp|int], size: int = -1) -> SparsePauliOp:
-    '''
+    """
     And operators for hamiltonians
 
     It's equal to H1 and H2 (where H1, H2 are hamiltonians)
@@ -457,7 +453,7 @@ def Ham_and(Hs: list[SparsePauliOp|int], size: int = -1) -> SparsePauliOp:
     ### Arguments
     - Hs - list of Hamiltonians or integers (single qubits), which are variables of and operator
     - size - integer, no need to specify, unless you work only on qubits
-    '''
+    """
     # Changing single Qubits to Hamiltonians
     for H in Hs:
         if type(H) == int:
@@ -471,7 +467,7 @@ def Ham_and(Hs: list[SparsePauliOp|int], size: int = -1) -> SparsePauliOp:
 
 @Ham_func
 def Ham_xor(Hs: list[SparsePauliOp|int], size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Xor opeartor for hamiltonians
 
     It's equal to H1 xor H2 (where H1 and H2 are hamiltonians)
@@ -483,7 +479,7 @@ def Ham_xor(Hs: list[SparsePauliOp|int], size: int = -1) -> SparsePauliOp:
     ### Arguments
     - Hs - list of Hamiltonians or integers (single qubits), which are variables of xor operator
     - size - integer, no need to specify, unless you work only on qubits
-    '''
+    """
     # Dealing with single qubits
     for H in Hs:
         if type(H) == int:
@@ -502,7 +498,7 @@ def Ham_xor(Hs: list[SparsePauliOp|int], size: int = -1) -> SparsePauliOp:
 
 @Ham_func
 def Ham_imp(H1: SparsePauliOp|list, H2: SparsePauliOp) -> SparsePauliOp:
-    '''
+    """
     Implication operator for hamiltonians
 
     example: Ham_imp(H1, H2) = H1 -> H2
@@ -513,7 +509,7 @@ def Ham_imp(H1: SparsePauliOp|list, H2: SparsePauliOp) -> SparsePauliOp:
     - H1 - first hamiltonian / both arguments may be passed as a list
     - H2 - * second hamiltonian
 
-    '''
+    """
     # Changing list into arguments
     if isinstance(H1, list):
         H2, H1 = H1[1], H1[0]
@@ -523,7 +519,7 @@ def Ham_imp(H1: SparsePauliOp|list, H2: SparsePauliOp) -> SparsePauliOp:
 
 @Ham_func
 def Ham_or(Hs: list[SparsePauliOp|int], size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Or opeartor for hamiltonians
 
     It's equal to H1 xor H2 (where H1 and H2 are hamiltonians)
@@ -535,7 +531,7 @@ def Ham_or(Hs: list[SparsePauliOp|int], size: int = -1) -> SparsePauliOp:
     ### Arguments
     - Hs - list of Hamiltonians or integers (single qubits), which are variables of and operator
     - size - integer, no need to specify, unless you work only on qubits
-    '''
+    """
     # Changing single qubits to Hamiltonians
     for H in Hs:
         if type(H) == int:
@@ -554,18 +550,18 @@ def Ham_or(Hs: list[SparsePauliOp|int], size: int = -1) -> SparsePauliOp:
 
 @Ham_func
 def Ham_scalar_sum(H1: SparsePauliOp, H2: SparsePauliOp, a: float = 1, b: float = 1) -> SparsePauliOp:
-    '''
+    """
     scalar sum of hamiltonians
 
     after using this operation hamiltonian is no longer boolean
 
     maybe it should be moved to onehot
-    '''
+    """
     return (a * H1) + (b * H2)
 
 @Ham_func
 def Ham_maj(H1: SparsePauliOp|list, H2: SparsePauliOp = H_x(), H3: SparsePauliOp = H_x()) -> SparsePauliOp:
-    '''
+    """
     Majority operator for 3 hamiltonians
 
     it returns True if majority of Hamiltonians are satisfied
@@ -576,7 +572,7 @@ def Ham_maj(H1: SparsePauliOp|list, H2: SparsePauliOp = H_x(), H3: SparsePauliOp
     - H1 - first Hamiltonian / list with 3 Hamiltonians
     - H2 - * second Hamiltonian
     - H3 - * thierd Hamiltonian
-    '''
+    """
     # Changing type if args passed in list
     if isinstance(H1, list):
         H3, H2, H1 = H1[2], H1[1], H1[0]

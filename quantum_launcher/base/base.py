@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from functools import wraps
 import pickle
 from typing import Any, Callable, Dict, Optional, Literal
 import logging
@@ -19,7 +18,7 @@ class Result:
     num_of_samples: int
     average_energy: float
     energy_std: float
-    result: any
+    result: Any
 
     def __str__(self):
         return f"Result(bitstring={self.best_bitstring}, energy={self.best_energy})"

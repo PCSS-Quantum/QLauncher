@@ -1,3 +1,4 @@
+""" Module with offering boolean operations on hamiltonians using only up to second degree polynomials """
 from qiskit.quantum_info import SparsePauliOp
 from itertools import combinations
 from math import comb
@@ -25,7 +26,7 @@ def quadratic_onehot(to_encode: list, n: int = -1) -> SparsePauliOp:
     prod = (sp - prod) if len(to_encode) > 0 else sp
     return prod.compose(prod)
 
-'''           
+"""           
 def ham_to_base_zero(Ham: SparsePauliOp) -> SparsePauliOp:
     truth = Ham_to_truth(Ham, dict)
     min_value = 2
@@ -38,7 +39,7 @@ def ham_to_base_zero(Ham: SparsePauliOp) -> SparsePauliOp:
     sparse_list = []
     sparse_list.append((('I', [0], -k)))
     sp = SparsePauliOp.from_sparse_list(sparse_list, int(log2(len(truth))))
-    return PauliSumOp(Ham.to_pauli_op() + sp)'''
+    return PauliSumOp(Ham.to_pauli_op() + sp)"""
 
 @H_func
 def quad_or(s: list = [0, 1], size: int = -1) -> SparsePauliOp:
@@ -75,9 +76,9 @@ def quad_nae(s: list = [0, 1], size: int = -1) -> SparsePauliOp:
 
 @H_func
 def test_hamiltonian(s: list, size: int = -1) -> SparsePauliOp:
-    '''
+    """
     Returns quadratic Hamiltonian that returns 0 if value is in half
-    '''
+    """
     # Auto adjusting size
     if size == -1: size = max(s) + 1
     if size == -1: size = max(s) + 1
@@ -89,8 +90,8 @@ def test_hamiltonian(s: list, size: int = -1) -> SparsePauliOp:
 
 @H_func
 def quad_ham_or(H1: SparsePauliOp, H2: SparsePauliOp) -> SparsePauliOp:
-    '''
+    """
     or gate that works between two Hamiltonianss they will be left in quadratic form
     so don't use that to normal Hamiltonianss with results of 0's and 1's
-    '''
+    """
     return H1 + H2
