@@ -1,5 +1,5 @@
 from qiskit.quantum_info import SparsePauliOp
-from typing import overload
+from typing import Union, overload
 
 
 class HampyEquation:
@@ -48,23 +48,23 @@ class HampyEquation:
     def is_quadratic(self) -> bool:
         return all(term.z.sum() <= 2 for term in self.hamiltonian.paulis)
 
-    def __or__(self, other: "HampyVariable" | "HampyEquation", /) -> "HampyEquation":
+    def __or__(self, other: Union["HampyVariable", "HampyEquation"], /) -> "HampyEquation":
         if isinstance(other, HampyVariable):
             other = other.to_equation()
 
-        return HampyEquation(self.hamiltonian - other.hamiltonian - self.hamiltonian.compose(other.hamiltonian))
+        return HampyEquation(self.hamiltonian + other.hamiltonian - self.hamiltonian.compose(other.hamiltonian))
 
-    def __and__(self, other: "HampyVariable" | "HampyEquation", /) -> "HampyEquation":
+    def __and__(self, other: Union["HampyVariable", "HampyEquation"], /) -> "HampyEquation":
         if isinstance(other, HampyVariable):
             other = other.to_equation()
 
         return HampyEquation(self.hamiltonian.compose(other.hamiltonian))
 
-    def __xor__(self, other: "HampyVariable" | "HampyEquation", /) -> "HampyEquation":
+    def __xor__(self, other: Union["HampyVariable", "HampyEquation"], /) -> "HampyEquation":
         if isinstance(other, HampyVariable):
             other = other.to_equation()
 
-        return HampyEquation(self.hamiltonian - other.hamiltonian - (2 * self.hamiltonian.compose(other.hamiltonian)))
+        return HampyEquation(self.hamiltonian + other.hamiltonian - (2 * self.hamiltonian.compose(other.hamiltonian)))
 
     def __invert__(self) -> "HampyEquation":
         I = ('I', [], 1)
@@ -83,7 +83,7 @@ class HampyVariable:
         self.index = index
         self.size = parent.size
 
-    def __xor__(self, other: "HampyVariable" | HampyEquation, /) -> HampyEquation:
+    def __xor__(self, other: Union["HampyVariable", HampyEquation], /) -> HampyEquation:
         if isinstance(other, HampyEquation):
             return self.to_equation() ^ other
 
@@ -92,26 +92,26 @@ class HampyVariable:
         eq = HampyEquation(SparsePauliOp.from_sparse_list([I, Z_term], self.size))
         return eq
 
-    def __or__(self, other: "HampyVariable" | HampyEquation, /) -> HampyEquation:
+    def __or__(self, other: Union["HampyVariable", HampyEquation], /) -> HampyEquation:
         if isinstance(other, HampyEquation):
             return self.to_equation() | other
-
-        I_term = ('I', [], 0.25)
-        Z1_term = ('Z', [self.index], -0.25)
-        Z2_term = ('Z', [other.index], -0.25)
-        ZZ_term = ('ZZ', [self.index, other.index], 0.25)
-        eq = HampyEquation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
-        return eq
-
-    def __and__(self, other: "HampyVariable" | HampyEquation, /) -> HampyEquation:
-
-        if isinstance(other, HampyEquation):
-            return self.to_equation() & other
 
         I_term = ('I', [], 0.75)
         Z1_term = ('Z', [self.index], -0.25)
         Z2_term = ('Z', [other.index], -0.25)
         ZZ_term = ('ZZ', [self.index, other.index], -0.25)
+        eq = HampyEquation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
+        return eq
+
+    def __and__(self, other: Union["HampyVariable", HampyEquation], /) -> HampyEquation:
+
+        if isinstance(other, HampyEquation):
+            return self.to_equation() & other
+
+        I_term = ('I', [], 0.25)
+        Z1_term = ('Z', [self.index], -0.25)
+        Z2_term = ('Z', [other.index], -0.25)
+        ZZ_term = ('ZZ', [self.index, other.index], 0.25)
         eq = HampyEquation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
         return eq
 
