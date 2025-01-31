@@ -66,7 +66,7 @@ class QuantumLauncher:
             dict: The results of the algorithm execution.
         """
         formatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
-        logging.info(f'Found proper formatter, with formatter structure: {formatter.__name__}')  # TODO: show formatter stacktrace
+        logging.info(f'Found proper formatter, with formatter structure: {formatter.__class__}')  # TODO: show formatter stacktrace
         self.result = self.algorithm.run(self.problem, self.backend, formatter=formatter)
         logging.info(f'Algorithm ended successfully!')
         return self.result

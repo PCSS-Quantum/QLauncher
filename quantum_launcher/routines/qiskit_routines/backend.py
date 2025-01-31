@@ -1,14 +1,18 @@
 """ Backend Class for Qiskit Launcher """
+from qiskit_algorithms.optimizers import COBYLA
+from qiskit.primitives import Sampler
+from typing import Literal
 from qiskit_aqt_provider import AQTProvider
 from qiskit_aqt_provider.primitives import AQTSampler, AQTEstimator
 from qiskit.primitives import StatevectorEstimator as LocalEstimator, BaseEstimator
 from qiskit.primitives import StatevectorSampler as LocalSampler, BaseSampler
 from qiskit.primitives import BackendSampler, BackendEstimator
+from qiskit.primitives import Sampler as BasicSampler
+from qiskit.primitives import Estimator as BasicEstimator
 from qiskit.providers import BackendV1, BackendV2
 from qiskit_algorithms.optimizers import COBYLA, SPSA, SciPyOptimizer, Optimizer
 from qiskit_ibm_runtime import Estimator, Sampler
 from qiskit_ibm_runtime import Session, Options
-from qiskit import QuantumCircuit
 
 from quantum_launcher.base import Backend
 
@@ -34,7 +38,7 @@ class QiskitBackend(Backend):
         _set_primitives_on_backend_name() -> None: Sets the appropriate primitives based on the backend name.
     """
 
-    def __init__(self, name: str, session: Session = None, options: Options = None, backendv1v2: BackendV1 | BackendV2 = None) -> None:
+    def __init__(self, name: Literal['local_simulator', 'backendv1v2_simulator'], session: Session = None, options: Options = None, backendv1v2: BackendV1 | BackendV2 = None) -> None:
         super().__init__(name)
         self.session = session
         self.options = options
@@ -54,8 +58,8 @@ class QiskitBackend(Backend):
 
     def _set_primitives_on_backend_name(self) -> None:
         if self.name == 'local_simulator':
-            self.estimator = LocalEstimator()
-            self.sampler = LocalSampler()
+            self.estimator = BasicEstimator()
+            self.sampler = BasicSampler()
             self.optimizer = COBYLA()
         elif self.name == 'backendv1v2_simulator':
             self.estimator = BackendEstimator(backend=self.backendv1v2)
@@ -69,30 +73,6 @@ class QiskitBackend(Backend):
                 session=self.session, options=self.options)
             self.sampler = Sampler(session=self.session, options=self.options)
             self.optimizer = SPSA()
-
-    @property
-    def estimator(self) -> BaseEstimator:
-        return self._estimator
-
-    @estimator.setter
-    def estimator(self, estimator: BaseEstimator):
-        self._estimator = estimator
-
-    @property
-    def sampler(self) -> BaseSampler:
-        return self._sampler
-
-    @sampler.setter
-    def sampler(self, sampler: BaseSampler):
-        self._sampler = sampler
-
-    @property
-    def optimizer(self) -> SciPyOptimizer:
-        return self._optimizer
-
-    @optimizer.setter
-    def optimizer(self, optimizer: SciPyOptimizer):
-        self._optimizer = optimizer
 
 
 class AQTBackend(QiskitBackend):
