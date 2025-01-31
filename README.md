@@ -1,4 +1,4 @@
-<h1 style="text-align:center;background:linear-gradient(rgb(141, 222, 251),rgb(0, 21, 255));  -webkit-background-clip: text;-webkit-text-fill-color: transparent;"> Quantum Launcher </h1>
+<h1 style="text-align:center;"> Quantum Launcher </h1>
 
 <h2 style="text-align:center;"> About Project </h2>
 
@@ -25,3 +25,17 @@ So far Quantum Launcher provides user with:
 - Asynchronous architecture to execute problems either standalone or in a grid
 
 Features planned to be implemented in feature:
+
+<h2 style="text-align:center;"> Installation and Examples </h2>
+
+To install the following library use the following script:
+
+```sh
+pip install git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0
+```
+
+Then to run any of examples run following command:
+
+```sh
+python -m examples.qiskit_example
+```

@@ -42,7 +42,7 @@ class HampyEquation:
     def get_order(self) -> int:
         equation_order = 0
         for Z_term in self.hamiltonian.paulis:
-            equation_order = max(equation_order, Z_term.count('Z'))
+            equation_order = max(equation_order, str(Z_term).count('Z'))
         return equation_order
 
     def is_quadratic(self) -> bool:
