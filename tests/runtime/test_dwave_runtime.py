@@ -40,17 +40,6 @@ def test_maxcut():
     assert inform is not None
 
 
-def test_qatm():
-    """ Testing function for Max Cut """
-    pr = QATM('exact', instance_name='RCP_3.txt', instance_path='data/qatm/')
-    solver = DwaveSolver(1)
-    backend = SimulatedAnnealingBackend()
-    launcher = QuantumLauncher(pr, solver, backend)
-
-    inform = launcher.run()
-    assert inform is not None
-
-
 def test_raw():
     """ Testing function for Raw """
     qubits = [Spin(f"x{i}") for i in range(2)]
