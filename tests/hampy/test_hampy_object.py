@@ -1,4 +1,5 @@
 from quantum_launcher.hampy.object import HampyEquation, HampyVariable
+from quantum_launcher.hampy.equations import one_in_n
 
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Sampler
@@ -21,6 +22,7 @@ def test_object():
     assert isinstance(hamiltonian, SparsePauliOp)
     return hamiltonian
 
+
 def test_run_qaoa():
 
     hamiltonian = test_object()
@@ -28,6 +30,7 @@ def test_run_qaoa():
     qaoa = QAOA(sampler, optimizer)
     result = qaoa.compute_minimum_eigenvalue(-hamiltonian)
     pprint(result.best_measurement)
+
 
 def test_or_operation():
 
@@ -37,4 +40,20 @@ def test_or_operation():
     new_eq = var0 | var1
     assert isinstance(new_eq, HampyEquation)
 
-# test_run_qaoa()
+
+def test_one_in_n():
+    equation = ~one_in_n([0, 1, 2, 3, 4], 5)
+    sampler, optimizer = Sampler(), COBYLA()
+    qaoa = QAOA(sampler, optimizer)
+    result = qaoa.compute_minimum_eigenvalue(equation.hamiltonian)
+    bitstring: str = result.best_measurement['bitstring']
+    assert bitstring.count('1') == 1
+
+def test_new_equation():
+    equation = HampyEquation(5)
+    equation = (equation[0] & ~equation[1] & (~equation[3] & equation[4])) | (equation[2] & equation[1])
+    hamiltonian = (~equation).hamiltonian
+    sampler, optimizer = Sampler(), COBYLA()
+    qaoa = QAOA(sampler, optimizer)
+    result = qaoa.compute_minimum_eigenvalue(hamiltonian)
+    assert len(result.best_measurement['bitstring']) == 5
