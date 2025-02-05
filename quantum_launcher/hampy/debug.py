@@ -2,15 +2,15 @@
 from qiskit.quantum_info import SparsePauliOp
 from typing import Literal, Union
 from itertools import product
-from quantum_launcher.hampy.object import HampyEquation
+from quantum_launcher.hampy.object import LogicalEquation
 
 
 class TruthTable:
-    def __init__(self, equation: Union[HampyEquation, SparsePauliOp], return_int: bool = True):
+    def __init__(self, equation: Union[LogicalEquation, SparsePauliOp], return_int: bool = True):
         if isinstance(equation, SparsePauliOp):
             hamiltonian = equation
             self.size = hamiltonian.num_qubits
-        if isinstance(equation, HampyEquation):
+        if isinstance(equation, LogicalEquation):
             hamiltonian = equation.hamiltonian
             self.size = equation.size
         self.return_int = return_int

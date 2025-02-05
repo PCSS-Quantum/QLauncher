@@ -1,4 +1,4 @@
-from quantum_launcher.hampy.object import HampyEquation, HampyVariable
+from quantum_launcher.hampy.object import LogicalEquation, Variable
 from quantum_launcher.hampy.equations import one_in_n
 
 from qiskit.quantum_info import SparsePauliOp
@@ -10,11 +10,11 @@ from warnings import filterwarnings
 filterwarnings('ignore')
 
 def test_object():
-    eq = HampyEquation(3)
+    eq = LogicalEquation(3)
     var0 = eq[0]
     var1 = eq[1]
     var2 = eq[2]
-    assert isinstance(var0, HampyVariable)
+    assert isinstance(var0, Variable)
     eq = (~var0 & var1) & var2
     eq = ~eq
     assert not eq.is_quadratic()
@@ -34,11 +34,11 @@ def test_run_qaoa():
 
 def test_or_operation():
 
-    eq = HampyEquation(2)
+    eq = LogicalEquation(2)
     var0 = eq.get_variable(0)
     var1 = eq.get_variable(1)
     new_eq = var0 | var1
-    assert isinstance(new_eq, HampyEquation)
+    assert isinstance(new_eq, LogicalEquation)
 
 
 def test_one_in_n():
@@ -50,7 +50,7 @@ def test_one_in_n():
     assert bitstring.count('1') == 1
 
 def test_new_equation():
-    equation = HampyEquation(5)
+    equation = LogicalEquation(5)
     equation = (equation[0] & ~equation[1] & (~equation[3] & equation[4])) | (equation[2] & equation[1])
     hamiltonian = (~equation).hamiltonian
     sampler, optimizer = Sampler(), COBYLA()

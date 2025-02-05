@@ -2,7 +2,7 @@
 from .hamiltonian import *
 from .debug import *
 from .quadratic import *
-from .object import HampyEquation, HampyVariable
+from .object import LogicalEquation, Variable
 from .equations import one_in_n
 
-__all__ = ['HampyEquation', 'HampyVariable', 'one_in_n']
+__all__ = ['LogicalEquation', 'Variable', 'one_in_n']
