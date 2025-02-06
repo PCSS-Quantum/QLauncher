@@ -1,29 +1,44 @@
 """ Module with functionalities for debugging hamiltonians and checking their boolean properties """
+import numpy as np
 from qiskit.quantum_info import SparsePauliOp
-from typing import Literal, Union
+from typing import Union
 from itertools import product
-from quantum_launcher.hampy.object import LogicalEquation
+from quantum_launcher.hampy.object import Equation
+import matplotlib.pyplot as plt
 
 
 class TruthTable:
-    def __init__(self, equation: Union[LogicalEquation, SparsePauliOp], return_int: bool = True):
+    def __init__(self, equation: Union[Equation, SparsePauliOp], return_int: bool = True):
         if isinstance(equation, SparsePauliOp):
             hamiltonian = equation
             self.size = hamiltonian.num_qubits
-        if isinstance(equation, LogicalEquation):
+        if isinstance(equation, Equation):
             hamiltonian = equation.hamiltonian
             self.size = equation.size
         self.return_int = return_int
         self.truth_table = self._ham_to_truth(hamiltonian)
+        self.lowest_value = min(self.truth_table.values())
 
-    def count_valid_solutions(self) -> int:
-        return sum(self.truth_table.values())
+    def count(self, value: float) -> int:
+        return list(self.truth_table.values()).count(value)
 
-    def get_valid_solutions(self) -> list[str]:
-        return list(filter(self.truth_table.get, self.truth_table.keys()))
+    def get_solutions(self, value: float) -> list[str]:
+        return list(filter(lambda x: self.truth_table[x] == value, self.truth_table.keys()))
+
+    def count_min_value_solutions(self) -> int:
+        return self.count(self.lowest_value)
+
+    def get_min_value_solutions(self) -> list[str]:
+        return self.get_solutions(self.lowest_value)
 
     def check_if_binary(self) -> bool:
         return all((value == 0 or value == 1) for value in self.truth_table.values())
+
+    def plot_distribution(self) -> None:
+        values = list(self.truth_table.values())
+        counts, bins = np.histogram(values, max(values)+1)
+        plt.stairs(counts, bins)
+        plt.show()
 
     def _ham_to_truth(self, hamiltonian: SparsePauliOp):
         return {

@@ -2,7 +2,7 @@ from qiskit.quantum_info import SparsePauliOp
 from typing import Union, overload
 
 
-class LogicalEquation:
+class Equation:
     @overload
     def __init__(self, size: int): ...
     @overload
@@ -48,79 +48,108 @@ class LogicalEquation:
     def is_quadratic(self) -> bool:
         return all(term.z.sum() <= 2 for term in self.hamiltonian.paulis)
 
-    def __or__(self, other: Union["Variable", "LogicalEquation"], /) -> "LogicalEquation":
+    def __or__(self, other: Union["Variable", "Equation"], /) -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
 
-        return LogicalEquation(self.hamiltonian + other.hamiltonian - self.hamiltonian.compose(other.hamiltonian))
+        return Equation(self.hamiltonian + other.hamiltonian - self.hamiltonian.compose(other.hamiltonian))
 
-    def __and__(self, other: Union["Variable", "LogicalEquation"], /) -> "LogicalEquation":
+    def __and__(self, other: Union["Variable", "Equation"], /) -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
 
-        return LogicalEquation(self.hamiltonian.compose(other.hamiltonian))
+        return Equation(self.hamiltonian.compose(other.hamiltonian))
 
-    def __xor__(self, other: Union["Variable", "LogicalEquation"], /) -> "LogicalEquation":
+    def __xor__(self, other: Union["Variable", "Equation"], /) -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
 
-        return LogicalEquation(self.hamiltonian + other.hamiltonian - (2 * self.hamiltonian.compose(other.hamiltonian)))
+        return Equation(self.hamiltonian + other.hamiltonian - (2 * self.hamiltonian.compose(other.hamiltonian)))
 
-    def __invert__(self) -> "LogicalEquation":
+    def __invert__(self) -> "Equation":
         I = ('I', [], 1)
         identity = SparsePauliOp.from_sparse_list([I], self.size)
-        return LogicalEquation(identity - self.hamiltonian)
+        return Equation(identity - self.hamiltonian)
 
     def __getitem__(self, variable_number: int):
         return self.get_variable(variable_number)
 
-    def __eq__(self, other: "LogicalEquation") -> bool:
+    def __eq__(self, other: "Equation") -> bool:
+        if isinstance(other, Variable):
+            other = other.to_equation()
+
         return self.hamiltonian == other.hamiltonian
+
+    def __add__(self, other: Union["Equation", "Variable"]) -> "Equation":
+        if isinstance(other, Variable):
+            other = other.to_equation()
+
+        return Equation(self.hamiltonian + other.hamiltonian)
+
+    def __radd__(self, other: "Equation") -> "Equation":
+        if isinstance(other, Variable):
+            other = other.to_equation()
+
+        return Equation(self.hamiltonian + other.hamiltonian)
+
+    def __mul__(self, other: Union["Equation", float]) -> "Equation":
+        if isinstance(other, Variable):
+            other = other.to_equation()
+        if isinstance(other, float):
+            return Equation(other * self.hamiltonian)
+        return Equation(self.hamiltonian.compose(other.hamiltonian))
+
+    def __rmul__(self, other: Union["Equation", float]) -> "Equation":
+        if isinstance(other, Variable):
+            other = other.to_equation()
+        if isinstance(other, float):
+            return Equation(other * self.hamiltonian)
+        return Equation(self.hamiltonian.compose(other.hamiltonian))
 
 
 class Variable:
-    def __init__(self, index: int, parent: LogicalEquation):
+    def __init__(self, index: int, parent: Equation):
         self.index = index
         self.size = parent.size
 
-    def __xor__(self, other: Union["Variable", LogicalEquation], /) -> LogicalEquation:
-        if isinstance(other, LogicalEquation):
+    def __xor__(self, other: Union["Variable", Equation], /) -> Equation:
+        if isinstance(other, Equation):
             return self.to_equation() ^ other
 
         I = ('I', [], 0.5)
         Z_term = ('ZZ', [self.index, other.index], -0.5)
-        eq = LogicalEquation(SparsePauliOp.from_sparse_list([I, Z_term], self.size))
+        eq = Equation(SparsePauliOp.from_sparse_list([I, Z_term], self.size))
         return eq
 
-    def __or__(self, other: Union["Variable", LogicalEquation], /) -> LogicalEquation:
-        if isinstance(other, LogicalEquation):
+    def __or__(self, other: Union["Variable", Equation], /) -> Equation:
+        if isinstance(other, Equation):
             return self.to_equation() | other
 
         I_term = ('I', [], 0.75)
         Z1_term = ('Z', [self.index], -0.25)
         Z2_term = ('Z', [other.index], -0.25)
         ZZ_term = ('ZZ', [self.index, other.index], -0.25)
-        eq = LogicalEquation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
+        eq = Equation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
         return eq
 
-    def __and__(self, other: Union["Variable", LogicalEquation], /) -> LogicalEquation:
+    def __and__(self, other: Union["Variable", Equation], /) -> Equation:
 
-        if isinstance(other, LogicalEquation):
+        if isinstance(other, Equation):
             return self.to_equation() & other
 
         I_term = ('I', [], 0.25)
         Z1_term = ('Z', [self.index], -0.25)
         Z2_term = ('Z', [other.index], -0.25)
         ZZ_term = ('ZZ', [self.index, other.index], 0.25)
-        eq = LogicalEquation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
+        eq = Equation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
         return eq
 
-    def __invert__(self) -> LogicalEquation:
+    def __invert__(self) -> Equation:
         I_term = ('I', [], 0.5)
         Z_term = ('Z', [self.index], 0.5)
-        return LogicalEquation([I_term, Z_term], self.size)
+        return Equation([I_term, Z_term], self.size)
 
-    def to_equation(self) -> LogicalEquation:
+    def to_equation(self) -> Equation:
         I_term = ('I', [], 0.5)
         Z_term = ('Z', [self.index], -0.5)
-        return LogicalEquation([I_term, Z_term], self.size)
+        return Equation([I_term, Z_term], self.size)

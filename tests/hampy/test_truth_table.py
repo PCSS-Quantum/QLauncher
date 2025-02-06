@@ -1,4 +1,4 @@
-from quantum_launcher.hampy.object import LogicalEquation
+from quantum_launcher.hampy.object import Equation
 from quantum_launcher.hampy.debug import TruthTable
 from qiskit.quantum_info import SparsePauliOp
 
@@ -21,7 +21,7 @@ def test_with_sparse_pauli():
 
 
 def test_with_hampy_object():
-    equation = LogicalEquation(4)
+    equation = Equation(4)
     equation = equation[0] & ~equation[1] & (equation[2] | equation[3])
     tt = TruthTable(equation)
     assert tt.check_if_binary()

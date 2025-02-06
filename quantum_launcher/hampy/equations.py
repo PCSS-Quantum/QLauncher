@@ -5,10 +5,10 @@ It's goal is too simplify the creation of more complex problem implementations, 
 """
 from qiskit.quantum_info import SparsePauliOp
 from typing import Optional
-from .object import LogicalEquation, Variable
+from .object import Equation, Variable
 
 
-def one_in_n(variables: list[int | Variable], size: Optional[int] = None, quadratic:bool = False) -> LogicalEquation:
+def one_in_n(variables: list[int | Variable], size: Optional[int] = None, quadratic:bool = False) -> Equation:
     """
     Generates HampyEquation for One in N problem.
 
@@ -27,7 +27,7 @@ def one_in_n(variables: list[int | Variable], size: Optional[int] = None, quadra
                 size = var.size
                 break
 
-    eq = LogicalEquation(size)
+    eq = Equation(size)
     new_variables = set()
     for var in variables.copy():
         if isinstance(var, int):
@@ -40,7 +40,7 @@ def one_in_n(variables: list[int | Variable], size: Optional[int] = None, quadra
             eq += variable
         I = SparsePauliOp.from_sparse_list([('I', [], 1)], size)
         hamiltonian = I - eq.hamiltonian
-        return LogicalEquation(hamiltonian.compose(hamiltonian))
+        return Equation(hamiltonian.compose(hamiltonian))
 
     for variable in new_variables:
         equation = variable

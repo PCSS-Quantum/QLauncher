@@ -2,6 +2,7 @@
 numpy
 pandas
 numba
+matplotlib
 
 # Qiskit
 qiskit
@@ -13,7 +14,6 @@ qiskit_aqt_provider
 
 # Orca
 torch
-matplotlib
 
 # Other Quantum Computing
 pyqubo
