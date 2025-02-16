@@ -30,9 +30,9 @@ class QiskitScheduler(JobShopScheduler):
                 else:
                     onehot_tasks.add(self.H_pos_by_label[label])
             if self.onehot == 'exact':
-                self.H += hampy.Ham_not(hampy.H_one_in_n(onehot_tasks, self.n))
+                self.H += (~hampy.one_in_n(onehot_tasks, self.n)).hamiltonian
             elif self.onehot == 'quadratic':
-                self.H += hampy.quadratic_onehot(onehot_tasks, self.n)
+                self.H += hampy.one_in_n(onehot_tasks, self.n, quadratic=True).hamiltonian
 
     def _add_precedence_constraint(self, lagrange_precedence=1):
         for current_task, next_task in zip(self.tasks, self.tasks[1:]):
@@ -48,8 +48,8 @@ class QiskitScheduler(JobShopScheduler):
                     if next_label in self.absurd_times:
                         continue
                     var2 = self.H_pos_by_label[next_label]
-                    self.H += hampy.H_x(var1,
-                                        self.n).compose(hampy.H_x(var2, self.n))
+                    equation = hampy.Equation(self.n)
+                    self.H += (equation[var1] & equation[var2]).hamiltonian
 
     def _add_share_machine_constraint(self, lagrange_share=1):
         sorted_tasks = sorted(self.tasks, key=lambda x: x.machine)
@@ -83,9 +83,8 @@ class QiskitScheduler(JobShopScheduler):
                             if this_label in self.absurd_times:
                                 continue
                             var2 = self.H_pos_by_label[this_label]
-
-                            self.H += hampy.H_x(var1,
-                                                self.n).compose(hampy.H_x(var2, self.n))
+                            equation = hampy.Equation(self.n)
+                            self.H += (equation[var1] & equation[var2]).hamiltonian
 
     def _build_variable_dict(self):
         for task in self.tasks:
@@ -172,7 +171,7 @@ class QiskitScheduler(JobShopScheduler):
                     continue
 
                 var = self.H_pos_by_label[label]
-                self.H += hampy.H_x(var, self.n)
+                self.H += hampy.Variable(var, hampy.Equation(self.n)).to_equation().hamiltonian
         # self.H += h / (base * len(self.last_task_indices))
 
         # Get BQM

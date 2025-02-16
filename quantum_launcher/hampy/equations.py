@@ -6,9 +6,10 @@ It's goal is too simplify the creation of more complex problem implementations, 
 from qiskit.quantum_info import SparsePauliOp
 from typing import Optional
 from .object import Equation, Variable
+from copy import copy
 
 
-def one_in_n(variables: list[int | Variable], size: Optional[int] = None, quadratic:bool = False) -> Equation:
+def one_in_n(variables: list[int | Variable], size: Optional[int] = None, quadratic: bool = False) -> Equation:
     """
     Generates HampyEquation for One in N problem.
 
@@ -29,7 +30,7 @@ def one_in_n(variables: list[int | Variable], size: Optional[int] = None, quadra
 
     eq = Equation(size)
     new_variables = set()
-    for var in variables.copy():
+    for var in copy(variables):
         if isinstance(var, int):
             new_variables.add(eq.get_variable(var))
         elif isinstance(var, Variable):

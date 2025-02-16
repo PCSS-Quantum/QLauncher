@@ -9,6 +9,8 @@ from quantum_launcher.base import formatter
 from quantum_launcher.base.adapter_structure import adapter
 import quantum_launcher.problems.problem_initialization as problems
 import quantum_launcher.hampy as hampy
+from quantum_launcher.hampy import Equation, Variable
+
 
 @adapter('hamiltonian', 'qubo')
 def hamiltonian_to_qubo(hamiltonian):
@@ -16,6 +18,7 @@ def hamiltonian_to_qubo(hamiltonian):
     conv = QuadraticProgramToQubo()
     qubo = conv.convert(qp).objective
     return None, qubo.quadratic.to_array()
+
 
 def ring_ham(ring: set, n):
     total = None
@@ -52,10 +55,9 @@ class ECQiskit:
         hamiltonian = None
         for ohs in onehots:
             if problem.onehot == 'exact':
-                part = hampy.Ham_not(hampy.H_one_in_n(
-                    list(ohs), size=len(problem.instance)))
+                part = (~hampy.one_in_n(list(ohs), len(problem.instance))).hamiltonian
             elif problem.onehot == 'quadratic':
-                part = hampy.quadratic_onehot(list(ohs), len(problem.instance))
+                part = hampy.one_in_n(list(ohs), len(problem.instance), quadratic=True).hamiltonian
 
             if hamiltonian is None:
                 hamiltonian = part
@@ -157,10 +159,10 @@ def get_qiskit_hamiltonian(problem: problems.MaxCut):
     n = problem.instance.number_of_nodes()
     for edge in problem.instance.edges():
         if ham is None:
-            ham = hampy.Ham_not(hampy.H_one_in_n(edge, n))
+            ham = ~hampy.one_in_n(edge, n)
         else:
-            ham += hampy.Ham_not(hampy.H_one_in_n(edge, n))
-    return ham.simplify()
+            ham += ~hampy.one_in_n(edge, n)
+    return ham.hamiltonian.simplify()
 
 
 @formatter(problems.QATM, 'hamiltonian')
@@ -172,14 +174,18 @@ class QATMQiskit:
         onehot_hamiltonian = None
         for plane, manouvers in aircrafts.groupby(by='aircraft'):
             if problem.onehot == 'exact':
-                h = hampy.Ham_not(hampy.H_one_in_n(
-                    manouvers.index.values.tolist(), len(cm)))
+                h = (~hampy.one_in_n(manouvers.index.values.tolist(), len(cm))).hamiltonian
             elif problem.onehot == 'quadratic':
-                h = hampy.quadratic_onehot(
-                    manouvers.index.values.tolist(), len(cm))
+                h = hampy.one_in_n(manouvers.index.values.tolist(), len(cm), quadratic=True).hamiltonian
             elif problem.onehot == 'xor':
-                h = hampy.Ham_not(hampy.H_xor(
-                    manouvers.index.values.tolist(), len(cm)))
+                total = None
+                eq = Equation(len(cm))
+                for part in manouvers.index.values.tolist():
+                    if total is None:
+                        total = eq[part].to_equation()
+                        continue
+                    total ^= eq[part]
+                h = (~total).hamiltonian
             if onehot_hamiltonian is not None:
                 onehot_hamiltonian += h
             else:
@@ -188,10 +194,12 @@ class QATMQiskit:
         triu = np.triu(cm, k=1)
         conflict_hamiltonian = None
         for p1, p2 in zip(*np.where(triu == 1)):
+            eq = Equation(len(cm))
+            partial_hamiltonian = (eq[int(p1)] & eq[int(p2)]).hamiltonian
             if conflict_hamiltonian is not None:
-                conflict_hamiltonian += hampy.H_and([p1, p2], len(cm))
+                conflict_hamiltonian += partial_hamiltonian
             else:
-                conflict_hamiltonian = hampy.H_and([p1, p2], len(cm))
+                conflict_hamiltonian = partial_hamiltonian
 
         hamiltonian = onehot_hamiltonian + conflict_hamiltonian
 
@@ -199,7 +207,8 @@ class QATMQiskit:
             goal_hamiltonian = None
             for i, (maneuver, ac) in problem.instance['aircrafts'].iterrows():
                 if maneuver != ac:
-                    h = hampy.H_x(i, len(aircrafts))
+                    eq = Equation(len(aircrafts))
+                    h = Variable(i, eq).to_equation()
                     if goal_hamiltonian is None:
                         goal_hamiltonian = h
                     else:
