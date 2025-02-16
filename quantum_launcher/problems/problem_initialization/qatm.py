@@ -29,10 +29,8 @@ class QATM(Problem):
     """
 
     def __init__(self, onehot: str, instance: any = None, instance_name: str | None = None,
-                 instance_path: str | None = None,
                  optimization_problem: bool = False) -> None:
-        super().__init__(instance=instance, instance_name=instance_name,
-                         instance_path=instance_path)
+        super().__init__(instance=instance, instance_name=instance_name)
         self.onehot = onehot
         self.optimization_problem = optimization_problem
 
@@ -46,15 +44,14 @@ class QATM(Problem):
     def _get_path(self) -> str:
         return f'{self.name}@{self.instance_name.split(".", 1)[0]}'
 
-    def read_instance(self, instance_path: str, instance_name: str | None = None) -> None:
-        if instance_name is None:
-            instance_name = self.instance_name
+    @classmethod
+    def from_file(cls, instance_path: str, instance_name: str):
         cm_path = os.path.join(instance_path, 'CM_' + instance_name)
         aircrafts_path = os.path.join(
             instance_path, 'aircrafts_' + instance_name)
 
-        self.instance = {'cm': np.loadtxt(cm_path),
-                         'aircrafts': pd.read_csv(aircrafts_path, delimiter=' ', names=['manouver', 'aircraft'])}
+        instance = {'cm': np.loadtxt(cm_path), 'aircrafts': pd.read_csv(aircrafts_path, delimiter=' ', names=['manouver', 'aircraft'])}
+        return QATM('exact', instance, instance_name)
 
     def analyze_result(self, result: dict):
         """

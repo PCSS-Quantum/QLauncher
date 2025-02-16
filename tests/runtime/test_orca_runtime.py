@@ -8,7 +8,7 @@ TESTING_DIR = 'testing'
 
 def test_ec():
     """ Testing function for Exact Cover """
-    pr = EC('exact', instance_name='toy')
+    pr = EC.from_preset(onehot='quadratic', instance_name='toy')
     bbs = BBS()
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
@@ -19,7 +19,7 @@ def test_ec():
 
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP(3, 'exact', instance_name='toy', optimization_problem=True)
+    pr = JSSP.from_preset(max_time=3, onehot='quadratic', instance_name='toy', optimization_problem=True)
     bbs = BBS()
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
@@ -30,7 +30,7 @@ def test_jssp():
 
 def test_maxcut():
     """ Testing function for Max Cut """
-    pr = MaxCut(instance_name='default')
+    pr = MaxCut.from_preset(instance_name='default')
     bbs = BBS()
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)

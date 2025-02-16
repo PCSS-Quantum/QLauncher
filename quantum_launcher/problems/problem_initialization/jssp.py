@@ -1,5 +1,6 @@
 """  Module for Job Shop Scheduling Problem (JSSP)."""
 from collections import defaultdict
+from typing import Dict, List, Literal, Tuple
 try:
     from quantum_launcher.problems.problem_formulations.jssp.qiskit_scheduler import get_jss_hamiltonian
 except ModuleNotFoundError:
@@ -29,11 +30,9 @@ class JSSP(Problem):
 
     """
 
-    def __init__(self, max_time: int, onehot: str, instance: any = None,
-                 instance_name: str | None = None, instance_path: str | None = None,
-                 optimization_problem: bool = False) -> None:
-        super().__init__(instance=instance, instance_name=instance_name,
-                         instance_path=instance_path)
+    def __init__(self, max_time: int, onehot: Literal['exact', 'quadratic'], instance: Dict[str, List[Tuple[str, int]]],
+                 instance_name: str = 'unnamed', optimization_problem: bool = False) -> None:
+        super().__init__(instance=instance, instance_name=instance_name)
         self.max_time = max_time
         self.onehot = onehot
         self.optimization_problem = optimization_problem
@@ -61,24 +60,20 @@ class JSSP(Problem):
     def _get_path(self) -> str:
         return f'{self.name}@{self.instance_name}@{self.max_time}@{"optimization" if self.optimization_problem else "decision"}@{self.onehot}'
 
-    def set_instance(self, instance: any, instance_name: str | None = None):
-        super().set_instance(instance, instance_name)
-        if instance is None:
-            match instance_name:
-                case 'toy':
-                    self.instance = {"cupcakes": [("mixer", 2), ("oven", 1)],
-                                     "smoothie": [("mixer", 1)],
-                                     "lasagna": [("oven", 2)]}
+    @staticmethod
+    def from_preset(instance_name: str, **kwargs) -> "JSSP":
+        match instance_name:
+            case 'toy':
+                instance = {"cupcakes": [("mixer", 2), ("oven", 1)],
+                            "smoothie": [("mixer", 1)],
+                            "lasagna": [("oven", 2)]}
 
-    def read_instance(self, instance_path: str):
-        """Reads the problem instance from a file.
+        return JSSP(instance=instance, instance_name=instance_name, **kwargs)
 
-        Args:
-            instance_path (str): The path to the file containing the problem instance.
-
-        """
+    @classmethod
+    def from_file(cls, path: str, **kwargs) -> "JSSP":
         job_dict = defaultdict(list)
-        with open(instance_path, 'r', encoding='utf-8') as file_:
+        with open(path, 'r', encoding='utf-8') as file_:
             file_.readline()
             for i, line in enumerate(file_):
                 lint = list(map(int, line.split()))
@@ -86,4 +81,4 @@ class JSSP(Problem):
                                    zip(lint[::2],  # machines
                                        lint[1::2]  # operation lengths
                                        )]
-        self.instance = job_dict
+        return JSSP(instance=job_dict, **kwargs)

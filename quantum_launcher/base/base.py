@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import pickle
-from typing import Any, Callable, Dict, Optional, Literal
+from typing import Any, Callable, Dict, Optional, Literal, TypeVar, overload
 import logging
 
 
 AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'none', 'fn']
+
 
 @dataclass
 class Result:
@@ -70,13 +71,16 @@ class Backend:
         self.name: str = name
         self.path: str | None = None
         self.parameters = parameters if parameters is not None else []
-        self.logger:Optional[logging.Logger] = None
+        self.logger: Optional[logging.Logger] = None
 
-    def set_logger(self, logger:logging.Logger):
+    def set_logger(self, logger: logging.Logger):
         self.logger = logger
 
     def _get_path(self):
         return f'{self.name}'
+
+
+P = TypeVar('P', bound='Problem')
 
 
 class Problem(ABC):
@@ -104,73 +108,33 @@ class Problem(ABC):
 
     _problem_id = None
 
-    @abstractmethod
-    def __init__(self, instance: any = None, instance_name: str | None = None, instance_path: str | None = None) -> None:
+    def __init__(self, instance: Any, instance_name: str = 'unnamed') -> None:
         """
         Initializes a Problem instance.
 
         Args:
             instance (any): An instance of the problem.
             instance_name (str | None): The name of the instance.
-            instance_path (str | None): The path to the instance file.
 
         Returns:
             None
         """
+        self.instance: any = instance
+        self.instance_name = instance_name
         self.variant: str = 'Optimization'
         self.path: str | None = None
-        self.name = type(self).__name__.lower()
-        self.instance_name: str = 'unnamed' if instance_name is None else instance_name
-        self.instance: any = None
-        if instance_path is None:
-            self.set_instance(instance=instance, instance_name=instance_name)
-        else:
-            self.read_instance(instance_path)
+        self.name = self.__class__.__name__.lower()
+
+    @classmethod
+    def from_file(cls: P, path: str) -> P:
+        with open(path, 'rb') as f:
+            instance = pickle.load(f)
+        return cls(instance)
 
     def __init_subclass__(cls) -> None:
         if Problem not in cls.__bases__:
             return
         cls._problem_id = cls
-
-    def set_instance(self, instance: any, instance_name: str | None = None) -> None:
-        """
-        Sets an instance of the problem.
-
-        Args:
-            instance (any): An instance of the problem.
-            instance_name (str | None): The name of the instance.
-
-        Returns:
-            None
-        """
-        if instance_name is not None:
-            self.instance_name = instance_name
-        self.instance = instance
-
-    def read_instance(self, instance_path: str) -> None:
-        """
-        Reads an instance of the problem from a file.
-
-        Args:
-            instance_path (str): The path to the instance file.
-
-        Returns:
-            None
-        """
-        if self.instance_name is None:
-            self.instance_name = instance_path.rsplit(
-                '/', 1)[1].split('.', 1)[0]
-        with open(instance_path, 'rb') as file:
-            self.instance = pickle.load(file)
-
-    def _get_path(self) -> str:
-        """
-        Returns the common path.
-
-        Returns:
-            str: The common path.
-        """
-        return f'{self.name}/{self.instance_name}'
 
     def read_result(self, exp, log_path):
         """

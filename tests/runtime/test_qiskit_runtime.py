@@ -8,7 +8,7 @@ TESTING_DIR = 'testing'
 
 def test_ec():
     """ Testing function for Exact Cover """
-    pr = EC('exact', instance_name='micro')
+    pr = EC.from_preset(onehot='exact', instance_name='micro')
     qaoa = QAOA(p=3)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
@@ -20,7 +20,7 @@ def test_ec():
 
 def test_qatm():
     """ Testing function for QATM """
-    pr = QATM('exact', instance_name='RCP_3.txt', instance_path='data/qatm/')
+    pr = QATM.from_file(instance_name='RCP_3.txt', instance_path='data/qatm/')
     qaoa = QAOA(p=3)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
@@ -32,7 +32,7 @@ def test_qatm():
 
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP(3, 'exact', instance_name='toy', optimization_problem=True)
+    pr = JSSP.from_preset('toy', max_time=3, onehot='exact', optimization_problem=True)
     qaoa = QAOA(p=3)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
@@ -44,7 +44,7 @@ def test_jssp():
 
 def test_maxcut():
     """ Testing function for Max Cut """
-    pr = MaxCut(instance_name='default')
+    pr = MaxCut.from_preset(instance_name='default')
     qaoa = QAOA()
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)

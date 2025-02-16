@@ -1,5 +1,6 @@
 """  This module contains the EC class."""
 import ast
+from typing import List, Literal, Set
 
 from quantum_launcher.base import Problem
 
@@ -24,10 +25,9 @@ class EC(Problem):
 
     """
 
-    def __init__(self, onehot: str, instance: any = None,
-                 instance_name: str | None = None, instance_path: str = None) -> None:
-        super().__init__(instance=instance, instance_name=instance_name,
-                         instance_path=instance_path)
+    def __init__(self, onehot: Literal['exact', 'quadratic'], instance: List[Set[int]] = None,
+                 instance_name: str = 'unnamed') -> None:
+        super().__init__(instance=instance, instance_name=instance_name)
         self.onehot = onehot
 
     @property
@@ -40,20 +40,20 @@ class EC(Problem):
     def _get_path(self) -> str:
         return f'{self.name}@{self.instance_name}@{self.onehot}'
 
-    def set_instance(self, instance: any, instance_name: str | None = None):
-        super().set_instance(instance, instance_name)
-        if instance is None:
-            match instance_name:
-                case 'micro':
-                    self.instance = [{1, 2},
-                                     {1}]
-                case 'toy':
-                    self.instance = [{1, 4, 7},
-                                     {1, 4},
-                                     {4, 5, 7},
-                                     {3, 5, 6},
-                                     {2, 3, 6, 7},
-                                     {2, 7}]
+    @staticmethod
+    def from_preset(instance_name: str, **kwargs) -> "EC":
+        match instance_name:
+            case 'micro':
+                instance = [{1, 2},
+                            {1}]
+            case 'toy':
+                instance = [{1, 4, 7},
+                            {1, 4},
+                            {4, 5, 7},
+                            {3, 5, 6},
+                            {2, 3, 6, 7},
+                            {2, 7}]
+        return EC(instance=instance, instance_name=instance_name, **kwargs)
 
     def read_instance(self, instance_path: str):
         with open(instance_path, 'r', encoding='utf-8') as file:

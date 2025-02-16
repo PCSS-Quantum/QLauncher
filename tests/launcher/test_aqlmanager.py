@@ -8,7 +8,7 @@ from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
 def test_runtime():
     with AQLManager('test') as launcher:
         launcher.add(backend=SimulatedAnnealingBackend(),
-                     algorithm=DwaveSolver(1), problem=EC('exact', instance_name='micro'))
+                     algorithm=DwaveSolver(1), problem=EC.from_preset(onehot='exact', instance_name='micro'))
         launcher.add_algorithm(DwaveSolver(2))
         result = launcher.result
 
@@ -18,9 +18,9 @@ def test_runtime():
 def test_runtime_dwave():
     with AQLManager('test') as launcher:
         launcher.add(backend=SimulatedAnnealingBackend(),
-                     algorithm=DwaveSolver(1), problem=EC('quadratic', instance_name='micro'))
+                     algorithm=DwaveSolver(1), problem=EC.from_preset(onehot='quadratic', instance_name='micro'))
         launcher.add_algorithm(DwaveSolver(2), times=2)
-        launcher.add_problem(MaxCut(instance_name='default'), times=3)
+        launcher.add_problem(MaxCut.from_preset(instance_name='default'), times=3)
         result = launcher.result
         result_bitstring = launcher.result_bitstring
 
@@ -36,8 +36,8 @@ def test_runtime_dwave():
 def test_runtime_qiskit():
     with AQLManager('test') as launcher:
         launcher.add(backend=QiskitBackend('local_simulator'),
-                     algorithm=QAOA(2), problem=EC('exact', instance_name='micro'))
-        launcher.add_problem(MaxCut(instance_name='default'), times=3)
+                     algorithm=QAOA(2), problem=EC.from_preset(onehot='exact', instance_name='micro'))
+        launcher.add_problem(MaxCut.from_preset(instance_name='default'), times=3)
         result = launcher.result
         result_bitstring = launcher.result_bitstring
 
@@ -55,8 +55,8 @@ def test_runtime_orca():
     return
     with AQLManager('test') as launcher:
         launcher.add(backend=OrcaBackend('local'),
-                     algorithm=BBS(), problem=MaxCut(instance_name='default'))
-        launcher.add_problem(MaxCut(instance_name='default'), times=1)
+                     algorithm=BBS(), problem=MaxCut.from_preset(instance_name='default'))
+        launcher.add_problem(MaxCut.from_preset(instance_name='default'), times=1)
         result = launcher.result
         result_bitstring = launcher.result_bitstring
 

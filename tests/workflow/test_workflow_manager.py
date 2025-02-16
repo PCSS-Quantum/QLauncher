@@ -57,6 +57,6 @@ def test_workflow_format():
 
     workflow = wm.to_workflow()
     assert workflow._algorithm_format == 'qubo'
-    launcher = QuantumLauncher(MaxCut(instance_name='default'), workflow)
+    launcher = QuantumLauncher(MaxCut.from_preset(instance_name='default'), workflow)
     result = launcher.run()
     assert result == 1
