@@ -1,6 +1,8 @@
 """  This module contains the EC class."""
 import ast
-from typing import List, Literal, Set
+from collections import defaultdict
+from typing import List, Literal, Optional, Set
+import networkx as nx
 
 from quantum_launcher.base import Problem
 
@@ -55,7 +57,65 @@ class EC(Problem):
                             {2, 7}]
         return EC(instance=instance, instance_name=instance_name, **kwargs)
 
+    @classmethod
+    def from_file(cls, path: str, **kwargs) -> "EC":
+        with open(path, 'r', encoding='utf-8') as file:
+            read_file = file.read()
+        instance = ast.literal_eval(read_file)
+        return EC(instance, **kwargs)
+
     def read_instance(self, instance_path: str):
         with open(instance_path, 'r', encoding='utf-8') as file:
             read_file = file.read()
         self.instance = ast.literal_eval(read_file)
+
+    def visualize(self, marked: Optional[str] = None):
+        import matplotlib.pyplot as plt
+        G = nx.Graph()
+        size = len(self.instance)
+        ec = list(map(lambda x: set(map(str, x)), self.instance))
+        names = set.union(*ec)
+        for i in range(len(ec)):
+            G.add_node(i)
+        for i in sorted(names):
+            G.add_node(i)
+        covered = defaultdict(int)
+        for node, edges in enumerate(ec):
+            for goal_node in edges:
+                G.add_edge(node, goal_node)
+
+        edge_colors = []
+        for goal_node in G.edges():
+            node, str_node = goal_node
+            if marked is None:
+                edge_colors.append('black')
+                continue
+            if marked[node] == '1':
+                edge_colors.append('red')
+                covered[str_node] += 1
+            else:
+                edge_colors.append('gray')
+        color_map = []
+        for node in G:
+            if isinstance(node, int):
+                color_map.append('lightblue')
+            elif covered[node] == 0:
+                color_map.append('yellow')
+            elif covered[node] == 1:
+                color_map.append('lightgreen')
+            else:
+                color_map.append('red')
+        pos = nx.bipartite_layout(G, nodes=range(size))
+        nx.draw(G, pos, node_color=color_map, with_labels=True,
+                edge_color=edge_colors)
+        plt.title('Exact Cover Problem Visualization')
+        plt.show()
+
+    @staticmethod
+    def generate_ec_instance(n: int, m: int, p: float = 0.5, **kwargs) -> "EC":
+        graph = nx.bipartite.random_graph(n, m, p)
+        right_nodes = [n for n, d in graph.nodes(data=True) if d["bipartite"] == 0]
+        instance = [set() for _ in right_nodes]
+        for left, right in graph.edges():
+            instance[left].add(right)
+        return EC(instance=instance, **kwargs)
