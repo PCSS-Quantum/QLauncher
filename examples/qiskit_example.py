@@ -2,6 +2,7 @@
 from quantum_launcher import *
 from quantum_launcher.routines.qiskit_routines import QiskitBackend, QAOA
 
+
 def main():
     """ main """
     pr = problems.JSSP(3, 'exact', instance_name='toy',
