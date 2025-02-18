@@ -11,6 +11,8 @@ import quantum_launcher.problems.problem_initialization as problems
 import quantum_launcher.hampy as hampy
 from quantum_launcher.hampy import Equation, Variable
 
+from .tsp.conversion import problem_to_hamiltonian as tsp_to_hamiltonian
+
 
 @adapter('hamiltonian', 'qubo')
 def hamiltonian_to_qubo(hamiltonian):
@@ -242,3 +244,7 @@ class QATMQiskit:
 @formatter(problems.Raw, 'hamiltonian')
 def get_qiskit_hamiltonian(self) -> SparsePauliOp:
     return self.instance
+
+@formatter(problems.TSP, 'hamiltonian')
+def get_qiskit_hamiltonian(problem: problems.TSP) -> SparsePauliOp:
+    return tsp_to_hamiltonian(problem,constraints_weight=5*(len(problem.instance.nodes) - 3))
