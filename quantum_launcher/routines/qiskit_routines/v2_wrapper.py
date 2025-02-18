@@ -33,9 +33,9 @@ class RuntimeJobV2Adapter(BasePrimitiveJob):
 
 
 class SamplerV2JobAdapter(RuntimeJobV2Adapter):
-    '''
+    """
     Dummy data holder, returns a v1 SamplerResult from v2 sampler job.
-    '''
+    """
 
     def __init__(self, job, **kwargs):
         super().__init__(job, **kwargs)
@@ -60,35 +60,6 @@ class SamplerV2JobAdapter(RuntimeJobV2Adapter):
             metas.append(metadata)
 
         return SamplerResult(quasi_dists=qd, metadata=metas)
-
-
-class EstimatorV2JobAdapter(RuntimeJobV2Adapter):
-    '''
-    Dummy data holder, returns a v1 EstimatorResult from v2 estimator job.
-    '''
-
-    def __init__(self, job, **kwargs):
-        super().__init__(job, **kwargs)
-
-    def _get_values_meta(self, res):
-        data = res.data
-
-        values = data['evs']
-
-        meta = res.metadata
-        meta["estimator_version"] = 2
-
-        return values, meta
-
-    def result(self):
-        res = self.job.result()
-        values, metas = [], []
-        for r in res:
-            energy, metadata = self._get_values_meta(r)
-            values.append(energy)
-            metas.append(metadata)
-
-        return EstimatorResult(values=values, metadata=metas)
 
 
 def transpile_circuits(circuits, backend):
@@ -119,27 +90,3 @@ class SamplerV2Adapter(BaseSamplerV1):
         job = self.sampler_v2.run(pubs=v2_list, **run_options)
 
         return SamplerV2JobAdapter(job)
-
-
-class EstimatorV2Adapter(BaseEstimatorV1):
-    """
-    V1 adapter for V2 estimators.
-    """
-
-    def __init__(self, estimator_v2: BaseEstimatorV2, backend=None, options: dict | None = None):
-        self.estimator_v2 = estimator_v2
-        self.backend = backend
-        super().__init__()
-
-    def _run(self, circuits, observables, parameter_values=None, **run_options):
-        circuits = transpile_circuits(circuits, self.backend)
-
-        if not (parameter_values is None):
-            v2_list = zip(circuits, observables, parameter_values)
-        else:
-            v2_list = zip(circuits, observables)
-
-        job = self.estimator_v2.run(
-            pubs=v2_list, precision=run_options.get("precision", None))
-
-        return EstimatorV2JobAdapter(job)
