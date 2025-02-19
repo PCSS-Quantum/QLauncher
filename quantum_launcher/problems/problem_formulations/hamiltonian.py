@@ -252,4 +252,4 @@ def get_qiskit_hamiltonian(self) -> SparsePauliOp:
 
 @formatter(problems.TSP, 'hamiltonian')
 def get_qiskit_hamiltonian(problem: problems.TSP) -> SparsePauliOp:
-    return tsp_to_hamiltonian(problem, constraints_weight=5*(len(problem.instance.nodes) - 3))
+    return tsp_to_hamiltonian(problem, constraints_weight=max(2, 5*(len(problem.instance.nodes) - 3)))

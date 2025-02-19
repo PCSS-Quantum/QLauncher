@@ -6,7 +6,7 @@ from quantum_launcher.base import Problem
 
 
 class TSP(Problem):
-    def __init__(self,instance: nx.Graph | None = None,instance_name: str | None = None):
+    def __init__(self, instance: nx.Graph, instance_name: str = "unnamed"):
         super().__init__(instance=instance, instance_name=instance_name)
 
     @property
@@ -16,11 +16,10 @@ class TSP(Problem):
     def _get_path(self) -> str:
         return f"{self.name}@{self.instance_name}"
 
-
     def visualize(self):
         import matplotlib.pyplot as plt
 
-        pos = nx.spring_layout(self.instance,weight=None,seed=42)
+        pos = nx.spring_layout(self.instance, weight=None, seed=42)
         plt.figure(figsize=(8, 6))
 
         nx.draw(
@@ -36,8 +35,8 @@ class TSP(Problem):
 
         labels = nx.get_edge_attributes(self.instance, "weight")
         nx.draw_networkx_edge_labels(
-            self.instance, 
-            pos, 
+            self.instance,
+            pos,
             edge_labels=labels,
             rotate=False,
             font_weight="bold",
@@ -68,20 +67,20 @@ class TSP(Problem):
             for j in range(i + 1, n):  # No connections to self
                 G.add_edge(i, j, weight=edge_costs[i, j])
 
-        return TSP(instance=G, instance_name=instance_name)                
+        return TSP(instance=G, instance_name=instance_name)
 
     @staticmethod
-    def generate_tsp_instance(num_vertices:int, min_distance:float=1.0, max_distance:float=10.0) -> nx.Graph:
+    def generate_tsp_instance(num_vertices: int, min_distance: float = 1.0, max_distance: float = 10.0) -> nx.Graph:
         if num_vertices < 2:
             raise ValueError("num_vertices must be at least 2")
-        
+
         if min_distance <= 0:
             raise ValueError("min_distance must be greater than 0")
-        
+
         g = nx.Graph()
         for i in range(num_vertices):
             for j in range(i + 1, num_vertices):
-                g.add_edge(i, j, weight=int(np.random.uniform(min_distance, max_distance)))
-        
+                g.add_edge(i, j, weight=int(
+                    np.random.uniform(min_distance, max_distance)))
+
         return g
-    

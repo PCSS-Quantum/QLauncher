@@ -3,7 +3,7 @@ from qiskit.quantum_info import Pauli, SparsePauliOp
 from quantum_launcher.hampy.object import Equation
 
 
-def shift_affected_qubits(equation:Equation, shift: int) -> Equation:
+def shift_affected_qubits(equation: Equation, shift: int) -> Equation:
     """
     Shifts the qubits affected by the equation by the given amount, wrapping around if the index goes out of bounds.
 
@@ -21,7 +21,7 @@ def shift_affected_qubits(equation:Equation, shift: int) -> Equation:
     op = equation.hamiltonian
 
     if shift == 0:
-        return op
+        return equation
 
     npaulis = []
     ncoeffs = []
@@ -32,5 +32,5 @@ def shift_affected_qubits(equation:Equation, shift: int) -> Equation:
         ncoeffs.append(coeff)
 
     new_op = SparsePauliOp(npaulis, coeffs=ncoeffs)
-    
+
     return Equation(new_op)
