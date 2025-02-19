@@ -19,7 +19,7 @@ def hamiltonian_to_qubo(hamiltonian):
     qp = from_ising(hamiltonian)
     conv = QuadraticProgramToQubo()
     qubo = conv.convert(qp).objective
-    return None, qubo.quadratic.to_array()
+    return qubo.quadratic.to_array(), 0
 
 
 def ring_ham(ring: set, n):

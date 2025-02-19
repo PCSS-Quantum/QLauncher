@@ -32,7 +32,8 @@ def test_qatm():
 
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP.from_preset('toy', max_time=3, onehot='exact', optimization_problem=True)
+    pr = JSSP.from_preset('toy', max_time=3, onehot='exact',
+                          optimization_problem=True)
     qaoa = QAOA(p=3)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
@@ -82,7 +83,7 @@ def test_raw():
 
 def test_tsp():
     """ Testing function for TSP """
-    pr = TSP(TSP.generate_tsp_instance(3))  # Smaller sample size for testing
+    pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
     qaoa = QAOA()
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)

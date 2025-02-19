@@ -6,8 +6,9 @@ from quantum_launcher.base import Problem
 
 
 class TSP(Problem):
-    def __init__(self, instance: nx.Graph, instance_name: str = "unnamed"):
+    def __init__(self, instance: nx.Graph, instance_name: str = "unnamed", quadratic: bool = False):
         super().__init__(instance=instance, instance_name=instance_name)
+        self.quadratic = quadratic
 
     @property
     def setup(self) -> dict:
@@ -48,7 +49,7 @@ class TSP(Problem):
         plt.show()
 
     @staticmethod
-    def from_preset(instance_name: str = 'default') -> "TSP":
+    def from_preset(instance_name: str = 'default', **kwargs) -> "TSP":
         match instance_name:
             case 'default':
                 edge_costs = np.array(
@@ -67,10 +68,12 @@ class TSP(Problem):
             for j in range(i + 1, n):  # No connections to self
                 G.add_edge(i, j, weight=edge_costs[i, j])
 
-        return TSP(instance=G, instance_name=instance_name)
+        quadratic = kwargs.get("quadratic", False)
+
+        return TSP(instance=G, instance_name=instance_name, quadratic=quadratic)
 
     @staticmethod
-    def generate_tsp_instance(num_vertices: int, min_distance: float = 1.0, max_distance: float = 10.0) -> nx.Graph:
+    def generate_tsp_instance(num_vertices: int, min_distance: float = 1.0, max_distance: float = 10.0, **kwargs) -> "TSP":
         if num_vertices < 2:
             raise ValueError("num_vertices must be at least 2")
 
@@ -83,4 +86,6 @@ class TSP(Problem):
                 g.add_edge(i, j, weight=int(
                     np.random.uniform(min_distance, max_distance)))
 
-        return g
+        quadratic = kwargs.get("quadratic", False)
+
+        return TSP(instance=g, instance_name="generated", quadratic=quadratic)
