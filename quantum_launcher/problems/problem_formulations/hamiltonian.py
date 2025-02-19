@@ -1,4 +1,5 @@
 # from .launcher import QiskitProblem
+from itertools import product
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 from qiskit import QuantumCircuit
@@ -12,7 +13,7 @@ import quantum_launcher.hampy as hampy
 from quantum_launcher.hampy import Equation, Variable
 
 
-@adapter('hamiltonian', 'qubo')
+@adapter("hamiltonian", "qubo")
 def hamiltonian_to_qubo(hamiltonian):
     qp = from_ising(hamiltonian)
     conv = QuadraticProgramToQubo()
@@ -40,10 +41,10 @@ def ring_ham(ring: set, n):
     return SparsePauliOp(total)
 
 
-@formatter(problems.EC, 'hamiltonian')
+@formatter(problems.EC, "hamiltonian")
 class ECQiskit:
     def __call__(self, problem: problems.EC) -> SparsePauliOp:
-        """ generating hamiltonian"""
+        """generating hamiltonian"""
         elements = set().union(*problem.instance)
         onehots = []
         for ele in elements:
@@ -54,9 +55,9 @@ class ECQiskit:
             onehots.append(ohs)
         hamiltonian = None
         for ohs in onehots:
-            if problem.onehot == 'exact':
+            if problem.onehot == "exact":
                 part = (~hampy.one_in_n(list(ohs), len(problem.instance))).hamiltonian
-            elif problem.onehot == 'quadratic':
+            elif problem.onehot == "quadratic":
                 part = hampy.one_in_n(list(ohs), len(problem.instance), quadratic=True).hamiltonian
 
             if hamiltonian is None:
@@ -66,7 +67,8 @@ class ECQiskit:
         return hamiltonian.simplify()
 
     def get_mixer_hamiltonian(self, problem: problems.EC, amount_of_rings=None):
-        """ generates mixer hamiltonian """
+        """generates mixer hamiltonian"""
+
         def get_main_set():
             main_set = []
             for element_set in problem.instance:
@@ -93,8 +95,7 @@ class ECQiskit:
             for elem in x_gate:
                 sparse_list = []
                 sparse_list.append((("X", [elem], 1)))
-                sp = SparsePauliOp.from_sparse_list(
-                    sparse_list, len(problem.instance))
+                sp = SparsePauliOp.from_sparse_list(sparse_list, len(problem.instance))
                 if total is None:
                     total = sp
                 else:
@@ -116,8 +117,7 @@ class ECQiskit:
         if amount_of_rings is not None:
             max_amount_of_rings, user_rings = len(ring), []
             if amount_of_rings > max_amount_of_rings:
-                raise ValueError(
-                    f"Too many rings. Maximum amount is {max_amount_of_rings}")
+                raise ValueError(f"Too many rings. Maximum amount is {max_amount_of_rings}")
             elif amount_of_rings == 0:
                 ring_qubits = []
             else:
@@ -126,8 +126,7 @@ class ECQiskit:
                     user_rings.append(ring[index])
                     current_qubits = current_qubits.union(ring[index])
                 ring_qubits = current_qubits
-        x_gate.extend(id for id, _ in enumerate(
-            problem.instance) if id not in ring_qubits)
+        x_gate.extend(id for id, _ in enumerate(problem.instance) if id not in ring_qubits)
 
         # connecting all parts of mixer hamiltonian together
         mix_ham = None
@@ -145,7 +144,47 @@ class ECQiskit:
         return mix_ham
 
 
-@formatter(problems.JSSP, 'hamiltonian')
+@formatter(problems.GraphColoring, "hamiltonian")
+def get_qiskit_hamiltonian(problem: problems.GraphColoring):
+    color_bit_length = int(np.ceil(np.log2(problem.num_colors)))
+    edges = list(problem.instance.edges)
+    nodes = list(problem.instance.nodes)
+    num_qubits = len(nodes) * color_bit_length
+    eq = Equation(num_qubits)
+    H = 0
+    for edge in edges:
+        node1, node2 = edge
+        for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
+            if ind >= problem.num_colors:
+                break
+            H2 = None
+            for i in range(color_bit_length):
+                if H2 is None:
+                    H2 = (eq[node1 * color_bit_length + i] if comb[i] else ~eq[node1 * color_bit_length + i]) & (
+                        eq[node2 * color_bit_length + i] if comb[i] else ~eq[node2 * color_bit_length + i]
+                    )
+                else:
+                    H2 = (
+                        H2
+                        & (eq[node1 * color_bit_length + i] if comb[i] else ~eq[node1 * color_bit_length + i])
+                        & (eq[node2 * color_bit_length + i] if comb[i] else ~eq[node2 * color_bit_length + i])
+                    )
+            H += H2.hamiltonian
+    for node in nodes:
+        for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
+            if ind < problem.num_colors:
+                continue
+            H2 = None
+            for i in range(color_bit_length):
+                if H2 is None:
+                    H2 = eq[node * color_bit_length + i] if comb[i] else ~eq[node * color_bit_length + i]
+                else:
+                    H2 = H2 & (eq[node * color_bit_length + i] if comb[i] else ~eq[node * color_bit_length + i])
+            H += H2.hamiltonian * 10
+    return H
+
+
+@formatter(problems.JSSP, "hamiltonian")
 def get_qiskit_hamiltonian(problem: problems.JSSP) -> SparsePauliOp:
     if problem.optimization_problem:
         return problem.h_o
@@ -153,7 +192,7 @@ def get_qiskit_hamiltonian(problem: problems.JSSP) -> SparsePauliOp:
         return problem.h_d
 
 
-@formatter(problems.MaxCut, 'hamiltonian')
+@formatter(problems.MaxCut, "hamiltonian")
 def get_qiskit_hamiltonian(problem: problems.MaxCut):
     ham = None
     n = problem.instance.number_of_nodes()
@@ -165,19 +204,19 @@ def get_qiskit_hamiltonian(problem: problems.MaxCut):
     return ham.hamiltonian.simplify()
 
 
-@formatter(problems.QATM, 'hamiltonian')
+@formatter(problems.QATM, "hamiltonian")
 class QATMQiskit:
     def __call__(self, problem: problems.QATM) -> SparsePauliOp:
-        cm = problem.instance['cm']
-        aircrafts = problem.instance['aircrafts']
+        cm = problem.instance["cm"]
+        aircrafts = problem.instance["aircrafts"]
 
         onehot_hamiltonian = None
-        for plane, manouvers in aircrafts.groupby(by='aircraft'):
-            if problem.onehot == 'exact':
+        for plane, manouvers in aircrafts.groupby(by="aircraft"):
+            if problem.onehot == "exact":
                 h = (~hampy.one_in_n(manouvers.index.values.tolist(), len(cm))).hamiltonian
-            elif problem.onehot == 'quadratic':
+            elif problem.onehot == "quadratic":
                 h = hampy.one_in_n(manouvers.index.values.tolist(), len(cm), quadratic=True).hamiltonian
-            elif problem.onehot == 'xor':
+            elif problem.onehot == "xor":
                 total = None
                 eq = Equation(len(cm))
                 for part in manouvers.index.values.tolist():
@@ -205,7 +244,7 @@ class QATMQiskit:
 
         if problem.optimization_problem:
             goal_hamiltonian = None
-            for i, (maneuver, ac) in problem.instance['aircrafts'].iterrows():
+            for i, (maneuver, ac) in problem.instance["aircrafts"].iterrows():
                 if maneuver != ac:
                     eq = Equation(len(aircrafts))
                     h = Variable(i, eq).to_equation()
@@ -219,11 +258,11 @@ class QATMQiskit:
         return hamiltonian.simplify()
 
     def get_mixer_hamiltonian(self, problem: problems.QATM) -> SparsePauliOp:
-        cm = problem.instance['cm']
-        aircrafts = problem.instance['aircrafts']
+        cm = problem.instance["cm"]
+        aircrafts = problem.instance["aircrafts"]
 
         mixer_hamiltonian = None
-        for plane, manouvers in aircrafts.groupby(by='aircraft'):
+        for plane, manouvers in aircrafts.groupby(by="aircraft"):
             h = ring_ham(manouvers.index.values.tolist(), len(cm))
             if mixer_hamiltonian is None:
                 mixer_hamiltonian = h
@@ -232,13 +271,13 @@ class QATMQiskit:
         return mixer_hamiltonian
 
     def get_QAOAAnsatz_initial_state(self, problem: problems.QATM) -> QuantumCircuit:
-        aircrafts = problem.instance['aircrafts']
+        aircrafts = problem.instance["aircrafts"]
         qc = QuantumCircuit(len(aircrafts))
-        for plane, manouvers in aircrafts.groupby(by='aircraft'):
+        for plane, manouvers in aircrafts.groupby(by="aircraft"):
             qc.x(manouvers.index.values.tolist()[0])
         return qc
 
 
-@formatter(problems.Raw, 'hamiltonian')
+@formatter(problems.Raw, "hamiltonian")
 def get_qiskit_hamiltonian(self) -> SparsePauliOp:
     return self.instance

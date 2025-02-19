@@ -1,0 +1,97 @@
+"""This module contains the Graph Coloring class."""
+
+import networkx as nx
+from random import randint
+import matplotlib.pyplot as plt
+from quantum_launcher.base import Problem
+
+
+class GraphColoring(Problem):
+    """
+    Class for Graph Coloring Problem which is a combinatorial problem involving assigning labels to vertices of the graph such that no two adjacent
+    vertices share the same label. The class contains an instance of the problem, so it can be passed into Quantum Launcher.
+
+    Attributes:
+        instance (nx.Graph): The graph for which the coloring problem is to be solved.
+
+    Methods:
+        visualize(): draws problem instance as graph
+        visualize_solution(solution): draws instance graph with proposed coloring
+        generate_graph_coloring_instance(num_vertices, edge_probability): generates a random graph with given number of vertices and edge probability.
+        randomly_choose_a_graph(): returns a random graph from the Graph Atlas with up to seven vertices.
+    """
+
+    def __init__(
+        self,
+        instance: nx.Graph | None = None,
+        instance_name: str | None = None,
+        instance_path: str | None = None,
+        num_colors: int | None = None,
+    ) -> None:
+        super().__init__(instance=instance, instance_name=instance_name, instance_path=instance_path)
+        self.pos = None
+        self.num_colors = num_colors
+
+    @property
+    def setup(self) -> dict:
+        return {"instance_name": self.instance_name}
+
+    @staticmethod
+    def from_preset(instance_name: str) -> "GraphColoring":
+        match instance_name:
+            case "default":
+                graph = nx.petersen_graph()
+                gc = GraphColoring(graph, instance_name=instance_name, num_colors=3)
+                gc.pos = nx.shell_layout(gc.instance, nlist=[list(range(5, 10)), list(range(5))])
+                return gc
+
+    def set_instance(self, instance: nx.Graph | None = None, instance_name: str | None = None) -> None:
+        super().set_instance(instance, instance_name)
+        self.instance = instance
+        self.instance_name = instance_name
+        if instance is None:
+            match instance_name:
+                case "default":
+                    self.instance = nx.petersen_graph()
+                    self.pos = nx.shell_layout(self.instance, nlist=[list(range(5, 10)), list(range(5))])
+
+    def _get_path(self) -> str:
+        return f"{self.name}@{self.instance_name}"
+
+    def visualize(self):
+        if self.pos is None:
+            self.pos = nx.spring_layout(self.instance)
+        plt.figure(figsize=(8, 6))
+
+        nx.draw(
+            self.instance,
+            self.pos,
+            with_labels=True,
+            node_color="skyblue",
+            node_size=500,
+            edge_color="gray",
+            font_size=10,
+            font_weight="bold",
+        )
+        plt.title("Graph Coloring Problem Instance Visualization")
+        plt.show()
+
+    def visualize_solution(self, solution: list[int]):
+        if self.pos is None:
+            self.pos = nx.spring_layout(self.instance)
+        plt.figure(figsize=(8, 6))
+        nx.draw_networkx_nodes(self.instance, self.pos, node_size=500, node_color=solution, cmap="Accent")
+        nx.draw_networkx_edges(self.instance, self.pos, edge_color="gray")
+        nx.draw_networkx_labels(self.instance, self.pos, font_size=10, font_weight="bold")
+        plt.title("Graph Coloring Problem Instance Visualization")
+        plt.show()
+
+    @staticmethod
+    def generate_graph_coloring_instance(num_vertices: int, edge_probability: int):
+        G = nx.gnp_random_graph(num_vertices, edge_probability)
+        return G
+
+    @staticmethod
+    def randomly_choose_a_graph():
+        graphs = nx.graph_atlas_g()
+        return graphs[randint(0, len(graphs) - 1)]
