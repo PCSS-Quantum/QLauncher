@@ -117,9 +117,7 @@ def problem_to_hamiltonian(problem: TSP, constraints_weight: int = 5, costs_weig
 
     node_count = len(instance_graph.nodes)
 
-    constraints = make_non_collision_hamiltonian(
-        node_count, quadratic=problem.quadratic)
-    costs = make_connection_hamiltonian(
-        scaled_edge_costs, return_to_start=return_to_start)
+    constraints = make_non_collision_hamiltonian(node_count, quadratic=problem.quadratic)
+    costs = make_connection_hamiltonian(scaled_edge_costs, return_to_start=return_to_start)
 
     return constraints * constraints_weight + costs * costs_weight

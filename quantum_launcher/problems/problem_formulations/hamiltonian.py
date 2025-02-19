@@ -181,8 +181,7 @@ class QATMQiskit:
                 h = (~hampy.one_in_n(
                     manouvers.index.values.tolist(), len(cm))).hamiltonian
             elif problem.onehot == 'quadratic':
-                h = hampy.one_in_n(manouvers.index.values.tolist(), len(
-                    cm), quadratic=True).hamiltonian
+                h = hampy.one_in_n(manouvers.index.values.tolist(), len(cm), quadratic=True).hamiltonian
             elif problem.onehot == 'xor':
                 total = None
                 eq = Equation(len(cm))

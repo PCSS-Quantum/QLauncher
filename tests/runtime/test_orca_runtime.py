@@ -19,8 +19,7 @@ def test_ec():
 
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP.from_preset(max_time=3, onehot='quadratic',
-                          instance_name='toy', optimization_problem=True)
+    pr = JSSP.from_preset(max_time=3, onehot='quadratic', instance_name='toy', optimization_problem=True)
     bbs = BBS()
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
