@@ -11,13 +11,15 @@ import quantum_launcher.problems.problem_initialization as problems
 import quantum_launcher.hampy as hampy
 from quantum_launcher.hampy import Equation, Variable
 
+from quantum_launcher.problems.problem_formulations.hamiltonians.tsp import problem_to_hamiltonian as tsp_to_hamiltonian
+
 
 @adapter('hamiltonian', 'qubo')
 def hamiltonian_to_qubo(hamiltonian):
     qp = from_ising(hamiltonian)
     conv = QuadraticProgramToQubo()
     qubo = conv.convert(qp).objective
-    return None, qubo.quadratic.to_array()
+    return qubo.quadratic.to_array(), 0
 
 
 def ring_ham(ring: set, n):
@@ -57,7 +59,8 @@ class ECQiskit:
             if problem.onehot == 'exact':
                 part = (~hampy.one_in_n(list(ohs), len(problem.instance))).hamiltonian
             elif problem.onehot == 'quadratic':
-                part = hampy.one_in_n(list(ohs), len(problem.instance), quadratic=True).hamiltonian
+                part = hampy.one_in_n(list(ohs), len(
+                    problem.instance), quadratic=True).hamiltonian
 
             if hamiltonian is None:
                 hamiltonian = part
@@ -242,3 +245,8 @@ class QATMQiskit:
 @formatter(problems.Raw, 'hamiltonian')
 def get_qiskit_hamiltonian(self) -> SparsePauliOp:
     return self.instance
+
+
+@formatter(problems.TSP, 'hamiltonian')
+def get_qiskit_hamiltonian(problem: problems.TSP) -> SparsePauliOp:
+    return tsp_to_hamiltonian(problem, constraints_weight=max(2, 5*(len(problem.instance.nodes) - 3)))
