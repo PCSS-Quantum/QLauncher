@@ -57,8 +57,7 @@ class ECQiskit:
         hamiltonian = None
         for ohs in onehots:
             if problem.onehot == 'exact':
-                part = (~hampy.one_in_n(list(ohs), len(
-                    problem.instance))).hamiltonian
+                part = (~hampy.one_in_n(list(ohs), len(problem.instance))).hamiltonian
             elif problem.onehot == 'quadratic':
                 part = hampy.one_in_n(list(ohs), len(
                     problem.instance), quadratic=True).hamiltonian
@@ -178,8 +177,7 @@ class QATMQiskit:
         onehot_hamiltonian = None
         for plane, manouvers in aircrafts.groupby(by='aircraft'):
             if problem.onehot == 'exact':
-                h = (~hampy.one_in_n(
-                    manouvers.index.values.tolist(), len(cm))).hamiltonian
+                h = (~hampy.one_in_n(manouvers.index.values.tolist(), len(cm))).hamiltonian
             elif problem.onehot == 'quadratic':
                 h = hampy.one_in_n(manouvers.index.values.tolist(), len(cm), quadratic=True).hamiltonian
             elif problem.onehot == 'xor':
