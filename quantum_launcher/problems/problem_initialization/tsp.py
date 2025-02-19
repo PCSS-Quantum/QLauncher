@@ -1,4 +1,3 @@
-from typing import Optional
 import networkx as nx
 
 import numpy as np
@@ -7,14 +6,8 @@ from quantum_launcher.base import Problem
 
 
 class TSP(Problem):
-    def __init__(
-        self,
-        instance: nx.Graph | None = None,
-        instance_name: str | None = None,
-    ) -> None:
-        super().__init__(
-            instance=instance, instance_name=instance_name
-        )
+    def __init__(self,instance: nx.Graph | None = None,instance_name: str | None = None):
+        super().__init__(instance=instance, instance_name=instance_name)
 
     @property
     def setup(self) -> dict:
@@ -23,27 +16,6 @@ class TSP(Problem):
     def _get_path(self) -> str:
         return f"{self.name}@{self.instance_name}"
 
-    def set_instance(
-        self, instance: Optional[nx.Graph] = None, instance_name: Optional[str] = None
-    ) -> None:
-        if instance is None:
-            match instance_name:
-                case "default":
-                    self.instance = nx.Graph()
-                    # 4 city problem
-                    edge_costs = np.array(
-                        [
-                            [0, 1, 2, 3],
-                            [1, 0, 4, 5],
-                            [2, 4, 0, 6],
-                            [3, 5, 6, 0]
-                        ]
-                    )
-                    n = edge_costs.shape[0]
-                    for i in range(n):
-                        for j in range(i + 1, n):  # No connections to self
-                            if edge_costs[i, j] != np.nan:
-                                self.instance.add_edge(i, j, weight=edge_costs[i, j])
 
     def visualize(self):
         import matplotlib.pyplot as plt
@@ -77,6 +49,28 @@ class TSP(Problem):
         plt.show()
 
     @staticmethod
+    def from_preset(instance_name: str = 'default') -> "TSP":
+        match instance_name:
+            case 'default':
+                edge_costs = np.array(
+                    [
+                        [0, 1, 2, 3],
+                        [1, 0, 4, 5],
+                        [2, 4, 0, 6],
+                        [3, 5, 6, 0]
+                    ]
+                )
+            case _:
+                raise ValueError("Unknown instance name")
+        G = nx.Graph()
+        n = edge_costs.shape[0]
+        for i in range(n):
+            for j in range(i + 1, n):  # No connections to self
+                G.add_edge(i, j, weight=edge_costs[i, j])
+
+        return TSP(instance=G, instance_name=instance_name)                
+
+    @staticmethod
     def generate_tsp_instance(num_vertices:int, min_distance:float=1.0, max_distance:float=10.0) -> nx.Graph:
         if num_vertices < 2:
             raise ValueError("num_vertices must be at least 2")
@@ -90,3 +84,4 @@ class TSP(Problem):
                 g.add_edge(i, j, weight=int(np.random.uniform(min_distance, max_distance)))
         
         return g
+    

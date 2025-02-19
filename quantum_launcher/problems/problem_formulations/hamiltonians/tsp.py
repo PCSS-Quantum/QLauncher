@@ -2,16 +2,16 @@ import numpy as np
 import networkx as nx
 
 from quantum_launcher.problems.problem_initialization import TSP
-from .utils import shift_paulis
 
-from quantum_launcher.hampy import  Equation
+from quantum_launcher.hampy import Equation
 import quantum_launcher.hampy as hampy
+from quantum_launcher.hampy.utils import shift_affected_qubits
 
 
-def make_non_collision_hamiltonian(node_count: int,quadratic=False):
+def make_non_collision_hamiltonian(node_count: int, quadratic=False):
     """
     Creates a Hamiltonian representing constraints for the TSP problem. (Each node visited only once, one node per timestep)
-    Qbit mapping: [step1:[node1, node2,... noden]],[step2],...[stepn]
+    Qubit mapping: [step1:[node1, node2,... noden]],[step2],...[stepn]
     Args:
         node_count: Number of nodes in the TSP problem
         quadratic: Whether to encode as a QUBO problem
@@ -33,26 +33,27 @@ def make_non_collision_hamiltonian(node_count: int,quadratic=False):
         [i for i in range(node_count)],
         eq.size,
         quadratic=quadratic
-        ).hamiltonian
-    
+    )
+
     for timestep in range(node_count):
-        shift = shift_paulis(t0_op, timestep * node_count)
-        eq.hamiltonian += shift
+        shift = shift_affected_qubits(t0_op, timestep * node_count)
+        eq += shift
 
     # Ensure that each node is visited only once
     n0_op = hampy.one_in_n(
         [timestep * node_count for timestep in range(node_count)],
         eq.size,
         quadratic=quadratic
-        ).hamiltonian
-    
+    )
+
     for node in range(node_count):
-        shift = shift_paulis(n0_op, node)
-        eq.hamiltonian += shift
+        shift = shift_affected_qubits(n0_op, node)
+        eq += shift
 
     return -1 * eq.hamiltonian
 
-def make_connection_hamiltonian(edge_costs: np.ndarray,return_to_start:bool=True) -> np.ndarray:
+
+def make_connection_hamiltonian(edge_costs: np.ndarray, return_to_start: bool = True) -> np.ndarray:
     """
     Creates a Hamiltonian that represents the costs of picking each path.
 
@@ -77,44 +78,48 @@ def make_connection_hamiltonian(edge_costs: np.ndarray,return_to_start:bool=True
                 and_hamiltonian = (
                     eq[node + timestep * node_count]
                     & eq[next_node + (timestep + 1) * node_count]
-                ).hamiltonian
-                eq.hamiltonian += edge_costs[node, next_node] * and_hamiltonian
+                )
+                eq += edge_costs[node, next_node] * and_hamiltonian
 
     if not return_to_start:
         return eq.hamiltonian
-    
+
     # Add cost of returning to the first node
     for node in range(node_count):
         for node2 in range(node_count):
             and_hamiltonian = (
                 eq[node + (node_count - 1) * node_count] & eq[node2]
-            ).hamiltonian
-            eq.hamiltonian += edge_costs[node, node2] * and_hamiltonian
+            )
+            eq += edge_costs[node, node2] * and_hamiltonian
 
     return eq.hamiltonian
 
-def problem_to_hamiltonian(problem:TSP,quadratic:bool=False, constraints_weight:int=5, costs_weight:int=1,return_to_start:bool=True) -> np.ndarray:
+
+def problem_to_hamiltonian(problem: TSP, quadratic: bool = False, constraints_weight: int = 5, costs_weight: int = 1, return_to_start: bool = True) -> np.ndarray:
     """
     Creates a Hamiltonian for the TSP problem.
-    
+
     Args:
         problem: TSP problem instance
         quadratic: Whether to encode as a quadratic Hamiltonian
         constraints_weight: Weight of the constraints in the Hamiltonian
         costs_weight: Weight of the costs in the Hamiltonian
-        
+
     Returns:
         np.ndarray: Hamiltonian representing the TSP problem
     """
     instance_graph = problem.instance
-    
+
     edge_costs = nx.to_numpy_array(instance_graph)
-    edge_costs += np.eye(len(edge_costs)) * np.max(edge_costs) #discourage breaking the constraints
+    # discourage breaking the constraints
+    edge_costs += np.eye(len(edge_costs)) * np.max(edge_costs)
     scaled_edge_costs = edge_costs.astype(np.float32) / np.max(edge_costs)
-    
+
     node_count = len(instance_graph.nodes)
-    
-    constraints = make_non_collision_hamiltonian(node_count,quadratic=quadratic)
-    costs = make_connection_hamiltonian(scaled_edge_costs,return_to_start=return_to_start)
-    
+
+    constraints = make_non_collision_hamiltonian(
+        node_count, quadratic=quadratic)
+    costs = make_connection_hamiltonian(
+        scaled_edge_costs, return_to_start=return_to_start)
+
     return constraints * constraints_weight + costs * costs_weight

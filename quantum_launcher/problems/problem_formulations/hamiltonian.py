@@ -11,7 +11,7 @@ import quantum_launcher.problems.problem_initialization as problems
 import quantum_launcher.hampy as hampy
 from quantum_launcher.hampy import Equation, Variable
 
-from .tsp.conversion import problem_to_hamiltonian as tsp_to_hamiltonian
+from quantum_launcher.problems.problem_formulations.hamiltonians.tsp import problem_to_hamiltonian as tsp_to_hamiltonian
 
 
 @adapter('hamiltonian', 'qubo')
@@ -57,9 +57,11 @@ class ECQiskit:
         hamiltonian = None
         for ohs in onehots:
             if problem.onehot == 'exact':
-                part = (~hampy.one_in_n(list(ohs), len(problem.instance))).hamiltonian
+                part = (~hampy.one_in_n(list(ohs), len(
+                    problem.instance))).hamiltonian
             elif problem.onehot == 'quadratic':
-                part = hampy.one_in_n(list(ohs), len(problem.instance), quadratic=True).hamiltonian
+                part = hampy.one_in_n(list(ohs), len(
+                    problem.instance), quadratic=True).hamiltonian
 
             if hamiltonian is None:
                 hamiltonian = part
@@ -176,9 +178,11 @@ class QATMQiskit:
         onehot_hamiltonian = None
         for plane, manouvers in aircrafts.groupby(by='aircraft'):
             if problem.onehot == 'exact':
-                h = (~hampy.one_in_n(manouvers.index.values.tolist(), len(cm))).hamiltonian
+                h = (~hampy.one_in_n(
+                    manouvers.index.values.tolist(), len(cm))).hamiltonian
             elif problem.onehot == 'quadratic':
-                h = hampy.one_in_n(manouvers.index.values.tolist(), len(cm), quadratic=True).hamiltonian
+                h = hampy.one_in_n(manouvers.index.values.tolist(), len(
+                    cm), quadratic=True).hamiltonian
             elif problem.onehot == 'xor':
                 total = None
                 eq = Equation(len(cm))
@@ -245,6 +249,7 @@ class QATMQiskit:
 def get_qiskit_hamiltonian(self) -> SparsePauliOp:
     return self.instance
 
+
 @formatter(problems.TSP, 'hamiltonian')
 def get_qiskit_hamiltonian(problem: problems.TSP) -> SparsePauliOp:
-    return tsp_to_hamiltonian(problem,constraints_weight=5*(len(problem.instance.nodes) - 3))
+    return tsp_to_hamiltonian(problem, constraints_weight=5*(len(problem.instance.nodes) - 3))
