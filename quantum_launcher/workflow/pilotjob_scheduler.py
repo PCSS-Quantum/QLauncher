@@ -1,0 +1,80 @@
+import json
+import os
+import pickle
+import sys
+from typing import Optional
+from qcg.pilotjob.api.errors import TimeoutElapsed
+from qcg.pilotjob.api.job import Jobs
+from qcg.pilotjob.api.manager import LocalManager
+from quantum_launcher.base.base import Problem
+
+
+def schedule_to_pilotjob(problem, algorithm, backend):
+    pass
+
+
+class JobManager:
+    def __init__(self):
+        self.jobs = {}
+        self.code_path = os.path.join(os.path.dirname(__file__), 'pilotjob_task.py')
+        self.manager = LocalManager(server_args=['--log', 'debug'])
+
+    def not_finished(self):
+        return len([job for job in self.jobs.values() if job.get('finished') is False])
+
+    def submit(self, problem, algorithm, backend, output_path: str, **kwargs):
+        free_cores = self.manager.resources()['free_cores']
+        if free_cores == 0:
+            return
+        qcg_jobs = Jobs()
+        for _ in range(free_cores):
+            job = self.prepare_ql_job(output_path, problem, kwargs=kwargs)
+            qcg_jobs.add(**job.get('qcg_args'))
+        self.manager.submit(qcg_jobs)
+
+    def wait_for_a_job(self, job_id: Optional[str] = None) -> tuple[str, str] | None:
+        while self.not_finished() > 0:
+            try:
+                if job_id is None:
+                    job_id, state = self.manager.wait4_any_job_finish(10)
+                else:
+                    state = self.manager.wait4(job_id)[job_id]
+                if job_id not in self.jobs:
+                    print(f'error: job {job_id} not known', flush=True)
+                    continue
+
+                self.jobs[job_id]['finished'] = True
+                return job_id, state
+
+            except TimeoutElapsed:
+                continue
+            except Exception as ex:
+                print(f'error in waiting: {str(ex)}', flush=True)
+                continue
+
+    def prepare_ql_job(self, output: str, problem: Problem, cores: int = 1, kwargs=None) -> dict:
+        if kwargs is None:
+            kwargs = {}
+        job_uid = f'{len(self.jobs):05d}'
+        output_file = os.path.abspath(f'{output}output.{job_uid}')
+        kwargs_str = json.dumps(kwargs)
+        problem_name = problem
+        in_args = [self.code_path, output_file, kwargs_str]
+        qcg_args = {
+            'name': job_uid,
+            'exec': sys.executable,
+            'args': in_args,
+            'model': 'openmpi',
+            'stdout': f'{output}stdout.{job_uid}',
+            'stderr': f'{output}stderr.{job_uid}',
+            'numCores': cores
+        }
+        job = {'name': job_uid, 'qcg_args': qcg_args, 'output_file': output_file, 'finished': False}
+        self.jobs[job_uid] = job
+        return job
+
+    def read_results(self, job_id) -> dict:
+        output_path = self.jobs[job_id]['output_file']
+        with open(output_path, 'rb') as rt:
+            results = pickle.load(rt)
+        return results
