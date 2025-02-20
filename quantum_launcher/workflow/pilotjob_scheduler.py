@@ -2,15 +2,11 @@ import json
 import os
 import pickle
 import sys
-from typing import Optional
+from typing import Any, Dict, Optional
 from qcg.pilotjob.api.errors import TimeoutElapsed
 from qcg.pilotjob.api.job import Jobs
 from qcg.pilotjob.api.manager import LocalManager
-from quantum_launcher.base.base import Problem
-
-
-def schedule_to_pilotjob(problem, algorithm, backend):
-    pass
+from quantum_launcher.base.base import Problem, Result
 
 
 class JobManager:
@@ -22,7 +18,16 @@ class JobManager:
     def not_finished(self):
         return len([job for job in self.jobs.values() if job.get('finished') is False])
 
-    def submit(self, problem, algorithm, backend, output_path: str, **kwargs):
+    def submit(self, problem, algorithm, backend, output_path: str, kwargs: Dict[str, Any]):
+        free_cores = self.manager.resources()['free_cores']
+        number_of_cores = max(1, free_cores)
+        job = self.prepare_ql_job(output=output_path, problem=problem, cores=number_of_cores, kwargs=kwargs)
+        job_id = self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
+        return job_id
+
+    def submit_many(self, problem, algorithm, backend, output_path: str, kwargs: Optional[Dict[str, Any]] = None):
+        if kwargs is None:
+            kwargs = {}
         free_cores = self.manager.resources()['free_cores']
         if free_cores == 0:
             return
@@ -30,7 +35,7 @@ class JobManager:
         for _ in range(free_cores):
             job = self.prepare_ql_job(output_path, problem, kwargs=kwargs)
             qcg_jobs.add(**job.get('qcg_args'))
-        self.manager.submit(qcg_jobs)
+        return self.manager.submit(qcg_jobs)
 
     def wait_for_a_job(self, job_id: Optional[str] = None) -> tuple[str, str] | None:
         while self.not_finished() > 0:
@@ -73,8 +78,11 @@ class JobManager:
         self.jobs[job_uid] = job
         return job
 
-    def read_results(self, job_id) -> dict:
+    def read_results(self, job_id) -> Result:
         output_path = self.jobs[job_id]['output_file']
         with open(output_path, 'rb') as rt:
             results = pickle.load(rt)
         return results
+
+    def __del__(self):
+        self.manager.kill_manager_process()

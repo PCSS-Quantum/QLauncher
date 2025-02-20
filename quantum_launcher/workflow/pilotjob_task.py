@@ -31,7 +31,6 @@ def save_result(result: Result, path: str):
 
 def main():
     arguments = parse_arguments()
-    avail_cores = check_cores()
 
     problem = arguments['problem']
     algorithm = QAOA(**arguments['kwargs'].get('algorithm', dict()))

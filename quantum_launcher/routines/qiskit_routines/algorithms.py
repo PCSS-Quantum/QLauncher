@@ -1,6 +1,7 @@
 """ Algorithms for Qiskit routines """
 import json
 from datetime import datetime
+import math
 
 import numpy as np
 from qiskit import qpy, QuantumCircuit
@@ -11,9 +12,11 @@ from qiskit.primitives.base.base_primitive import BasePrimitive
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_algorithms.minimum_eigensolvers import QAOA as QiskitQAOA
 from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
+import scipy
 
 from quantum_launcher.base import Problem, Algorithm, Result
 from .backend import QiskitBackend
+from quantum_launcher.workflow.pilotjob_scheduler import JobManager
 from typing import Callable
 
 
@@ -315,3 +318,104 @@ class FALQON(QiskitOptimizationAlgorithm):
         ansatz.measure_all()
         res = sampler.run(ansatz, betas).result()
         return res
+
+
+class EducatedGuess(Algorithm):
+    _algorithm_format = 'hamiltonian'
+
+    def __init__(self, starting_p: int = 3, max_p: int = 8, verbose: bool = False):
+        self.output_initial = 'initial/'
+        self.output_interpolated = 'interpolated/'
+        self.p_init = starting_p
+        self.p_max = max_p
+        self.verbose = verbose
+        self.failed_jobs = None
+        self.min_energy = None
+        self.manager = JobManager()
+        self.best_job_id = ''
+
+    def run(self, problem: Problem, backend: QiskitBackend, formatter=Callable) -> Result:
+
+        self.manager.submit_many(problem, backend, backend, output_path=self.output_initial, kwargs={'algorithm': {'p': self.p_init}})
+        print(f'{len(self.manager.jobs)} jobs submitted to qcg')
+
+        self.failed_jobs = False
+        self.min_energy = math.inf
+        found_optimal_params = False
+
+        while not found_optimal_params:
+            jobid, state = self.manager.wait_for_a_job()
+
+            if state != 'SUCCEED':
+                self.failed_jobs = True
+                continue
+            has_potential, energy = self.process_job(jobid, self.p_init, self.min_energy, compare_factor=0.99)
+            if has_potential:
+                found_optimal_params = self.search_for_job_with_optimal_params(jobid, energy, problem, backend)
+
+            self.manager.submit_many(problem, backend, backend, output_path=self.output_initial, kwargs={'algorithm': {'p': self.p_init}})
+
+        return self.manager.read_results(self.best_job_id)
+
+    def search_for_job_with_optimal_params(self, previous_job_id, previous_energy, problem, backend) -> bool:
+        for p in range(self.p_init + 1, self.p_max + 1):
+            previous_job_results = self.manager.read_results(previous_job_id).result
+            initial_point = interpolate_f(list(previous_job_results['SamplingVQEResult'].optimal_point), p-1)
+
+            new_job_id = self.manager.submit(problem, QAOA, backend, output_path=self.output_interpolated,
+                                             kwargs={'algorithm': {'p': p, 'initial_point': list(initial_point)}})
+            _, state = self.manager.wait_for_a_job(new_job_id)
+            if state != 'SUCCEED':
+                self.failed_jobs = True
+                return False
+            has_potential, new_energy = self.process_job(new_job_id, p, previous_energy)
+            if has_potential:
+                previous_energy = new_energy
+                previous_job_id = new_job_id
+            else:
+                return False
+        self.best_job_id = new_job_id
+        return True
+
+    def process_job(self, jobid: str, p: int, energy_to_compare: float, compare_factor: float = 1.0) -> tuple[
+            float, bool]:
+        result = self.manager.read_results(jobid).result
+        optimal_point = result['SamplingVQEResult'].optimal_point
+        has_potential = False
+        linear = check_linearity(optimal_point, p)
+        energy = result['energy']
+        if self.verbose:
+            print(f'job {jobid}, p={p}, energy: {energy}')
+
+        if p == self.p_init and energy < energy_to_compare:
+            print(f'new min energy: {energy}')
+            self.min_energy = energy
+        if linear and energy * compare_factor < energy_to_compare:
+            has_potential = True
+        return has_potential, energy
+
+
+def interp(params: np.ndarray) -> np.ndarray:
+    arr1 = np.append([0], params)
+    arr2 = np.append(params, [0])
+    weights = np.arange(len(arr1)) / len(params)
+    res = arr1 * weights + arr2 * weights[::-1]
+    return res
+
+
+def interpolate_f(params: np.ndarray, p: int) -> np.ndarray:
+    betas = params[:p]
+    gammas = params[p:]
+    new_betas = interp(betas)
+    new_gammas = interp(gammas)
+    return np.hstack([new_betas, new_gammas])
+
+
+def check_linearity(optimal_params: np.ndarray, p: int) -> bool:
+    linear = False
+    correlations = (scipy.stats.pearsonr(np.arange(1, p + 1), optimal_params[:p])[0],
+                    scipy.stats.pearsonr(np.arange(1, p + 1), optimal_params[p:])[0])
+
+    if abs(correlations[0]) > 0.85 and abs(correlations[1]) > 0.85:
+        linear = True
+    return linear
