@@ -2,7 +2,7 @@ import json
 import os
 import pickle
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from qcg.pilotjob.api.errors import TimeoutElapsed
 from qcg.pilotjob.api.job import Jobs
 from qcg.pilotjob.api.manager import LocalManager
@@ -10,10 +10,12 @@ from quantum_launcher.base.base import Problem, Result
 
 
 class JobManager:
-    def __init__(self):
+    def __init__(self, manager_args: Optional[List[str]] = None):
+        if manager_args is None:
+            manager_args = []
         self.jobs = {}
         self.code_path = os.path.join(os.path.dirname(__file__), 'pilotjob_task.py')
-        self.manager = LocalManager(server_args=['--log', 'debug'])
+        self.manager = LocalManager(manager_args)
 
     def not_finished(self):
         return len([job for job in self.jobs.values() if job.get('finished') is False])
@@ -85,4 +87,5 @@ class JobManager:
         return results
 
     def __del__(self):
+        self.manager.cancel(self.jobs)
         self.manager.kill_manager_process()

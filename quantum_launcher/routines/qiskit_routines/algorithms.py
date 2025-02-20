@@ -2,6 +2,7 @@
 import json
 from datetime import datetime
 import math
+import os
 
 import numpy as np
 from qiskit import qpy, QuantumCircuit
@@ -326,6 +327,7 @@ class EducatedGuess(Algorithm):
     def __init__(self, starting_p: int = 3, max_p: int = 8, verbose: bool = False):
         self.output_initial = 'initial/'
         self.output_interpolated = 'interpolated/'
+        self.output = 'output/'
         self.p_init = starting_p
         self.p_max = max_p
         self.verbose = verbose
@@ -334,7 +336,7 @@ class EducatedGuess(Algorithm):
         self.manager = JobManager()
         self.best_job_id = ''
 
-    def run(self, problem: Problem, backend: QiskitBackend, formatter=Callable) -> Result:
+    def run(self, problem: Problem, backend: QiskitBackend, formatter) -> Result:
 
         self.manager.submit_many(problem, backend, backend, output_path=self.output_initial, kwargs={'algorithm': {'p': self.p_init}})
         print(f'{len(self.manager.jobs)} jobs submitted to qcg')
@@ -360,7 +362,7 @@ class EducatedGuess(Algorithm):
     def search_for_job_with_optimal_params(self, previous_job_id, previous_energy, problem, backend) -> bool:
         for p in range(self.p_init + 1, self.p_max + 1):
             previous_job_results = self.manager.read_results(previous_job_id).result
-            initial_point = interpolate_f(list(previous_job_results['SamplingVQEResult'].optimal_point), p-1)
+            initial_point = self.interpolate_f(list(previous_job_results['SamplingVQEResult'].optimal_point), p-1)
 
             new_job_id = self.manager.submit(problem, QAOA, backend, output_path=self.output_interpolated,
                                              kwargs={'algorithm': {'p': p, 'initial_point': list(initial_point)}})
@@ -382,7 +384,7 @@ class EducatedGuess(Algorithm):
         result = self.manager.read_results(jobid).result
         optimal_point = result['SamplingVQEResult'].optimal_point
         has_potential = False
-        linear = check_linearity(optimal_point, p)
+        linear = self.check_linearity(optimal_point, p)
         energy = result['energy']
         if self.verbose:
             print(f'job {jobid}, p={p}, energy: {energy}')
@@ -394,28 +396,33 @@ class EducatedGuess(Algorithm):
             has_potential = True
         return has_potential, energy
 
+    def create_directories_if_not_existing(self):
+        if not os.path.exists(self.output_initial):
+            os.makedirs(self.output_initial)
+        if not os.path.exists(self.output_interpolated):
+            os.makedirs(self.output_interpolated)
+        if not os.path.exists(self.output):
+            os.makedirs(self.output)
 
-def interp(params: np.ndarray) -> np.ndarray:
-    arr1 = np.append([0], params)
-    arr2 = np.append(params, [0])
-    weights = np.arange(len(arr1)) / len(params)
-    res = arr1 * weights + arr2 * weights[::-1]
-    return res
+    def interp(self, params: np.ndarray) -> np.ndarray:
+        arr1 = np.append([0], params)
+        arr2 = np.append(params, [0])
+        weights = np.arange(len(arr1)) / len(params)
+        res = arr1 * weights + arr2 * weights[::-1]
+        return res
 
+    def interpolate_f(self, params: np.ndarray, p: int) -> np.ndarray:
+        betas = params[:p]
+        gammas = params[p:]
+        new_betas = self.interp(betas)
+        new_gammas = self.interp(gammas)
+        return np.hstack([new_betas, new_gammas])
 
-def interpolate_f(params: np.ndarray, p: int) -> np.ndarray:
-    betas = params[:p]
-    gammas = params[p:]
-    new_betas = interp(betas)
-    new_gammas = interp(gammas)
-    return np.hstack([new_betas, new_gammas])
+    def check_linearity(self, optimal_params: np.ndarray, p: int) -> bool:
+        linear = False
+        correlations = (scipy.stats.pearsonr(np.arange(1, p + 1), optimal_params[:p])[0],
+                        scipy.stats.pearsonr(np.arange(1, p + 1), optimal_params[p:])[0])
 
-
-def check_linearity(optimal_params: np.ndarray, p: int) -> bool:
-    linear = False
-    correlations = (scipy.stats.pearsonr(np.arange(1, p + 1), optimal_params[:p])[0],
-                    scipy.stats.pearsonr(np.arange(1, p + 1), optimal_params[p:])[0])
-
-    if abs(correlations[0]) > 0.85 and abs(correlations[1]) > 0.85:
-        linear = True
-    return linear
+        if abs(correlations[0]) > 0.85 and abs(correlations[1]) > 0.85:
+            linear = True
+        return linear
