@@ -1,7 +1,7 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend, FALQON
-from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw
+from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP
 from qiskit.quantum_info import SparsePauliOp
 TESTING_DIR = 'testing'
 
@@ -78,3 +78,18 @@ def test_raw():
     assert inform is not None
     bitstring = inform.best_bitstring
     assert bitstring in ['00', '01', '10', '11']
+
+
+def test_tsp():
+    """ Testing function for TSP """
+    pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
+    qaoa = QAOA()
+    backend = QiskitBackend('local_simulator')
+    launcher = QuantumLauncher(pr, qaoa, backend)
+
+    inform = launcher.run()
+    assert inform is not None
+    bitstring = inform.best_bitstring
+    assignments = [bitstring[i:i+3] for i in range(0, len(bitstring), 3)]
+    assert len(assignments) == 3
+    assert set(assignments) == set(['001', '010', '100'])
