@@ -62,7 +62,7 @@ class SamplerV2JobAdapter(RuntimeJobV2Adapter):
         return SamplerResult(quasi_dists=qd, metadata=metas)
 
 
-def transpile_circuits(circuits, backend):
+def _transpile_circuits(circuits, backend):
     # Transpile qaoa circuit to backend instruction set, if backend is provided
     # ? I pass a backend into SamplerV2 as *mode* but here sampler_v2.mode returns None, why?
     if not backend is None:
@@ -79,13 +79,18 @@ class SamplerV2Adapter(BaseSamplerV1):
     V1 adapter for V2 samplers.
     """
 
-    def __init__(self, sampler_v2: BaseSamplerV2, backend=None, options: dict | None = None):
+    def __init__(self, sampler_v2: BaseSamplerV2, backend=None):
+        """
+        Args:
+            sampler_v2 (BaseSamplerV2): V2 sampler to be adapted.
+            backend (Optional[Backend]): Backend to transpile circuits to.
+        """
         self.sampler_v2 = sampler_v2
         self.backend = backend
         super().__init__()
 
-    def _run(self, circuits, parameter_values=None, **run_options):
-        circuits = transpile_circuits(circuits, self.backend)
+    def _run(self, circuits, parameter_values=None, **run_options) -> SamplerV2JobAdapter:
+        circuits = _transpile_circuits(circuits, self.backend)
         v2_list = list(zip(circuits, parameter_values))
         job = self.sampler_v2.run(pubs=v2_list, **run_options)
 
