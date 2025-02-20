@@ -10,7 +10,9 @@ import tomllib
 
 conf_path = os.path.dirname(os.path.abspath(__file__))
 project_path = os.path.dirname(conf_path)
+lib_path = os.path.join(project_path, 'quantum_launcher')
 sys.path.insert(0, project_path)
+
 
 def run_apidoc(app):
     """Generate API documentation"""
@@ -24,19 +26,19 @@ def run_apidoc(app):
         '--separate',
         '-o',
         os.path.join('.', 'API'),
-        project_path,
+        lib_path,  # Generate docs only for quantum_launcher/
     ])
 
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-#Grab info from pyproject.toml
+# Grab info from pyproject.toml
 
-with open(os.path.join(project_path, 'pyproject.toml'),'rb') as f:
+with open(os.path.join(project_path, 'pyproject.toml'), 'rb') as f:
     parsed_pyproject = tomllib.load(f)
 
-name = parsed_pyproject['project']['name'].replace('_',' ').title()
+name = parsed_pyproject['project']['name'].replace('_', ' ').title()
 version = parsed_pyproject['project']['version']
 
 project = name
@@ -59,16 +61,17 @@ napoleon_use_param = False
 viewcode_line_numbers = True
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store','../tests']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '../tests']
 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_book_theme'
-html_show_sourcelink = False # No option to show .rst source
+html_show_sourcelink = False  # No option to show .rst source
 html_static_path = ['_static']
 html_css_files = ['css/custom.css']
+
 
 def setup(app):
     app.connect('builder-inited', run_apidoc)

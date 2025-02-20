@@ -101,7 +101,7 @@ class AQL:
 
 class AQLManager:
     """
-    ### Context manager for asyncQuantumLauncher
+    Context manager for asyncQuantumLauncher
     Simplified high-level context manager to support asynchronous flow of asyncQuantumLauncher.
 
     Inside is only initialization and whole processing is done at the end.
@@ -111,7 +111,7 @@ class AQLManager:
 
     ---
 
-    #### Usage Example:
+    Usage Example:
     ```
     with AQLManager('my_path') as launcher:
         launcher.add()

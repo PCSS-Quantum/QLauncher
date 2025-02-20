@@ -6,7 +6,16 @@ from quantum_launcher.base import Problem
 
 
 class TSP(Problem):
+    """
+    Traveling Salesman Problem (TSP) definition.
+    """
     def __init__(self, instance: nx.Graph, instance_name: str = "unnamed", quadratic: bool = False):
+        """
+        Args:
+            instance (nx.Graph): Graph representing the TSP instance.
+            instance_name (str): Name of the instance.
+            quadratic (bool): Whether to use quadratic constraints
+        """
         super().__init__(instance=instance, instance_name=instance_name)
         self.quadratic = quadratic
 
@@ -18,6 +27,9 @@ class TSP(Problem):
         return f"{self.name}@{self.instance_name}"
 
     def visualize(self):
+        """
+        Show plot of the TSP instance.
+        """
         import matplotlib.pyplot as plt
 
         pos = nx.spring_layout(self.instance, weight=None, seed=42)
@@ -50,6 +62,16 @@ class TSP(Problem):
 
     @staticmethod
     def from_preset(instance_name: str = 'default', **kwargs) -> "TSP":
+        """
+        Generate TSP instance from a preset name.
+        
+        Args:
+            instance_name (str): Name of the preset instance
+            quadratic (bool, optional): Whether to use quadratic constraints. Defaults to False
+            
+        Returns:
+            TSP: TSP instance
+        """
         match instance_name:
             case 'default':
                 edge_costs = np.array(
@@ -74,6 +96,18 @@ class TSP(Problem):
 
     @staticmethod
     def generate_tsp_instance(num_vertices: int, min_distance: float = 1.0, max_distance: float = 10.0, **kwargs) -> "TSP":
+        """
+        Generate a random TSP instance.
+        
+        Args:
+            num_vertices (int): Number of vertices in the graph
+            min_distance (float, optional): Minimum distance between vertices. Defaults to 1.0
+            max_distance (float, optional): Maximum distance between vertices. Defaults to 10.0
+            quadratic (bool, optional): Whether to use quadratic constraints. Defaults to False
+        
+        Returns:
+            TSP: TSP instance
+        """
         if num_vertices < 2:
             raise ValueError("num_vertices must be at least 2")
 

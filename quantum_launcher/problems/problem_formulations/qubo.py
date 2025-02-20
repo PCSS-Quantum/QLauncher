@@ -28,6 +28,7 @@ def get_maxcut_qubo(problem: problem.MaxCut):
 
     return Q, 0
 
+
 @formatter(problem.EC, 'qubo')
 class ECOrca:
     gamma = 1
@@ -73,7 +74,6 @@ class ECOrca:
     def calculate_instance_size(self, problem: problem.EC):
         # Calculate instance size for training
         return len(problem.instance)
-
 
     def __call__(self, problem: problem.EC):
         self.num_elements = self.calculate_num_elements(problem)
