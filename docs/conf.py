@@ -16,7 +16,6 @@ def run_apidoc(app):
     """Generate API documentation"""
     import better_apidoc
     better_apidoc.APP = app
-    better_apidoc.
     better_apidoc.main([
         'better-apidoc',
         '-t',
@@ -32,15 +31,17 @@ def run_apidoc(app):
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+#Grab info from pyproject.toml
+
 with open(os.path.join(project_path, 'pyproject.toml'),'rb') as f:
     parsed_pyproject = tomllib.load(f)
 
 name = parsed_pyproject['project']['name'].replace('_',' ').title()
-version = parsed_pyproject['project']['version'] #Grab version from pyproject.toml
+version = parsed_pyproject['project']['version']
 
 project = name
-copyright = '2025, tbd'
-author = 'tbd'
+copyright = '2025, psnc-qcg'
+author = 'psnc-qcg'
 release = version
 
 # -- General configuration ---------------------------------------------------
@@ -55,6 +56,8 @@ extensions = [
 
 napoleon_use_param = False
 
+viewcode_line_numbers = True
+
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store','../tests']
 
@@ -62,8 +65,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store','../tests']
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_book_theme'
+html_show_sourcelink = False # No option to show .rst source
 html_static_path = ['_static']
+html_css_files = ['css/custom.css']
 
 def setup(app):
     app.connect('builder-inited', run_apidoc)
+    app.add_css_file('css/custom.css')

@@ -20,9 +20,10 @@ Getting started
 ----------------
 To install the quantum launcher use the following script:
 
-``sh
-pip install git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0
-``
+::
+
+   pip install git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0
+
 
 Then you can get to know the library by checking out the following sections:
 
