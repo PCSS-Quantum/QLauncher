@@ -14,12 +14,13 @@ dependencies = [
     "pytest-httpx>=0.35.0",
 ]
 
-[tool.setuptools]
-packages = ['quantum_launcher']
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["quantum_launcher*"]
 
 [project.optional-dependencies]
 qiskit = ["qiskit", "qiskit_algorithms", "qiskit_aqt_provider", "qiskit_ibm_runtime", "qiskit_optimization"]
-orca = [
-  "numba==0.60.0", "torch", "matplotlib"
-]
-dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0", ]
+orca = ["numba==0.60.0", "torch", "matplotlib"]
+dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
+cirq = ["cirq>=0.5.556"]
+pilotjob = ["qcg-pilotjob"]
