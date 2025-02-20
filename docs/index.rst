@@ -1,5 +1,5 @@
 Quantum Launcher Docs
-================
+=====================
 
 ----------------
 About project
@@ -31,4 +31,5 @@ Then you can get to know the library by checking out the following sections:
    :maxdepth: 1
 
    examples
+   tutorials
    api_reference
