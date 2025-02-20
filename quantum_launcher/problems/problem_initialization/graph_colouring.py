@@ -28,7 +28,7 @@ class GraphColoring(Problem):
         instance_path: str | None = None,
         num_colors: int | None = None,
     ) -> None:
-        super().__init__(instance=instance, instance_name=instance_name, instance_path=instance_path)
+        super().__init__(instance=instance, instance_name=instance_name)
         self.pos = None
         self.num_colors = num_colors
 
@@ -44,6 +44,16 @@ class GraphColoring(Problem):
                 gc = GraphColoring(graph, instance_name=instance_name, num_colors=3)
                 gc.pos = nx.shell_layout(gc.instance, nlist=[list(range(5, 10)), list(range(5))])
                 return gc
+            case "small":
+                graph = nx.Graph()
+                graph.add_edges_from([(0, 1), (1, 2), (0, 2), (3, 2)])
+                gc = GraphColoring(graph, instance_name=instance_name, num_colors=3)
+                return gc
+
+    def from_pickle(path: str, num_colors: int) -> "GraphColoring":
+        graph = nx.read_gpickle(path)
+        gc = GraphColoring(graph, instance_name=path, num_colors=num_colors)
+        return gc
 
     def set_instance(self, instance: nx.Graph | None = None, instance_name: str | None = None) -> None:
         super().set_instance(instance, instance_name)
@@ -92,6 +102,6 @@ class GraphColoring(Problem):
         return G
 
     @staticmethod
-    def randomly_choose_a_graph():
+    def randomly_choose_a_graph() -> nx.Graph:
         graphs = nx.graph_atlas_g()
         return graphs[randint(0, len(graphs) - 1)]
