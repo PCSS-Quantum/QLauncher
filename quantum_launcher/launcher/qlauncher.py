@@ -54,7 +54,7 @@ class QuantumLauncher:
         self.algorithm: Algorithm = algorithm
         self.backend: Backend = backend
         if logger is None:
-            logger:logging.Logger = logging.getLogger('QuantumLauncher')
+            logger: logging.Logger = logging.getLogger('QuantumLauncher')
         self.logger = logger
         self.res: dict = {}
 
@@ -78,7 +78,7 @@ class QuantumLauncher:
                 pickle.dump(self.result, f)
         elif format == 'json':
             with open(path, mode='w', encoding='utf-8') as f:
-                json.dump(self.result, f, default=fix_json)
+                json.dump(self.result.__dict__, f, default=fix_json)
         elif format == 'txt':
             with open(path, mode='w', encoding='utf-8') as f:
                 f.write(self.result.__str__())
