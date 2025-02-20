@@ -20,6 +20,9 @@ pyqubo
 dwave-ocean-sdk
 dwave-tabu
 
+# Scheduling
+qcg-pilotjob
+
 # Others
 pytest
 pytest_httpx
