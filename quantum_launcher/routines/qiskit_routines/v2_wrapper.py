@@ -1,73 +1,97 @@
-import time
-from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2
-from qiskit.primitives import  SamplerResult, BasePrimitiveJob
+from typing import Sequence
+from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2, BaseEstimatorV1, BaseEstimatorV2
+from qiskit.primitives import SamplerResult, EstimatorResult, BasePrimitiveJob
 from qiskit import transpile
-    
-class DummyJob(BasePrimitiveJob):
-    '''
-    Dummy data holder, to pass v1 result from V2Wrapper
-    '''
-    def __init__(self, job_id,res, **kwargs):
-        super().__init__(job_id, **kwargs)
-        self.res = res    
-    
-    def result(self):
-        return self.res
-    
-    def cancel(self):
-        pass
-    
-    def status(self):
-        return "COMPLETED"
-    
-    def done(self):
-        return True
-    
-    def cancelled(self):
-        return False
-    
-    def running(self):
-        return False
-    
-    def in_final_state(self):
-        return True
+from qiskit.result import QuasiDistribution
 
-    
+
+class RuntimeJobV2Adapter(BasePrimitiveJob):
+    def __init__(self, job, **kwargs):
+        super().__init__(job.job_id(), **kwargs)
+        self.job = job
+
+    def result(self):
+        raise NotImplementedError()
+
+    def cancel(self):
+        return self.job.cancel()
+
+    def status(self):
+        return self.job.status()
+
+    def done(self):
+        return self.job.done()
+
+    def cancelled(self):
+        return self.job.cancelled()
+
+    def running(self):
+        return self.job.running()
+
+    def in_final_state(self):
+        return self.job.in_final_state()
+
+
+class SamplerV2JobAdapter(RuntimeJobV2Adapter):
+    """
+    Dummy data holder, returns a v1 SamplerResult from v2 sampler job.
+    """
+
+    def __init__(self, job, **kwargs):
+        super().__init__(job, **kwargs)
+
+    def _get_quasi_meta(self, res):
+        data = res.data["meas"]
+        counts = data.get_int_counts()
+        probs = {k: v/data.num_shots for k, v in counts.items()}
+        quasi_dists = QuasiDistribution(probs, shots=data.num_shots)
+
+        metadata = res.metadata
+        metadata["sampler_version"] = 2  # might be useful for debugging
+
+        return quasi_dists, metadata
+
+    def result(self):
+        res = self.job.result()
+        qd, metas = [], []
+        for r in res:
+            quasi_dist, metadata = self._get_quasi_meta(r)
+            qd.append(quasi_dist)
+            metas.append(metadata)
+
+        return SamplerResult(quasi_dists=qd, metadata=metas)
+
+
+def _transpile_circuits(circuits, backend):
+    # Transpile qaoa circuit to backend instruction set, if backend is provided
+    # ? I pass a backend into SamplerV2 as *mode* but here sampler_v2.mode returns None, why?
+    if not backend is None:
+        if isinstance(circuits, Sequence):
+            circuits = [transpile(circuit) for circuit in circuits]
+        else:
+            circuits = transpile(circuits)
+
+    return circuits
+
+
 class SamplerV2Adapter(BaseSamplerV1):
     """
     V1 adapter for V2 samplers.
     """
-    def __init__(self, samplerv2:BaseSamplerV2,backend=None, options: dict | None = None):
-        self.samplerv2 = samplerv2
+
+    def __init__(self, sampler_v2: BaseSamplerV2, backend=None):
+        """
+        Args:
+            sampler_v2 (BaseSamplerV2): V2 sampler to be adapted.
+            backend (Optional[Backend]): Backend to transpile circuits to.
+        """
+        self.sampler_v2 = sampler_v2
         self.backend = backend
         super().__init__()
-        
-    def _run(self,circuits,parameter_values=None,**run_options):
-        
-        #Transpile qaoa circuit to backend instruction set, if backend is provided
-        #TODO (or question): I pass a backend into SamplerV2 as *mode* but here samplerv2.mode returns None, why?
-        if self.backend is not None:
-            circuits = [transpile(circuit,self.backend) for circuit in circuits]
-            
-        v2_list = list(zip(circuits,parameter_values))
-        job =  self.samplerv2.run(pubs=v2_list,**run_options)
-        
-        job_id = job.job_id()
-        try:
-            job.wait_for_final_state() #ibm runtime jobs have this nice method, e.g aer jobs don't
-        except Exception as e:
-            while not job.in_final_state():
-                time.sleep(0.001)
-        
-        #v2 results have only counts available
-        data = job.result()[0].data["meas"]
-        counts = data.get_int_counts()
-        quasi_dists = {k:v/data.num_shots for k,v in counts.items()}
-        
-        metadata = job.result()[0].metadata
-        metadata["sampler_version"] = 2 #might be useful for debugging
-        
-        v1_result =  SamplerResult(quasi_dists=[quasi_dists],metadata=[metadata])
-        
-        #QAOA expects a job
-        return DummyJob(job_id,v1_result)
+
+    def _run(self, circuits, parameter_values=None, **run_options) -> SamplerV2JobAdapter:
+        circuits = _transpile_circuits(circuits, self.backend)
+        v2_list = list(zip(circuits, parameter_values))
+        job = self.sampler_v2.run(pubs=v2_list, **run_options)
+
+        return SamplerV2JobAdapter(job)

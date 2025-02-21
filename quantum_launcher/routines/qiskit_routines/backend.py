@@ -4,17 +4,18 @@ from qiskit.primitives import Sampler
 from typing import Literal
 from qiskit_aqt_provider import AQTProvider
 from qiskit_aqt_provider.primitives import AQTSampler, AQTEstimator
-from qiskit.primitives import StatevectorEstimator as LocalEstimator, BaseEstimator
-from qiskit.primitives import StatevectorSampler as LocalSampler, BaseSampler
+from qiskit.primitives import StatevectorEstimator as LocalEstimator
+from qiskit.primitives import StatevectorSampler as LocalSampler
 from qiskit.primitives import BackendSampler, BackendEstimator
-from qiskit.primitives import Sampler as BasicSampler
-from qiskit.primitives import Estimator as BasicEstimator
+from qiskit.primitives import Sampler as SamplerV1
+from qiskit.primitives import Estimator as EstimatorV1
 from qiskit.providers import BackendV1, BackendV2
-from qiskit_algorithms.optimizers import COBYLA, SPSA, SciPyOptimizer, Optimizer
+from qiskit_algorithms.optimizers import COBYLA, SPSA, Optimizer
 from qiskit_ibm_runtime import Estimator, Sampler
 from qiskit_ibm_runtime import Session, Options
 
 from quantum_launcher.base import Backend
+from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
 
 
 class QiskitBackend(Backend):
@@ -30,7 +31,7 @@ class QiskitBackend(Backend):
         options (Options): The options for the backend.
         primitive_strategy: The strategy for selecting primitives based on the backend name.
         sampler (BaseSampler): The sampler used for sampling.
-        estimator (BaseEstimator): The estimator used for estimation.
+        estimator (LocalEstimator): The estimator used for estimation.
         optimizer (Optimizer): The optimizer used for optimization.
 
     Methods:
@@ -45,8 +46,9 @@ class QiskitBackend(Backend):
         self.backendv1v2 = backendv1v2
         self.primitive_strategy = None
         self.sampler = None
-        self.estimator: BaseEstimator = None
+        self.estimator: LocalEstimator = None
         self.optimizer: Optimizer = None
+        self._samplerV1: SamplerV1 | None = None
         self._set_primitives_on_backend_name()
 
     @property
@@ -56,10 +58,16 @@ class QiskitBackend(Backend):
             'session': self.session
         }
 
+    @property
+    def samplerV1(self) -> Sampler:
+        if self._samplerV1 is None:
+            self._samplerV1 = SamplerV2Adapter(self.sampler)
+        return self._samplerV1
+
     def _set_primitives_on_backend_name(self) -> None:
         if self.name == 'local_simulator':
-            self.estimator = BasicEstimator()
-            self.sampler = BasicSampler()
+            self.estimator = LocalEstimator()
+            self.sampler = LocalSampler()
             self.optimizer = COBYLA()
         elif self.name == 'backendv1v2_simulator':
             self.estimator = BackendEstimator(backend=self.backendv1v2)
