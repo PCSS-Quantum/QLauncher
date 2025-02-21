@@ -1,7 +1,6 @@
 import json
 import sys
 from quantum_launcher import QuantumLauncher
-from quantum_launcher.base import Result
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
 from quantum_launcher.problems import MaxCut, EC, JSSP, QATM
 
@@ -12,29 +11,32 @@ PROBLEM_DICT = {
     'QATM': QATM
 }
 
+ALGORITHM_DICT = {
+    'QAOA': QAOA,
+}
+
+BACKEND_DICT = {
+    'QiskitBackend': QiskitBackend
+}
+
 
 def parse_arguments() -> dict:
     arguments = {}
-    arguments['output'] = sys.argv[1]
-    arguments['kwargs'] = json.loads(sys.argv[2])
+    arguments['problem'] = PROBLEM_DICT[sys.argv[1]]
+    arguments['algorithm'] = ALGORITHM_DICT[sys.argv[2]]
+    arguments['backend'] = BACKEND_DICT[sys.argv[3]]
+    arguments['output'] = sys.argv[4]
+    arguments['kwargs'] = json.loads(sys.argv[5])
     arguments['problem'] = MaxCut.from_preset('default')
     return arguments
-
-
-def check_cores() -> int: ...
-
-
-def save_result(result: Result, path: str):
-    with open(path, 'w') as f:
-        json.dump(result.__dict__, f)
 
 
 def main():
     arguments = parse_arguments()
 
-    problem = arguments['problem']
-    algorithm = QAOA(**arguments['kwargs'].get('algorithm', dict()))
-    backend = QiskitBackend('local_simulator')
+    problem = arguments['problem'](**arguments['kwargs'].get('problem', dict()))
+    algorithm = arguments['algorithm'](**arguments['kwargs'].get('algorithm', dict()))
+    backend = arguments['backend'](**arguments['kwargs'].get('algorithm', dict()))
 
     launcher = QuantumLauncher(problem, algorithm, backend)
     launcher.run()

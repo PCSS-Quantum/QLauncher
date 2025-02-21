@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from qcg.pilotjob.api.errors import TimeoutElapsed
 from qcg.pilotjob.api.job import Jobs
 from qcg.pilotjob.api.manager import LocalManager
-from quantum_launcher.base.base import Problem, Result
+from quantum_launcher.base.base import Algorithm, Backend, Problem, Result
 
 
 class JobManager:
@@ -23,7 +23,8 @@ class JobManager:
     def submit(self, problem, algorithm, backend, output_path: str, kwargs: Dict[str, Any]):
         free_cores = self.manager.resources()['free_cores']
         number_of_cores = max(1, free_cores)
-        job = self.prepare_ql_job(output=output_path, problem=problem, cores=number_of_cores, kwargs=kwargs)
+        job = self.prepare_ql_job(problem=problem, algorithm=algorithm, backend=backend,
+                                  output=output_path, cores=number_of_cores, kwargs=kwargs)
         job_id = self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
         return job_id
 
@@ -35,7 +36,7 @@ class JobManager:
             return
         qcg_jobs = Jobs()
         for _ in range(free_cores):
-            job = self.prepare_ql_job(output_path, problem, kwargs=kwargs)
+            job = self.prepare_ql_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path, kwargs=kwargs)
             qcg_jobs.add(**job.get('qcg_args'))
         return self.manager.submit(qcg_jobs)
 
@@ -59,14 +60,14 @@ class JobManager:
                 print(f'error in waiting: {str(ex)}', flush=True)
                 continue
 
-    def prepare_ql_job(self, output: str, problem: Problem, cores: int = 1, kwargs=None) -> dict:
+    def prepare_ql_job(self, problem: Problem, algorithm: Algorithm, backend: Backend, output: str, cores: int = 1, kwargs=None) -> dict:
         if kwargs is None:
             kwargs = {}
         job_uid = f'{len(self.jobs):05d}'
         output_file = os.path.abspath(f'{output}output.{job_uid}')
         kwargs_str = json.dumps(kwargs)
-        problem_name = problem
-        in_args = [self.code_path, output_file, kwargs_str]
+        in_args = [self.code_path, problem.__class__.__name__, algorithm.__class__.__name__,
+                   backend.__class__.__name__, output_file, kwargs_str]
         qcg_args = {
             'name': job_uid,
             'exec': sys.executable,
