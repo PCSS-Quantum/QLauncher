@@ -6,4 +6,6 @@ This section contains several tutorials, that will help you to get started with 
 .. toctree::
    :maxdepth: 1
 
-   examples/hampy_tutorial
+   tutorials/hampy_tutorial
+   tutorials/problem_types
+   tutorials/backends_algorithms
