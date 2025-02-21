@@ -9,10 +9,10 @@ TESTING_DIR = "testing"
 
 
 def test_ec():
-    """Testing function for Exact Cover"""
-    pr = EC.from_preset(onehot="exact", instance_name="micro")
+    """ Testing function for Exact Cover """
+    pr = EC.from_preset(onehot='exact', instance_name='micro')
     qaoa = QAOA(p=3)
-    backend = QiskitBackend("local_simulator")
+    backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # inform = launcher.process(save_pickle=True, save_txt=True)
@@ -21,10 +21,10 @@ def test_ec():
 
 
 def test_qatm():
-    """Testing function for QATM"""
-    pr = QATM.from_file(instance_name="RCP_3.txt", instance_path="data/qatm/")
+    """ Testing function for QATM """
+    pr = QATM.from_file(instance_name='RCP_3.txt', instance_path='data/qatm/')
     qaoa = QAOA(p=3)
-    backend = QiskitBackend("local_simulator")
+    backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # inform = launcher.process(save_pickle=True)
@@ -33,10 +33,10 @@ def test_qatm():
 
 
 def test_jssp():
-    """Testing function for Job Shop Shedueling Problem"""
-    pr = JSSP.from_preset("toy", max_time=3, onehot="exact", optimization_problem=True)
+    """ Testing function for Job Shop Shedueling Problem """
+    pr = JSSP.from_preset('toy', max_time=3, onehot='exact', optimization_problem=True)
     qaoa = QAOA(p=3)
-    backend = QiskitBackend("local_simulator")
+    backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # inform = launcher.process(save_pickle=True)
@@ -45,10 +45,10 @@ def test_jssp():
 
 
 def test_maxcut():
-    """Testing function for Max Cut"""
-    pr = MaxCut.from_preset(instance_name="default")
+    """ Testing function for Max Cut """
+    pr = MaxCut.from_preset(instance_name='default')
     qaoa = QAOA()
-    backend = QiskitBackend("local_simulator")
+    backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # inform = launcher.process(save_pickle=True)
@@ -68,32 +68,33 @@ def test_maxcut():
 
 
 def test_raw():
-    """Testing function for Raw"""
-    hamiltonian = SparsePauliOp.from_list([("ZZ", -1), ("ZI", 2), ("IZ", 2), ("II", -1)])
+    """ Testing function for Raw """
+    hamiltonian = SparsePauliOp.from_list(
+        [("ZZ", -1), ("ZI", 2), ("IZ", 2), ("II", -1)])
     pr = Raw(hamiltonian)
     qaoa = QAOA()
-    backend = QiskitBackend("local_simulator")
+    backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     inform = launcher.run()
     assert inform is not None
     bitstring = inform.best_bitstring
-    assert bitstring in ["00", "01", "10", "11"]
+    assert bitstring in ['00', '01', '10', '11']
 
 
 def test_tsp():
-    """Testing function for TSP"""
+    """ Testing function for TSP """
     pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
     qaoa = QAOA()
-    backend = QiskitBackend("local_simulator")
+    backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     inform = launcher.run()
     assert inform is not None
     bitstring = inform.best_bitstring
-    assignments = [bitstring[i : i + 3] for i in range(0, len(bitstring), 3)]
+    assignments = [bitstring[i:i+3] for i in range(0, len(bitstring), 3)]
     assert len(assignments) == 3
-    assert set(assignments) == set(["001", "010", "100"])
+    assert set(assignments) == set(['001', '010', '100'])
 
 
 def test_graph_coloring():
@@ -112,7 +113,7 @@ def test_graph_coloring():
     solution = bitstring[::-1]
     proper_solution = []
     for i in range(0, num_qubits, color_bit_length):
-        node_bit_string = solution[i : i + color_bit_length]
+        node_bit_string = solution[i: i + color_bit_length]
         color_num = int(node_bit_string, 2)
         proper_solution.append(color_num)
     assert len(proper_solution) == gc.instance.number_of_nodes()

@@ -30,30 +30,6 @@ def get_maxcut_qubo(problem: problem.MaxCut):
 
     return Q, 0
 
-@formatter(problem.GraphColoring, format="qubo")
-def get_graph_coloring_qubo(problem: problem.GraphColoring):
-    """ Returns Qubo function """
-    edges = list(problem.instance.edges)
-    nodes = list(problem.instance.nodes)
-    num_qubits = len(nodes) * problem.num_colors
-    x = Array.create("x", shape=(len(nodes), problem.num_colors), vartype="BINARY")
-    H = 0
-    for node in nodes:
-        H += (1 - sum(x[node, i] for i in range(problem.num_colors))) ** 2
-    for edge in edges:
-        n1, n2 = edge
-        for c in range(problem.num_colors):
-            H += (x[n1, c] * x[n2, c])
-    model = H.compile()
-    qubo, offset = model.to_qubo()
-    Q_matrix = np.zeros((num_qubits, num_qubits))
-    for key in qubo:
-        x = re.split(r"[\[\]]", key[0])
-        i = int(x[1]) * problem.num_colors + int(x[3])
-        y = re.split(r"[\[\]]", key[1])
-        j = int(y[1]) * problem.num_colors + int(y[3])
-        Q_matrix[i, j] = qubo[key]
-    return Q_matrix, offset
 
 @formatter(problem.EC, 'qubo')
 class ECOrca:
@@ -100,7 +76,6 @@ class ECOrca:
     def calculate_instance_size(self, problem: problem.EC):
         # Calculate instance size for training
         return len(problem.instance)
-
 
     def __call__(self, problem: problem.EC):
         self.num_elements = self.calculate_num_elements(problem)
@@ -193,3 +168,29 @@ class JSSPOrca:
 @formatter(problem.Raw, 'qubo')
 def get_raw_qubo(problem: problem.Raw):
     return problem.instance
+
+
+@formatter(problem.GraphColoring, format='qubo')
+def get_graph_coloring_qubo(problem: problem.GraphColoring):
+    """ Returns Qubo function """
+    edges = list(problem.instance.edges)
+    nodes = list(problem.instance.nodes)
+    num_qubits = len(nodes) * problem.num_colors
+    x = Array.create('x', shape=(len(nodes), problem.num_colors), vartype='BINARY')
+    H = 0
+    for node in nodes:
+        H += (1 - sum(x[node, i] for i in range(problem.num_colors))) ** 2
+    for edge in edges:
+        n1, n2 = edge
+        for c in range(problem.num_colors):
+            H += (x[n1, c] * x[n2, c])
+    model = H.compile()
+    qubo, offset = model.to_qubo()
+    Q_matrix = np.zeros((num_qubits, num_qubits))
+    for key in qubo:
+        x = re.split(r"[\[\]]", key[0])
+        i = int(x[1]) * problem.num_colors + int(x[3])
+        y = re.split(r"[\[\]]", key[1])
+        j = int(y[1]) * problem.num_colors + int(y[3])
+        Q_matrix[i, j] = qubo[key]
+    return Q_matrix, offset
