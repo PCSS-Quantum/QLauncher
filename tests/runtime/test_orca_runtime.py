@@ -72,11 +72,10 @@ def test_graph_coloring():
     backend = OrcaBackend("local_simulator")
     launcher = QuantumLauncher(gc, bbs, backend)
     inform = launcher.run()
-    assert inform is not None
-    bitstring = inform.best_bitstring
-    num_qubits = len(bitstring)
+    assert isinstance(inform, Result)
+    solution = inform.best_bitstring
+    num_qubits = len(solution)
     assert num_qubits == gc.instance.number_of_nodes() * num_colors
-    solution = bitstring[::-1]
     print(solution)
     proper_solution = []
     for node in nodes:
@@ -88,6 +87,3 @@ def test_graph_coloring():
     assert all([x in set(range(num_colors)) for x in proper_solution])
     print(set(proper_solution[:-1]))
     assert len(set(proper_solution[:-1])) == len(proper_solution[:-1])
-
-
-test_graph_coloring()

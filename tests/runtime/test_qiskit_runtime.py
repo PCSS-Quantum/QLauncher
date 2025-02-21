@@ -105,7 +105,7 @@ def test_graph_coloring():
     backend = QiskitBackend("local_simulator")
     launcher = QuantumLauncher(gc, qaoa, backend)
     inform = launcher.run()
-    assert inform is not None
+    assert isinstance(inform, Result)
     bitstring = inform.best_bitstring
     num_qubits = len(bitstring)
     assert num_qubits == gc.instance.number_of_nodes() * color_bit_length
