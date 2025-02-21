@@ -1,5 +1,6 @@
 """This module contains the Graph Coloring class."""
 
+import pickle
 import networkx as nx
 from random import randint
 import matplotlib.pyplot as plt
@@ -50,10 +51,16 @@ class GraphColoring(Problem):
                 gc = GraphColoring(graph, instance_name=instance_name, num_colors=3)
                 return gc
 
+    @staticmethod
     def from_pickle(path: str, num_colors: int) -> "GraphColoring":
-        graph = nx.read_gpickle(path)
+        with open(path, 'rb') as f:
+            graph = pickle.load(f)
         gc = GraphColoring(graph, instance_name=path, num_colors=num_colors)
         return gc
+
+    def save_pickle(self, path: str):
+        with open(path, 'wb') as f:
+            pickle.dump(self.instance, f, pickle.HIGHEST_PROTOCOL)
 
     def set_instance(self, instance: nx.Graph | None = None, instance_name: str | None = None) -> None:
         super().set_instance(instance, instance_name)
