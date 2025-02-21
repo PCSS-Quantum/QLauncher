@@ -23,4 +23,4 @@ qiskit = ["qiskit", "qiskit_algorithms", "qiskit_aqt_provider", "qiskit_ibm_runt
 orca = ["numba==0.60.0", "torch", "matplotlib"]
 dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
 cirq = ["cirq>=0.5.556"]
-pilotjob = ["qcg-pilotjob"]
+pilotjob = ["qcg-pilotjob", "dill>=0.3.0"]

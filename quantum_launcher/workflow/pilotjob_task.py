@@ -1,10 +1,12 @@
 import json
 import sys
+from typing import Dict, Tuple, Type
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
-from quantum_launcher.problems import MaxCut, EC, JSSP, QATM
+from quantum_launcher.problems import MaxCut, EC, JSSP, QATM, Problem
+import dill
 
-PROBLEM_DICT = {
+PROBLEM_DICT: Dict[str, Type[Problem]] = {
     'MaxCut': MaxCut,
     'EC': EC,
     'JSSP': JSSP,
@@ -20,27 +22,33 @@ BACKEND_DICT = {
 }
 
 
-def parse_arguments() -> dict:
-    arguments = {}
-    arguments['problem'] = PROBLEM_DICT[sys.argv[1]]
-    arguments['algorithm'] = ALGORITHM_DICT[sys.argv[2]]
-    arguments['backend'] = BACKEND_DICT[sys.argv[3]]
-    arguments['output'] = sys.argv[4]
-    arguments['kwargs'] = json.loads(sys.argv[5])
-    arguments['problem'] = MaxCut.from_preset('default')
-    return arguments
+def parse_arguments() -> Tuple[QuantumLauncher, str]:
+    """ Returns Quantum Launcher object and output file path """
+    if len(sys.argv) == 3:
+        input_file_path = sys.argv[1]
+        with open(input_file_path, 'rb') as f:
+            launcher = dill.load(f)
+        output_path = sys.argv[2]
+    elif len(sys.argv) == 6:
+        problem = PROBLEM_DICT[sys.argv[1]]
+        algorithm = ALGORITHM_DICT[sys.argv[2]]
+        backend = BACKEND_DICT[sys.argv[3]]
+        kwargs = json.loads(sys.argv[4])
+        launcher = QuantumLauncher(problem(**kwargs.get('problem', dict())),
+                                   algorithm(**kwargs.get('algorithm', dict())),
+                                   backend(**kwargs.get('backend', dict())))
+        output_path = sys.argv[5]
+    else:
+        raise ValueError(f'Wrong number of arguments, expected 3 or 6 got {len(sys.argv)} instead')
+
+    return launcher, output_path
 
 
 def main():
-    arguments = parse_arguments()
+    launcher, output_path = parse_arguments()
 
-    problem = arguments['problem'](**arguments['kwargs'].get('problem', dict()))
-    algorithm = arguments['algorithm'](**arguments['kwargs'].get('algorithm', dict()))
-    backend = arguments['backend'](**arguments['kwargs'].get('algorithm', dict()))
-
-    launcher = QuantumLauncher(problem, algorithm, backend)
     launcher.run()
-    launcher.save(path=arguments.get('output'), format='pickle')
+    launcher.save(path=output_path, format='pickle')
 
 
 if __name__ == '__main__':

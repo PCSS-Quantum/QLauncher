@@ -338,7 +338,7 @@ class EducatedGuess(Algorithm):
 
     def run(self, problem: Problem, backend: QiskitBackend, formatter) -> Result:
 
-        self.manager.submit_many(problem, backend, backend, output_path=self.output_initial, kwargs={'algorithm': {'p': self.p_init}})
+        self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial)
         print(f'{len(self.manager.jobs)} jobs submitted to qcg')
 
         self.failed_jobs = False
@@ -355,17 +355,19 @@ class EducatedGuess(Algorithm):
             if has_potential:
                 found_optimal_params = self.search_for_job_with_optimal_params(jobid, energy, problem, backend)
 
-            self.manager.submit_many(problem, backend, backend, output_path=self.output_initial, kwargs={'algorithm': {'p': self.p_init}})
+            self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial)
 
-        return self.manager.read_results(self.best_job_id)
+        result = self.manager.read_results(self.best_job_id)
+        self.manager.stop()
+        return result
 
     def search_for_job_with_optimal_params(self, previous_job_id, previous_energy, problem, backend) -> bool:
         for p in range(self.p_init + 1, self.p_max + 1):
             previous_job_results = self.manager.read_results(previous_job_id).result
             initial_point = self.interpolate_f(list(previous_job_results['SamplingVQEResult'].optimal_point), p-1)
 
-            new_job_id = self.manager.submit(problem, QAOA, backend, output_path=self.output_interpolated,
-                                             kwargs={'algorithm': {'p': p, 'initial_point': list(initial_point)}})
+            new_job_id = self.manager.submit(problem, QAOA(p=p, initial_point=initial_point),
+                                             backend, output_path=self.output_interpolated)
             _, state = self.manager.wait_for_a_job(new_job_id)
             if state != 'SUCCEED':
                 self.failed_jobs = True
