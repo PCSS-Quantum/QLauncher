@@ -9,6 +9,9 @@ qiskit
 qiskit_optimization
 qiskit_ibm_runtime
 
+# Cirq
+cirq
+
 # AQT
 qiskit_aqt_provider
 
