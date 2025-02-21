@@ -1,16 +1,17 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
-from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP
+from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
 from quantum_launcher.base import Result
 import numpy as np
-TESTING_DIR = 'testing'
+
+TESTING_DIR = "testing"
 
 
 def test_ec():
-    """ Testing function for Exact Cover """
-    pr = EC.from_preset(onehot='quadratic', instance_name='toy')
+    """Testing function for Exact Cover"""
+    pr = EC.from_preset(onehot="quadratic", instance_name="toy")
     bbs = BBS()
-    backend = OrcaBackend('local_simulator')
+    backend = OrcaBackend("local_simulator")
     launcher = QuantumLauncher(pr, bbs, backend)
 
     inform = launcher.run()
@@ -18,10 +19,10 @@ def test_ec():
 
 
 def test_jssp():
-    """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP.from_preset(max_time=3, onehot='quadratic', instance_name='toy', optimization_problem=True)
+    """Testing function for Job Shop Shedueling Problem"""
+    pr = JSSP.from_preset(max_time=3, onehot="quadratic", instance_name="toy", optimization_problem=True)
     bbs = BBS()
-    backend = OrcaBackend('local_simulator')
+    backend = OrcaBackend("local_simulator")
     launcher = QuantumLauncher(pr, bbs, backend)
 
     inform = launcher.run()
@@ -29,10 +30,10 @@ def test_jssp():
 
 
 def test_maxcut():
-    """ Testing function for Max Cut """
-    pr = MaxCut.from_preset(instance_name='default')
+    """Testing function for Max Cut"""
+    pr = MaxCut.from_preset(instance_name="default")
     bbs = BBS()
-    backend = OrcaBackend('local_simulator')
+    backend = OrcaBackend("local_simulator")
     launcher = QuantumLauncher(pr, bbs, backend)
 
     inform = launcher.run()
@@ -40,11 +41,11 @@ def test_maxcut():
 
 
 def test_raw():
-    """ Testing function for Raw """
+    """Testing function for Raw"""
     qubo = np.array([[10, 1], [0, -10]]), 2
     pr = Raw(qubo)
     bbs = BBS()
-    backend = OrcaBackend('local_simulator')
+    backend = OrcaBackend("local_simulator")
     launcher = QuantumLauncher(pr, bbs, backend)
 
     inform = launcher.run()
@@ -52,12 +53,41 @@ def test_raw():
 
 
 def test_tsp():
-    """ Testing function for TSP """
-    pr = TSP.generate_tsp_instance(
-        3, quadratic=True)  # Smaller sample size for testing
+    """Testing function for TSP"""
+    pr = TSP.generate_tsp_instance(3, quadratic=True)  # Smaller sample size for testing
     bbs = BBS()
-    backend = OrcaBackend('local_simulator')
+    backend = OrcaBackend("local_simulator")
     launcher = QuantumLauncher(pr, bbs, backend)
 
     inform = launcher.run()
     assert isinstance(inform, Result)
+
+
+def test_graph_coloring():
+    """Testing function for Graph Coloring"""
+    gc = GraphColoring.from_preset("small")
+    num_colors = gc.num_colors
+    nodes = list(gc.instance.nodes)
+    bbs = BBS()
+    backend = OrcaBackend("local_simulator")
+    launcher = QuantumLauncher(gc, bbs, backend)
+    inform = launcher.run()
+    assert inform is not None
+    bitstring = inform.best_bitstring
+    num_qubits = len(bitstring)
+    assert num_qubits == gc.instance.number_of_nodes() * num_colors
+    solution = bitstring[::-1]
+    print(solution)
+    proper_solution = []
+    for node in nodes:
+        for c in range(num_colors):
+            if solution[node * num_colors + c] == "1":
+                proper_solution.append(c)
+    print(proper_solution)
+    assert len(proper_solution) == gc.instance.number_of_nodes()
+    assert all([x in set(range(num_colors)) for x in proper_solution])
+    print(set(proper_solution[:-1]))
+    assert len(set(proper_solution[:-1])) == len(proper_solution[:-1])
+
+
+test_graph_coloring()

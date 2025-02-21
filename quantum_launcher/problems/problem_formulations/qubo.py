@@ -31,7 +31,7 @@ def get_maxcut_qubo(problem: problem.MaxCut):
     return Q, 0
 
 @formatter(problem.GraphColoring, format="qubo")
-def get_graph_coloring_qubo(problem: problem.GraphColoring)
+def get_graph_coloring_qubo(problem: problem.GraphColoring):
     """ Returns Qubo function """
     edges = list(problem.instance.edges)
     nodes = list(problem.instance.nodes)
@@ -43,7 +43,7 @@ def get_graph_coloring_qubo(problem: problem.GraphColoring)
     for edge in edges:
         n1, n2 = edge
         for c in range(problem.num_colors):
-            H += (1 - (x[n1, c] + x[n2, c])) ** 2
+            H += (x[n1, c] * x[n2, c])
     model = H.compile()
     qubo, offset = model.to_qubo()
     Q_matrix = np.zeros((num_qubits, num_qubits))
