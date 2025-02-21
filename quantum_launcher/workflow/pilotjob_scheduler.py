@@ -1,25 +1,30 @@
-import json
 import os
 import pickle
 import sys
-from typing import Any, Dict, List, Optional, Type
+from typing import Optional
 import dill
-from qcg.pilotjob.api.errors import TimeoutElapsed
 from qcg.pilotjob.api.job import Jobs
-from qcg.pilotjob.api.manager import LocalManager
+from qcg.pilotjob.api.manager import LocalManager, Manager
 from quantum_launcher.base.base import Algorithm, Backend, Problem, Result
 from quantum_launcher.launcher.qlauncher import QuantumLauncher
 
 
 class JobManager:
-    def __init__(self, manager_args: Optional[List[str]] = None):
-        if manager_args is None:
-            manager_args = []
+    def __init__(self, manager: Optional[Manager] = None):
+        """
+        Job manager is Quantum Launcher's wrapper for process management system, current version works on top of qcg-pilotjob
+
+        Args:
+            manager (Optional[Manager], optional): Manager system to schedule jobs, if set to None, the pilotjob's LocalManager is set.
+            Defaults to None.
+        """
         self.jobs = {}
         self.code_path = os.path.join(os.path.dirname(__file__), 'pilotjob_task.py')
-        self.manager = LocalManager(manager_args)
+        if manager is None:
+            manager = LocalManager()
+        self.manager = manager
 
-    def not_finished(self):
+    def count_not_finished(self) -> int:
         return len([job for job in self.jobs.values() if job.get('finished') is False])
 
     def submit(self, problem: Problem, algorithm, backend, output_path: str):
@@ -40,25 +45,31 @@ class JobManager:
             qcg_jobs.add(**job.get('qcg_args'))
         return self.manager.submit(qcg_jobs)
 
-    def wait_for_a_job(self, job_id: Optional[str] = None) -> tuple[str, str] | None:
-        while self.not_finished() > 0:
-            try:
-                if job_id is None:
-                    job_id, state = self.manager.wait4_any_job_finish(10)
-                else:
-                    state = self.manager.wait4(job_id)[job_id]
-                if job_id not in self.jobs:
-                    print(f'error: job {job_id} not known', flush=True)
-                    continue
+    def wait_for_a_job(self, job_id: Optional[str] = None, timeout: Optional[int | float] = None) -> tuple[str, str]:
+        """
+        Wait's for job to finished and returns it's id and status
 
-                self.jobs[job_id]['finished'] = True
-                return job_id, state
+        Args:
+            job_id (Optional[str], optional): Id of selected job, if None waiting for any job. Defaults to None.
+            timeout (Optional[int  |  float], optional): Timeout in seconds. Defaults to None.
 
-            except TimeoutElapsed:
-                continue
-            except Exception as ex:
-                print(f'error in waiting: {str(ex)}', flush=True)
-                continue
+        Raises:
+            ValueError: Raises if job_id not found or there are no jobs left.
+
+        Returns:
+            tuple[str, str]: job_id, job's status
+        """
+        if job_id is None:
+            if self.count_not_finished() <= 0:
+                raise ValueError("There are no jobs left")
+            job_id, state = self.manager.wait4_any_job_finish(timeout)
+        elif job_id in self.jobs:
+            state = self.manager.wait4(job_id, timeout=timeout)[job_id]
+        else:
+            raise ValueError(f"Job {job_id} not found in {self.__class__.__name__}'s jobs")
+
+        self.jobs[job_id]['finished'] = True
+        return job_id, state
 
     def prepare_ql_dill_job(self, problem: Problem, algorithm: Algorithm, backend: Backend,
                             output: str, cores: int = 1) -> dict:
@@ -88,6 +99,12 @@ class JobManager:
         with open(output_path, 'rb') as rt:
             results = pickle.load(rt)
         return results
+
+    def clean_up(self):
+        for job in self.jobs.values():
+            os.remove(job['output_file'])
+        if isinstance(self.manager, LocalManager):
+            self.manager.cleanup()
 
     def stop(self):
         self.manager.cancel(self.jobs)

@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from typing import Dict, Tuple, Type
 from quantum_launcher import QuantumLauncher
@@ -28,6 +29,7 @@ def parse_arguments() -> Tuple[QuantumLauncher, str]:
         input_file_path = sys.argv[1]
         with open(input_file_path, 'rb') as f:
             launcher = dill.load(f)
+        os.remove(input_file_path)
         output_path = sys.argv[2]
     elif len(sys.argv) == 6:
         problem = PROBLEM_DICT[sys.argv[1]]

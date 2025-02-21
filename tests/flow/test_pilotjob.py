@@ -33,8 +33,11 @@ def test_job_manager(tmp_path):
         assert status != 'FAILED'
         results = manager.read_results(job_id)
         assert isinstance(results, Result)
-    not_a_job = manager.wait_for_a_job()
-    assert not_a_job is None
+    with pytest.raises(ValueError):
+        manager.wait_for_a_job('definitely_not_a_job_id')
+    with pytest.raises(ValueError):
+        manager.wait_for_a_job()
+    manager.clean_up()
 
 
 def test_educated_guess(tmp_path):
