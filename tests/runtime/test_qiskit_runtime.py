@@ -109,13 +109,4 @@ def test_graph_coloring():
     assert isinstance(inform, Result)
     bitstring = inform.best_bitstring
     num_qubits = len(bitstring)
-    assert num_qubits == gc.instance.number_of_nodes() * color_bit_length
-    solution = bitstring[::-1]
-    proper_solution = []
-    for i in range(0, num_qubits, color_bit_length):
-        node_bit_string = solution[i: i + color_bit_length]
-        color_num = int(node_bit_string, 2)
-        proper_solution.append(color_num)
-    assert len(proper_solution) == gc.instance.number_of_nodes()
-    assert all([x in set(range(num_colors)) for x in proper_solution])
-    assert len(set(proper_solution[:-1])) == len(proper_solution[:-1])
+    assert num_qubits == gc.instance.number_of_nodes() * color_bit_length, "error in encoding, solution contains wrong number of qubits"

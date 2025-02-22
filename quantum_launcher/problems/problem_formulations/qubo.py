@@ -173,24 +173,22 @@ def get_raw_qubo(problem: problem.Raw):
 @formatter(problem.GraphColoring, format='qubo')
 def get_graph_coloring_qubo(problem: problem.GraphColoring):
     """ Returns Qubo function """
-    edges = list(problem.instance.edges)
-    nodes = list(problem.instance.nodes)
-    num_qubits = len(nodes) * problem.num_colors
-    x = Array.create('x', shape=(len(nodes), problem.num_colors), vartype='BINARY')
-    H = 0
-    for node in nodes:
-        H += (1 - sum(x[node, i] for i in range(problem.num_colors))) ** 2
-    for edge in edges:
-        n1, n2 = edge
+    num_qubits = problem.instance.number_of_nodes() * problem.num_colors
+    x = Array.create('x', shape=(problem.instance.number_of_nodes(), problem.num_colors), vartype='BINARY')
+    qubo = 0
+    for node in problem.instance.nodes:
+        qubo += (1 - sum(x[node, i] for i in range(problem.num_colors))) ** 2
+    for n1, n2 in problem.instance.edges:
         for c in range(problem.num_colors):
-            H += (x[n1, c] * x[n2, c])
-    model = H.compile()
-    qubo, offset = model.to_qubo()
+            qubo += (x[n1, c] * x[n2, c])
+    model = qubo.compile()
+    qubo_dict, offset = model.to_qubo()
     Q_matrix = np.zeros((num_qubits, num_qubits))
-    for key in qubo:
-        x = re.split(r"[\[\]]", key[0])
-        i = int(x[1]) * problem.num_colors + int(x[3])
-        y = re.split(r"[\[\]]", key[1])
-        j = int(y[1]) * problem.num_colors + int(y[3])
-        Q_matrix[i, j] = qubo[key]
+    for i in range(num_qubits):
+        for j in range(num_qubits):
+            n1, c1 = i//problem.num_colors, i % problem.num_colors
+            n2, c2 = j//problem.num_colors, j % problem.num_colors
+            key = ("x["+str(n1)+"]["+str(c1)+"]", "x["+str(n2)+"]["+str(c2)+"]")
+            if key in qubo_dict:
+                Q_matrix[i, j] = qubo_dict[key]
     return Q_matrix, offset

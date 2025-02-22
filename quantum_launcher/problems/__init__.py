@@ -1,6 +1,5 @@
-"""All problems together"""
-
+""" All problems together """
 from . import problem_formulations
 from .problem_initialization import Raw, MaxCut, EC, QATM, JSSP, TSP, GraphColoring, Problem
 
-__all__ = ["Raw", "MaxCut", "EC", "QATM", "JSSP", "TSP", "GraphColoring", "Problem"]
+__all__ = ['Raw', 'MaxCut', 'EC', 'QATM', 'JSSP', 'TSP', 'GraphColoring', 'Problem']

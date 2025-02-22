@@ -10,7 +10,7 @@ from quantum_launcher.base import Problem
 class GraphColoring(Problem):
     """
     Class for Graph Coloring Problem which is a combinatorial problem involving assigning labels to vertices of the graph such that no two adjacent
-    vertices share the same label. The class contains an instance of the problem, so it can be passed into Quantum Launcher.
+    vertices share the same label.
 
     Attributes:
         instance (nx.Graph): The graph for which the coloring problem is to be solved.
@@ -24,10 +24,9 @@ class GraphColoring(Problem):
 
     def __init__(
         self,
-        instance: nx.Graph | None = None,
-        instance_name: str | None = None,
-        instance_path: str | None = None,
-        num_colors: int | None = None,
+        instance: nx.Graph,
+        num_colors: int,
+        instance_name: str = "unnamed",
     ) -> None:
         super().__init__(instance=instance, instance_name=instance_name)
         self.pos = None
@@ -52,15 +51,15 @@ class GraphColoring(Problem):
                 return gc
 
     @staticmethod
-    def from_pickle(path: str, num_colors: int) -> "GraphColoring":
+    def from_file(path: str) -> "GraphColoring":
         with open(path, 'rb') as f:
-            graph = pickle.load(f)
+            graph, num_colors = pickle.load(f)
         gc = GraphColoring(graph, instance_name=path, num_colors=num_colors)
         return gc
 
-    def save_pickle(self, path: str):
+    def to_file(self, path: str):
         with open(path, 'wb') as f:
-            pickle.dump(self.instance, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump((self.instance, self.num_colors), f, pickle.HIGHEST_PROTOCOL)
 
     def set_instance(self, instance: nx.Graph | None = None, instance_name: str | None = None) -> None:
         super().set_instance(instance, instance_name)
@@ -75,40 +74,28 @@ class GraphColoring(Problem):
     def _get_path(self) -> str:
         return f"{self.name}@{self.instance_name}"
 
-    def visualize(self):
+    def visualize_solution(self, solution: list[int] | None = None):
         if self.pos is None:
             self.pos = nx.spring_layout(self.instance)
         plt.figure(figsize=(8, 6))
-
-        nx.draw(
-            self.instance,
-            self.pos,
-            with_labels=True,
-            node_color="skyblue",
-            node_size=500,
-            edge_color="gray",
-            font_size=10,
-            font_weight="bold",
-        )
-        plt.title("Graph Coloring Problem Instance Visualization")
-        plt.show()
-
-    def visualize_solution(self, solution: list[int]):
-        if self.pos is None:
-            self.pos = nx.spring_layout(self.instance)
-        plt.figure(figsize=(8, 6))
-        nx.draw_networkx_nodes(self.instance, self.pos, node_size=500, node_color=solution, cmap="Accent")
+        if solution is not None:
+            nx.draw_networkx_nodes(self.instance, self.pos, node_size=500, node_color=solution, cmap="Accent")
+        else:
+            nx.draw_networkx_nodes(self.instance, self.pos, node_size=500, node_color="skyblue")
         nx.draw_networkx_edges(self.instance, self.pos, edge_color="gray")
         nx.draw_networkx_labels(self.instance, self.pos, font_size=10, font_weight="bold")
         plt.title("Graph Coloring Problem Instance Visualization")
         plt.show()
 
     @staticmethod
-    def generate_graph_coloring_instance(num_vertices: int, edge_probability: int):
-        G = nx.gnp_random_graph(num_vertices, edge_probability)
-        return G
+    def generate_graph_coloring_instance(num_vertices: int, edge_probability: int, num_colors: int) -> "GraphColoring":
+        graph = nx.gnp_random_graph(num_vertices, edge_probability)
+        gc = GraphColoring(graph, num_colors=num_colors)
+        return gc
 
     @staticmethod
-    def randomly_choose_a_graph() -> nx.Graph:
+    def randomly_choose_a_graph(num_colors: int) -> "GraphColoring":
         graphs = nx.graph_atlas_g()
-        return graphs[randint(0, len(graphs) - 1)]
+        graph = graphs[randint(0, len(graphs) - 1)]
+        gc = GraphColoring(graph, num_colors=num_colors)
+        return gc

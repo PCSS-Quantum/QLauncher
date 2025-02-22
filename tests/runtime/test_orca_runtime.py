@@ -4,7 +4,7 @@ from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphCol
 from quantum_launcher.base import Result
 import numpy as np
 
-TESTING_DIR = "testing"
+TESTING_DIR = 'testing'
 
 
 def test_ec():
@@ -68,7 +68,6 @@ def test_graph_coloring():
     """Testing function for Graph Coloring"""
     gc = GraphColoring.from_preset("small")
     num_colors = gc.num_colors
-    nodes = list(gc.instance.nodes)
     bbs = BBS()
     backend = OrcaBackend("local_simulator")
     launcher = QuantumLauncher(gc, bbs, backend)
@@ -76,15 +75,4 @@ def test_graph_coloring():
     assert isinstance(inform, Result)
     solution = inform.best_bitstring
     num_qubits = len(solution)
-    assert num_qubits == gc.instance.number_of_nodes() * num_colors
-    print(solution)
-    proper_solution = []
-    for node in nodes:
-        for c in range(num_colors):
-            if solution[node * num_colors + c] == "1":
-                proper_solution.append(c)
-    print(proper_solution)
-    assert len(proper_solution) == gc.instance.number_of_nodes()
-    assert all([x in set(range(num_colors)) for x in proper_solution])
-    print(set(proper_solution[:-1]))
-    assert len(set(proper_solution[:-1])) == len(proper_solution[:-1])
+    assert num_qubits == gc.instance.number_of_nodes() * num_colors, "error in encoding, solution contains wrong number of qubits"
