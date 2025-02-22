@@ -24,7 +24,7 @@ class JobManager:
             manager = LocalManager()
         self.manager = manager
 
-    def count_not_finished(self) -> int:
+    def _count_not_finished(self) -> int:
         return len([job for job in self.jobs.values() if job.get('finished') is False])
 
     def submit(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores: Optional[int] = None) -> str:
@@ -43,8 +43,8 @@ class JobManager:
         """
         if cores is None:
             cores = max(1, self.manager.resources()['free_cores'])
-        job = self.prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend,
-                                       output=output_path, cores=cores)
+        job = self._prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend,
+                                        output=output_path, cores=cores)
         job_id = self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
         return job_id
 
@@ -67,7 +67,7 @@ class JobManager:
             return []
         qcg_jobs = Jobs()
         for _ in range(free_cores//cores_per_job):
-            job = self.prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path, cores=cores_per_job)
+            job = self._prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path, cores=cores_per_job)
             qcg_jobs.add(**job.get('qcg_args'))
         return self.manager.submit(qcg_jobs)
 
@@ -86,7 +86,7 @@ class JobManager:
             tuple[str, str]: job_id, job's status
         """
         if job_id is None:
-            if self.count_not_finished() <= 0:
+            if self._count_not_finished() <= 0:
                 raise ValueError("There are no jobs left")
             job_id, state = self.manager.wait4_any_job_finish(timeout)
         elif job_id in self.jobs:
@@ -97,8 +97,8 @@ class JobManager:
         self.jobs[job_id]['finished'] = True
         return job_id, state
 
-    def prepare_ql_dill_job(self, problem: Problem, algorithm: Algorithm, backend: Backend,
-                            output: str, cores: int = 1) -> dict:
+    def _prepare_ql_dill_job(self, problem: Problem, algorithm: Algorithm, backend: Backend,
+                             output: str, cores: int = 1) -> dict:
         job_uid = f'{len(self.jobs):05d}'
         output_file = os.path.abspath(f'{output}output.{job_uid}')
         launcher = QuantumLauncher(problem, algorithm, backend)
@@ -120,19 +120,34 @@ class JobManager:
         self.jobs[job_uid] = job
         return job
 
-    def read_results(self, job_id) -> Result:
+    def read_results(self, job_id: str) -> Result:
+        """
+        Reads the result of given job_id.
+
+        Args:
+            job_id (str): Job Id.
+
+        Returns:
+            Result: Result of selected Job.
+        """
         output_path = self.jobs[job_id]['output_file']
         with open(output_path, 'rb') as rt:
             results = pickle.load(rt)
         return results
 
     def clean_up(self):
+        """
+        Removes all output files generated in the process and calls self.manager.cleanup().
+        """
         for job in self.jobs.values():
             os.remove(job['output_file'])
         if isinstance(self.manager, LocalManager):
             self.manager.cleanup()
 
     def stop(self):
+        """
+        Stops the manager process.
+        """
         self.manager.cancel(self.jobs)
         self.manager.finish()
 
