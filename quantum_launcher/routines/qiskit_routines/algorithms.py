@@ -331,8 +331,8 @@ class EducatedGuess(Algorithm):
         self.p_init = starting_p
         self.p_max = max_p
         self.verbose = verbose
-        self.failed_jobs = None
-        self.min_energy = None
+        self.failed_jobs = 0
+        self.min_energy = math.inf
         self.manager = JobManager()
         self.best_job_id = ''
 
@@ -341,15 +341,13 @@ class EducatedGuess(Algorithm):
         self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial)
         print(f'{len(self.manager.jobs)} jobs submitted to qcg')
 
-        self.failed_jobs = False
-        self.min_energy = math.inf
         found_optimal_params = False
 
         while not found_optimal_params:
             jobid, state = self.manager.wait_for_a_job()
 
             if state != 'SUCCEED':
-                self.failed_jobs = True
+                self.failed_jobs += 1
                 continue
             has_potential, energy = self.process_job(jobid, self.p_init, self.min_energy, compare_factor=0.99)
             if has_potential:
@@ -370,7 +368,7 @@ class EducatedGuess(Algorithm):
                                              backend, output_path=self.output_interpolated)
             _, state = self.manager.wait_for_a_job(new_job_id)
             if state != 'SUCCEED':
-                self.failed_jobs = True
+                self.failed_jobs += 1
                 return False
             has_potential, new_energy = self.process_job(new_job_id, p, previous_energy)
             if has_potential:

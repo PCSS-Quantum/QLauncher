@@ -1,7 +1,7 @@
 import os
 import pickle
 import sys
-from typing import Optional
+from typing import List, Optional
 import dill
 from qcg.pilotjob.api.job import Jobs
 from qcg.pilotjob.api.manager import LocalManager, Manager
@@ -27,27 +27,53 @@ class JobManager:
     def count_not_finished(self) -> int:
         return len([job for job in self.jobs.values() if job.get('finished') is False])
 
-    def submit(self, problem: Problem, algorithm, backend, output_path: str):
-        free_cores = self.manager.resources()['free_cores']
-        number_of_cores = max(1, free_cores)
+    def submit(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores: Optional[int] = None) -> str:
+        """
+        Submits Quantum Launcher job to the scheduler
+
+        Args:
+            problem (Problem): Problem.
+            algorithm (Algorithm): Algorithm.
+            backend (Backend): Backend.
+            output_path (str): Path of output file.
+            cores (Optional[int], optional): Number of cores per task, if None value set to number of free cores (at least 1). Defaults to None.
+
+        Returns:
+            str: Job Id.
+        """
+        if cores is None:
+            cores = max(1, self.manager.resources()['free_cores'])
         job = self.prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend,
-                                       output=output_path, cores=number_of_cores)
+                                       output=output_path, cores=cores)
         job_id = self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
         return job_id
 
-    def submit_many(self, problem, algorithm, backend, output_path: str):
+    def submit_many(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores_per_job: int = 1) -> List[str]:
+        """
+        Submits as many jobs as there are currently available cores.
+
+        Args:
+            problem (Problem): Problem.
+            algorithm (Algorithm): Algorithm.
+            backend (Backend): Backend.
+            output_path (str): Path of output file.
+            cores_per_job (int, optional): Number of cores per job. Defaults to 1.
+
+        Returns:
+            List[str]: List with Job Id's.
+        """
         free_cores = self.manager.resources()['free_cores']
         if free_cores == 0:
-            return
+            return []
         qcg_jobs = Jobs()
-        for _ in range(free_cores):
-            job = self.prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path)
+        for _ in range(free_cores//cores_per_job):
+            job = self.prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path, cores=cores_per_job)
             qcg_jobs.add(**job.get('qcg_args'))
         return self.manager.submit(qcg_jobs)
 
     def wait_for_a_job(self, job_id: Optional[str] = None, timeout: Optional[int | float] = None) -> tuple[str, str]:
         """
-        Wait's for job to finished and returns it's id and status
+        Waits for a job to finish and returns it's id and status.
 
         Args:
             job_id (Optional[str], optional): Id of selected job, if None waiting for any job. Defaults to None.
