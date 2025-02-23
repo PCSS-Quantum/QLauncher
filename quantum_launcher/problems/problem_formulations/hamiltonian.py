@@ -258,13 +258,12 @@ def get_qiskit_hamiltonian(problem: problems.GraphColoring):
     color_bit_length = int(np.ceil(np.log2(problem.num_colors)))
     num_qubits = problem.instance.number_of_nodes() * color_bit_length
     eq = Equation(num_qubits)
-    H = Equation(num_qubits)
     # Penalty for assigning the same colors to neighboring vertices
     for node1, node2 in problem.instance.edges:
         for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
             if ind >= problem.num_colors:
                 break
-            H2 = None
+            eq2 = None
             for i in range(color_bit_length):
                 qubit1 = eq[node1 * color_bit_length + i]
                 qubit2 = eq[node2 * color_bit_length + i]
@@ -272,11 +271,11 @@ def get_qiskit_hamiltonian(problem: problems.GraphColoring):
                     exp = qubit1 & qubit2
                 else:
                     exp = ~qubit1 & ~qubit2
-                if H2 is None:
-                    H2 = exp
+                if eq2 is None:
+                    eq2 = exp
                 else:
-                    H2 &= exp
-            H += H2
+                    eq2 &= exp
+            eq += eq2
     # Penalty for using excessive colors
     share_of_unused_colors = (2**color_bit_length - problem.num_colors)/(2**color_bit_length)
     penalty_coefficient = share_of_unused_colors*problem.instance.number_of_nodes()
@@ -284,14 +283,14 @@ def get_qiskit_hamiltonian(problem: problems.GraphColoring):
         for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
             if ind < problem.num_colors:
                 continue
-            H2 = None
+            eq2 = None
             for i in range(color_bit_length):
                 qubit = eq[node * color_bit_length + i]
                 exp = qubit if comb[i] else ~qubit
-                if H2 is None:
-                    H2 = exp
+                if eq2 is None:
+                    eq2 = exp
                 else:
-                    H2 &= exp
-            H += H2 * penalty_coefficient
+                    eq2 &= exp
+            eq += eq2 * penalty_coefficient
             # TODO parametrize constraint coefficient
-    return H.hamiltonian
+    return eq.hamiltonian

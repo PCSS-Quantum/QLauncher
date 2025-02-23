@@ -16,8 +16,7 @@ class GraphColoring(Problem):
         instance (nx.Graph): The graph for which the coloring problem is to be solved.
 
     Methods:
-        visualize(): draws problem instance as graph
-        visualize_solution(solution): draws instance graph with proposed coloring
+        visualize(solution): draws problem instance as graph, optionally with proposed coloring
         generate_graph_coloring_instance(num_vertices, edge_probability): generates a random graph with given number of vertices and edge probability.
         randomly_choose_a_graph(): returns a random graph from the Graph Atlas with up to seven vertices.
     """
@@ -47,34 +46,22 @@ class GraphColoring(Problem):
             case "small":
                 graph = nx.Graph()
                 graph.add_edges_from([(0, 1), (1, 2), (0, 2), (3, 2)])
-                gc = GraphColoring(graph, instance_name=instance_name, num_colors=3)
-                return gc
+                return GraphColoring(graph, instance_name=instance_name, num_colors=3)
 
     @staticmethod
     def from_file(path: str) -> "GraphColoring":
         with open(path, 'rb') as f:
             graph, num_colors = pickle.load(f)
-        gc = GraphColoring(graph, instance_name=path, num_colors=num_colors)
-        return gc
+        return GraphColoring(graph, instance_name=path, num_colors=num_colors)
 
     def to_file(self, path: str):
         with open(path, 'wb') as f:
             pickle.dump((self.instance, self.num_colors), f, pickle.HIGHEST_PROTOCOL)
 
-    def set_instance(self, instance: nx.Graph | None = None, instance_name: str | None = None) -> None:
-        super().set_instance(instance, instance_name)
-        self.instance = instance
-        self.instance_name = instance_name
-        if instance is None:
-            match instance_name:
-                case "default":
-                    self.instance = nx.petersen_graph()
-                    self.pos = nx.shell_layout(self.instance, nlist=[list(range(5, 10)), list(range(5))])
-
     def _get_path(self) -> str:
         return f"{self.name}@{self.instance_name}"
 
-    def visualize_solution(self, solution: list[int] | None = None):
+    def visualize(self, solution: list[int] | None = None):
         if self.pos is None:
             self.pos = nx.spring_layout(self.instance)
         plt.figure(figsize=(8, 6))
@@ -90,12 +77,10 @@ class GraphColoring(Problem):
     @staticmethod
     def generate_graph_coloring_instance(num_vertices: int, edge_probability: int, num_colors: int) -> "GraphColoring":
         graph = nx.gnp_random_graph(num_vertices, edge_probability)
-        gc = GraphColoring(graph, num_colors=num_colors)
-        return gc
+        return GraphColoring(graph, num_colors=num_colors)
 
     @staticmethod
     def randomly_choose_a_graph(num_colors: int) -> "GraphColoring":
         graphs = nx.graph_atlas_g()
         graph = graphs[randint(0, len(graphs) - 1)]
-        gc = GraphColoring(graph, num_colors=num_colors)
-        return gc
+        return GraphColoring(graph, num_colors=num_colors)
