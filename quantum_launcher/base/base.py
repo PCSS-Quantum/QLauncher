@@ -131,6 +131,10 @@ class Problem(ABC):
             instance = pickle.load(f)
         return cls(instance)
 
+    @staticmethod
+    def from_preset(instance_name: str, **kwargs):
+        raise NotImplementedError()
+
     def __init_subclass__(cls) -> None:
         if Problem not in cls.__bases__:
             return

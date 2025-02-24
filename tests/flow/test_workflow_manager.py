@@ -1,7 +1,6 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.workflow import WorkflowManager
-from quantum_launcher.problems import Raw, MaxCut
-from quantum_launcher.routines import orca_routines
+from quantum_launcher.problems import MaxCut
 from quantum_launcher.base import Algorithm
 
 

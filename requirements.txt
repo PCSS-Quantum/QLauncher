@@ -3,6 +3,7 @@ numpy
 pandas
 numba
 matplotlib
+scipy
 
 # Qiskit
 qiskit
@@ -19,6 +20,10 @@ torch
 pyqubo
 dwave-ocean-sdk
 dwave-tabu
+
+# Scheduling
+qcg-pilotjob
+dill
 
 # Others
 pytest
