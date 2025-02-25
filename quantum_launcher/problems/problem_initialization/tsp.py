@@ -2,7 +2,6 @@ import networkx as nx
 
 import numpy as np
 
-from qiskit.quantum_info import Pauli, SparsePauliOp
 from qiskit_algorithms import SamplingMinimumEigensolverResult
 
 from quantum_launcher.base import Problem
@@ -60,7 +59,7 @@ class TSP(Problem):
         if isinstance(solution, list):
             chain = solution
         else:
-            chain = self.solution_to_node_chain(solution)
+            chain = self._solution_to_node_chain(solution)
 
         for i in range(len(chain) - 1):
             cost += self.instance[chain[i]][chain[i + 1]]["weight"]
@@ -71,7 +70,7 @@ class TSP(Problem):
         if isinstance(solution, list):
             chain = solution
         else:
-            chain = self.solution_to_node_chain(solution)
+            chain = self._solution_to_node_chain(solution)
 
         import matplotlib.pyplot as plt
 
