@@ -7,3 +7,5 @@ pandoc
 
 #Testing
 pytest
+pytest_httpx
+pytest-asyncio
