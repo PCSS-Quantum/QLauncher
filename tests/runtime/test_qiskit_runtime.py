@@ -1,9 +1,11 @@
+import numpy as np
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend, FALQON
-from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP
+from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
 from qiskit.quantum_info import SparsePauliOp
-TESTING_DIR = 'testing'
+
+TESTING_DIR = "testing"
 
 
 def test_ec():
@@ -93,3 +95,18 @@ def test_tsp():
     assignments = [bitstring[i:i+3] for i in range(0, len(bitstring), 3)]
     assert len(assignments) == 3
     assert set(assignments) == set(['001', '010', '100'])
+
+
+def test_graph_coloring():
+    """Testing function for Graph Coloring"""
+    gc = GraphColoring.from_preset("small")
+    num_colors = gc.num_colors
+    color_bit_length = int(np.ceil(np.log2(num_colors)))
+    qaoa = QAOA()
+    backend = QiskitBackend("local_simulator")
+    launcher = QuantumLauncher(gc, qaoa, backend)
+    inform = launcher.run()
+    assert isinstance(inform, Result)
+    bitstring = inform.best_bitstring
+    num_qubits = len(bitstring)
+    assert num_qubits == gc.instance.number_of_nodes() * color_bit_length, "error in encoding, solution contains wrong number of qubits"
