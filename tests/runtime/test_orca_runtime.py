@@ -53,11 +53,11 @@ def test_raw():
 
 def test_tsp():
     """ Testing function for TSP """
-    pr = TSP.generate_tsp_instance(
-        3, quadratic=True)  # Smaller sample size for testing
+    pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
     bbs = BBS()
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
 
-    inform = launcher.run()
+    inform = launcher.run(problem__quadratic=True)
+
     assert isinstance(inform, Result)
