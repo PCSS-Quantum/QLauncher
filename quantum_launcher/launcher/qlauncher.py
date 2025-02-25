@@ -73,7 +73,7 @@ class QuantumLauncher:
         else:
             warnings.warn(f'Attribute {attr} not found in {child.__class__}')
 
-    def _process_run_kwargs(self, **kwargs):
+    def _set_attributes_from_kwargs(self, **kwargs):
         for key, value in kwargs.items():
             if not re.match(r'\w+__\w+', key):
                 warnings.warn(f'Invalid parameter format: {key}.\nUse [problem | algorithm | backend]__<parameter_name> instead')
@@ -90,6 +90,9 @@ class QuantumLauncher:
                     warnings.warn(f'Invalid object: {obj}.\nUse [problem | algorithm | backend]__<parameter_name> instead')
 
     def _restore_child_attributes(self):
+        """
+        Restores all attributes changed by last call to _set_attributes_from_kwargs().
+        """
         for child, attrs in self.child_attributes.items():
             for attr, value in attrs.items():
                 setattr(child, attr, value)
@@ -103,10 +106,10 @@ class QuantumLauncher:
         Returns:
             dict: The results of the algorithm execution.
         """
-        self._process_run_kwargs(**kwargs)
+        self._set_attributes_from_kwargs(**kwargs)
         logging.info(f'Found proper formatter, with formatter structure: {self.formatter.__class__}')  # TODO: show formatter stacktrace
         self.result = self.algorithm.run(self.problem, self.backend, formatter=self.formatter)
-        logging.info(f'Algorithm ended successfully!')
+        logging.info('Algorithm ended successfully!')
         self._restore_child_attributes()
         return self.result
 
