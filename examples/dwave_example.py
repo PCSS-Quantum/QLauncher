@@ -1,5 +1,6 @@
 """ Quantum Launcher for Orca """
 from quantum_launcher import *
+from quantum_launcher import problems
 from quantum_launcher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
 
 
