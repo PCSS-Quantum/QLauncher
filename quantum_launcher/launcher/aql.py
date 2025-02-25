@@ -112,14 +112,15 @@ class AQLManager:
     ---
 
     Usage Example:
-    ```
-    with AQLManager('my_path') as launcher:
-        launcher.add()
-        launcher.add()
-        launcher.add()
-        result = aql.result
-    print(result)
-    ```
+    ::
+
+        with AQLManager('my_path') as launcher:
+            launcher.add()
+            launcher.add()
+            launcher.add()
+            result = aql.result
+        print(result)
+
     """
 
     def __init__(self, path: str = None):
