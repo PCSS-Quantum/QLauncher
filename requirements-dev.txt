@@ -1,5 +1,9 @@
+#Documentation build
 sphinx
 better-apidoc
 sphinx-book-theme
 myst_nb
 pandoc
+
+#Testing
+pytest
