@@ -1,5 +1,6 @@
 #Documentation build
 sphinx
+sphinx_copybutton
 better-apidoc
 sphinx-book-theme
 myst_nb

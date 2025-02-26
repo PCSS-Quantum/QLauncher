@@ -54,7 +54,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
-    "myst_nb",
+    'sphinx_copybutton',
+    'myst_nb',
 ]
 
 napoleon_use_param = False
@@ -62,7 +63,7 @@ napoleon_use_param = False
 viewcode_line_numbers = True
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '../tests']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'tests/*']
 
 
 # -- Options for HTML output -------------------------------------------------

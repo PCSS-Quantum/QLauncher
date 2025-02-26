@@ -109,18 +109,17 @@ class AQLManager:
     To save the results it's recommended to assign manager's variables to local ones, so they don't get destroyed.
 
 
-    ---
-
-    Usage Example:
+    Usage Example
+    -------------
     ::
-
+    
         with AQLManager('my_path') as launcher:
             launcher.add()
             launcher.add()
             launcher.add()
             result = aql.result
         print(result)
-
+    
     """
 
     def __init__(self, path: str = None):
