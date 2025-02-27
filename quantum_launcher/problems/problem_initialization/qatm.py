@@ -22,10 +22,6 @@ class QATM(Problem):
         instance_name (str | None): The name of the instance.
         instance_path (str): The path to the instance file.
 
-    Methods:
-        set_instance: Sets the instance of the problem.
-        read_instance: Reads the instance from a file.
-        analyze_result: Analyzes the result in terms of collisions and violations of onehot constraint.
     """
 
     def __init__(self, onehot: str, instance: any = None, instance_name: str | None = None,

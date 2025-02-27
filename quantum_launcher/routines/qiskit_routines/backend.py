@@ -34,9 +34,6 @@ class QiskitBackend(Backend):
         estimator (LocalEstimator): The estimator used for estimation.
         optimizer (Optimizer): The optimizer used for optimization.
 
-    Methods:
-        setup() -> dict: Returns a dictionary with the setup information of the backend.
-        _set_primitives_on_backend_name() -> None: Sets the appropriate primitives based on the backend name.
     """
 
     def __init__(self, name: Literal['local_simulator', 'backendv1v2_simulator'], session: Session = None, options: Options = None, backendv1v2: BackendV1 | BackendV2 = None) -> None:
