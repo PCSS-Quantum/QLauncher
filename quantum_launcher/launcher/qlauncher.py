@@ -4,7 +4,7 @@ import re
 import warnings
 import pickle
 from typing import List, Literal, Optional, Union, Callable
-from quantum_launcher.base.adapter_structure import get_formatter
+from quantum_launcher.base.adapter_structure import get_formatter, Formatter
 from quantum_launcher.base import Problem, Algorithm, Backend, Result
 from quantum_launcher.problems import Raw
 import logging
@@ -56,8 +56,7 @@ class QuantumLauncher:
         self.problem: Problem = problem
         self.algorithm: Algorithm = algorithm
         self.backend: Backend = backend
-        self.formatter: Callable = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
-
+        self.formatter: Formatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
         self.child_attributes: dict = {}  # {child: {attr: value}}
 
         if logger is None:
@@ -106,11 +105,12 @@ class QuantumLauncher:
         Returns:
             dict: The results of the algorithm execution.
         """
-        self._set_attributes_from_kwargs(**kwargs)
+        
+        for param,value in kwargs.items():
+            self.formatter.set_param(param, value)
         logging.info(f'Found proper formatter, with formatter structure: {self.formatter.__class__}')  # TODO: show formatter stacktrace
         self.result = self.algorithm.run(self.problem, self.backend, formatter=self.formatter)
         logging.info('Algorithm ended successfully!')
-        self._restore_child_attributes()
         return self.result
 
     def save(self, path: str, format: Literal['pickle', 'txt', 'json'] = 'pickle'):
