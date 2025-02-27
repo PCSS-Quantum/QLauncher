@@ -24,14 +24,8 @@ class QuantumLauncher:
         binding_params (dict or None): The parameters to be bound to the problem and algorithm. Defaults to None.
         encoding_type (type): The encoding type to be used changing the class of the problem. Defaults to None.
 
-    Methods:
-        _bind_parameters: Binds the specified parameters to the problem and algorithm.
-        _prepare_problem: Chooses a problem and binds parameters.
-        _run: Runs the algorithm on the problem.
-        process: Runs the algorithm, processes the results, and saves them if specified.
-
-
-        Example of usage:
+    Example of usage::
+    
             from templates import QuantumLauncher
             from problems import MaxCut
             from qiskit_routines import QAOA, QiskitBackend
@@ -54,7 +48,7 @@ class QuantumLauncher:
         self.algorithm: Algorithm = algorithm
         self.backend: Backend = backend
         if logger is None:
-            logger:logging.Logger = logging.getLogger('QuantumLauncher')
+            logger: logging.Logger = logging.getLogger('QuantumLauncher')
         self.logger = logger
         self.res: dict = {}
 
@@ -78,7 +72,7 @@ class QuantumLauncher:
                 pickle.dump(self.result, f)
         elif format == 'json':
             with open(path, mode='w', encoding='utf-8') as f:
-                json.dump(self.result, f, default=fix_json)
+                json.dump(self.result.__dict__, f, default=fix_json)
         elif format == 'txt':
             with open(path, mode='w', encoding='utf-8') as f:
                 f.write(self.result.__str__())

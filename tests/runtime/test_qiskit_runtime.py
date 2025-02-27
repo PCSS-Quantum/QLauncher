@@ -1,10 +1,10 @@
+import numpy as np
 from qiskit.quantum_info import SparsePauliOp
-
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend, FALQON
-from quantum_launcher.routines.cirq_routines import CirqBackend
-from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP
+from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
+from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
+
 TESTING_DIR = 'testing'
 
 
@@ -12,7 +12,7 @@ def test_ec():
     """ Testing function for Exact Cover """
     pr = EC.from_preset(onehot='exact', instance_name='micro')
     qaoa = QAOA(p=3)
-    backend = CirqBackend('local_simulator')
+    backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True, save_txt=True)
@@ -56,17 +56,6 @@ def test_maxcut():
     assert isinstance(results, Result)
 
 
-# def test_falqon():
-#     """ Testing function for Falqon, using Exact Cover """
-#     pr = EC('exact', instance_name='toy')
-#     falqon = FALQON()
-#     backend = QiskitBackend('local_simulator')
-#     launcher = QuantumLauncher(pr, falqon, backend)
-
-#     results = launcher.process(save_to_file=True)
-#     assert results is not None
-
-
 def test_raw():
     """ Testing function for Raw """
     hamiltonian = SparsePauliOp.from_list(
@@ -95,3 +84,18 @@ def test_tsp():
     assignments = [bitstring[i:i+3] for i in range(0, len(bitstring), 3)]
     assert len(assignments) == 3
     assert set(assignments) == set(['001', '010', '100'])
+
+
+def test_graph_coloring():
+    """Testing function for Graph Coloring"""
+    gc = GraphColoring.from_preset("small")
+    num_colors = gc.num_colors
+    color_bit_length = int(np.ceil(np.log2(num_colors)))
+    qaoa = QAOA()
+    backend = QiskitBackend("local_simulator")
+    launcher = QuantumLauncher(gc, qaoa, backend)
+    inform = launcher.run()
+    assert isinstance(inform, Result)
+    bitstring = inform.best_bitstring
+    num_qubits = len(bitstring)
+    assert num_qubits == gc.instance.number_of_nodes() * color_bit_length, "error in encoding, solution contains wrong number of qubits"

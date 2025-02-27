@@ -1,5 +1,6 @@
 ''' Example of how Quantum Launcher works'''
 from quantum_launcher import *
+from quantum_launcher import problems
 from quantum_launcher.routines.qiskit_routines import QiskitBackend, QAOA
 
 

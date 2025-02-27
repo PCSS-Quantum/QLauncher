@@ -3,6 +3,7 @@ numpy
 pandas
 numba
 matplotlib
+scipy
 
 # Qiskit
 qiskit
@@ -23,6 +24,6 @@ pyqubo
 dwave-ocean-sdk
 dwave-tabu
 
-# Others
-pytest
-pytest_httpx
+# Scheduling
+qcg-pilotjob
+dill

@@ -62,9 +62,6 @@ class Backend:
         path (str | None): The path to the backend (optional).
         parameters (list): A list of parameters for the backend (optional).
 
-    Methods:
-        _get_path(): Returns the path to the backend.
-
     """
 
     def __init__(self, name: str, parameters: list = None) -> None:
@@ -94,16 +91,6 @@ class Problem(ABC):
         instance_name (str): The name of the instance.
         instance (any): An instance of the problem.
 
-    Methods:
-        set_instance(self, instance: any, instance_name: str | None = None) -> None:
-            Sets the instance of the problem.
-        read_instance(self, instance_path: str) -> None:
-            Reads the instance of the problem from a file.
-        read_result(self, exp, log_path) -> any:
-            Reads a result from a file.
-        analyze_result(self, result) -> None:
-            Analyzes the result.
-
     """
 
     _problem_id = None
@@ -112,7 +99,7 @@ class Problem(ABC):
         """
         Initializes a Problem instance.
 
-        Args:
+        Params:
             instance (any): An instance of the problem.
             instance_name (str | None): The name of the instance.
 
@@ -130,6 +117,10 @@ class Problem(ABC):
         with open(path, 'rb') as f:
             instance = pickle.load(f)
         return cls(instance)
+
+    @staticmethod
+    def from_preset(instance_name: str, **kwargs):
+        raise NotImplementedError()
 
     def __init_subclass__(cls) -> None:
         if Problem not in cls.__bases__:

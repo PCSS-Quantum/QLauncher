@@ -12,6 +12,7 @@ def make_non_collision_hamiltonian(node_count: int, quadratic=False):
     """
     Creates a Hamiltonian representing constraints for the TSP problem. (Each node visited only once, one node per timestep)
     Qubit mapping: [step1:[node1, node2,... noden]],[step2],...[stepn]
+
     Args:
         node_count: Number of nodes in the TSP problem
         quadratic: Whether to encode as a QUBO problem

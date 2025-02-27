@@ -24,10 +24,6 @@ class JSSP(Problem):
         optimization_problem (bool): Flag indicating whether the problem is an optimization problem or a decision problem.
         results (dict): Dictionary to store the results of the problem instance.
 
-    Methods:
-        set_instance: Sets the problem instance manually.
-        read_instance: Reads the problem instance from a file.
-
     """
 
     def __init__(self, max_time: int, onehot: Literal['exact', 'quadratic'], instance: Dict[str, List[Tuple[str, int]]],

@@ -101,7 +101,7 @@ class AQL:
 
 class AQLManager:
     """
-    ### Context manager for asyncQuantumLauncher
+    Context manager for asyncQuantumLauncher
     Simplified high-level context manager to support asynchronous flow of asyncQuantumLauncher.
 
     Inside is only initialization and whole processing is done at the end.
@@ -109,17 +109,17 @@ class AQLManager:
     To save the results it's recommended to assign manager's variables to local ones, so they don't get destroyed.
 
 
-    ---
-
-    #### Usage Example:
-    ```
-    with AQLManager('my_path') as launcher:
-        launcher.add()
-        launcher.add()
-        launcher.add()
-        result = aql.result
-    print(result)
-    ```
+    Usage Example
+    -------------
+    ::
+    
+        with AQLManager('my_path') as launcher:
+            launcher.add()
+            launcher.add()
+            launcher.add()
+            result = aql.result
+        print(result)
+    
     """
 
     def __init__(self, path: str = None):

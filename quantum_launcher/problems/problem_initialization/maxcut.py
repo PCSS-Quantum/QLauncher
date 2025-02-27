@@ -16,8 +16,6 @@ class MaxCut(Problem):
     Attributes:
         instance (nx.Graph): The graph instance representing the problem.
 
-    Methods:
-        visualize()
     """
 
     def __init__(self, instance: nx.Graph, instance_name='unnamed'):
