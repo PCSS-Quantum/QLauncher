@@ -1,8 +1,10 @@
+from qiskit.quantum_info import SparsePauliOp
+
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend, FALQON
+from quantum_launcher.routines.cirq_routines import CirqBackend
 from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP
-from qiskit.quantum_info import SparsePauliOp
 TESTING_DIR = 'testing'
 
 
@@ -10,12 +12,12 @@ def test_ec():
     """ Testing function for Exact Cover """
     pr = EC.from_preset(onehot='exact', instance_name='micro')
     qaoa = QAOA(p=3)
-    backend = QiskitBackend('local_simulator')
+    backend = CirqBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
-    # inform = launcher.process(save_pickle=True, save_txt=True)
-    inform = launcher.run()
-    assert isinstance(inform, Result)
+    # results = launcher.process(save_pickle=True, save_txt=True)
+    results = launcher.run()
+    assert isinstance(results, Result)
 
 
 def test_qatm():
@@ -25,9 +27,9 @@ def test_qatm():
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
-    # inform = launcher.process(save_pickle=True)
-    inform = launcher.run()
-    assert isinstance(inform, Result)
+    # results = launcher.process(save_pickle=True)
+    results = launcher.run()
+    assert isinstance(results, Result)
 
 
 def test_jssp():
@@ -37,9 +39,9 @@ def test_jssp():
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
-    # inform = launcher.process(save_pickle=True)
-    inform = launcher.run()
-    assert isinstance(inform, Result)
+    # results = launcher.process(save_pickle=True)
+    results = launcher.run()
+    assert isinstance(results, Result)
 
 
 def test_maxcut():
@@ -49,9 +51,9 @@ def test_maxcut():
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
-    # inform = launcher.process(save_pickle=True)
-    inform = launcher.run()
-    assert isinstance(inform, Result)
+    # results = launcher.process(save_pickle=True)
+    results = launcher.run()
+    assert isinstance(results, Result)
 
 
 # def test_falqon():
@@ -61,8 +63,8 @@ def test_maxcut():
 #     backend = QiskitBackend('local_simulator')
 #     launcher = QuantumLauncher(pr, falqon, backend)
 
-#     inform = launcher.process(save_to_file=True)
-#     assert inform is not None
+#     results = launcher.process(save_to_file=True)
+#     assert results is not None
 
 
 def test_raw():
@@ -74,9 +76,9 @@ def test_raw():
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
-    inform = launcher.run()
-    assert inform is not None
-    bitstring = inform.best_bitstring
+    results = launcher.run()
+    assert results is not None
+    bitstring = results.best_bitstring
     assert bitstring in ['00', '01', '10', '11']
 
 
@@ -87,9 +89,9 @@ def test_tsp():
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
-    inform = launcher.run()
-    assert inform is not None
-    bitstring = inform.best_bitstring
+    results = launcher.run()
+    assert results is not None
+    bitstring = results.best_bitstring
     assignments = [bitstring[i:i+3] for i in range(0, len(bitstring), 3)]
     assert len(assignments) == 3
     assert set(assignments) == set(['001', '010', '100'])

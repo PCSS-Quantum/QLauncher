@@ -1,4 +1,4 @@
-from quantum_launcher.base.qasm_translator import QiskitTranslation, CirqTranslation, Translation
+from quantum_launcher.base.translator import QiskitTranslation, CirqTranslation, Translation
 import qiskit
 import cirq
 
