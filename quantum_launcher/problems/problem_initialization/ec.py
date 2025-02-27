@@ -21,10 +21,6 @@ class EC(Problem):
         instance_name (str | None): The name of the instance.
         instance_path (str): The path to the instance file.
 
-    Methods:
-        set_instance: Sets the instance of the problem.
-        read_instance: Reads the instance from a file.
-
     """
 
     def __init__(self, onehot: Literal['exact', 'quadratic'], instance: List[Set[int]] = None,

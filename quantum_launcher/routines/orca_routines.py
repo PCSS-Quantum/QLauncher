@@ -33,11 +33,6 @@ class BBS(Algorithm):
     - print_frequency (int): The frequency at which to print updates.
     - logger (Logger): The logger object for logging algorithm information.
 
-    Methods:
-    - __init__(self, learning_rate:float=1e-1, updates:int=80, tbi_loops:str='single-loop', print_frequency:int=20) -> None:
-        Initialize the BBS algorithm.
-    - run(self, problem: Problem, backend: OrcaBackend):
-        Run the BBS algorithm.
     """
     _algorithm_format = 'qubo'
 

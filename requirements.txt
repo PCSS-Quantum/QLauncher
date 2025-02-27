@@ -24,7 +24,3 @@ dwave-tabu
 # Scheduling
 qcg-pilotjob
 dill
-
-# Others
-pytest
-pytest_httpx

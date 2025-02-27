@@ -1,0 +1,12 @@
+#Documentation build
+sphinx
+sphinx_copybutton
+better-apidoc
+sphinx-book-theme
+myst_nb
+pandoc
+
+#Testing
+pytest
+pytest_httpx
+pytest-asyncio

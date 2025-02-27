@@ -1,4 +1,4 @@
-""" Module with functionalities for debugging hamiltonians and checking their boolean properties """
+""" Module with functionalities for debugging Hamiltonians and checking their boolean properties """
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 from typing import Union
