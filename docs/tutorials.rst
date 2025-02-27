@@ -8,4 +8,4 @@ This section contains several tutorials, that will help you to get started with 
 
    tutorials/hampy_tutorial
    tutorials/problem_types
-   tutorials/backends_algorithms
+   backends
