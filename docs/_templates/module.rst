@@ -9,7 +9,7 @@
 
 .. automodule:: {{ fullname }}
     {% if members -%}
-    :members: 
+    :members: {{ members|join(", ") }}
     :undoc-members:
     :show-inheritance:
     :member-order: bysource

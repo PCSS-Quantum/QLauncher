@@ -23,7 +23,7 @@ def run_apidoc(app):
         '-t',
         os.path.join('.', '_templates'),
         '--force',
-        '--separate',
+        #'--separate',
         '-o',
         os.path.join('.', 'API'),
         lib_path,  # Generate docs only for quantum_launcher/
@@ -49,6 +49,11 @@ release = version
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+suppress_warnings = [
+    'myst.header', # ipynb linter
+    'docutils' # rst linter
+]
+
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
@@ -63,7 +68,14 @@ napoleon_use_param = False
 viewcode_line_numbers = True
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'tests/*']
+exclude_patterns = [
+    '_build',
+    'Thumbs.db',
+    '.DS_Store',
+    'tests/*',
+    '*.md',
+    'API/modules.rst'
+    ]
 
 
 # -- Options for HTML output -------------------------------------------------

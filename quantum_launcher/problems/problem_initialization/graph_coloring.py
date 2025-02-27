@@ -15,10 +15,7 @@ class GraphColoring(Problem):
     Attributes:
         instance (nx.Graph): The graph for which the coloring problem is to be solved.
 
-    Methods:
-        visualize(solution): draws problem instance as graph, optionally with proposed coloring
-        generate_graph_coloring_instance(num_vertices, edge_probability): generates a random graph with given number of vertices and edge probability.
-        randomly_choose_a_graph(): returns a random graph from the Graph Atlas with up to seven vertices.
+   
     """
 
     def __init__(

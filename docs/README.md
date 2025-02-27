@@ -3,11 +3,19 @@
 
 ## View documentation
 
-`serve.sh` will serve the documentation files on [localhost:8080](http://localhost:8080). It will also build the documentation automatically if no html files are found (you will need to manually rebuild on changes).
+```sh
+docs/serve.sh
+```
+
+will serve the documentation files on [localhost:8080](http://localhost:8080). It will also build the documentation automatically if no html files are found (you will need to manually rebuild on changes).
 
 ## Build
 
-`build.sh` will build the documentation.
+```sh
+docs/build.sh
+```
+
+will build the documentation.
 
 ## Requirements
 
