@@ -44,13 +44,13 @@ def adapter(translates_from: str, translates_to: str):
     return outer
 
 
-def formatter(problem: Problem, output_format: str):
+def formatter(problem: Problem, format: str):
     def wrapper(func):
         if isinstance(func, type):
             func = func()
             
         formatter_obj = Formatter(func)
-        __QL_ADAPTERS[problem][output_format] = formatter_obj 
+        __QL_ADAPTERS[problem][format] = formatter_obj 
         return formatter_obj 
     return wrapper
 

@@ -51,7 +51,6 @@ class QuantumLauncher:
         self.algorithm: Algorithm = algorithm
         self.backend: Backend = backend
         self.formatter: Formatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
-        self.child_attributes: dict = {}  # {child: {attr: value}}
 
         if logger is None:
             logger: logging.Logger = logging.getLogger('QuantumLauncher')

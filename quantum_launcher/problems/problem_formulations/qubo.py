@@ -6,6 +6,7 @@ from quantum_launcher.problems.problem_formulations.jssp.pyqubo_scheduler import
 import quantum_launcher.problems.problem_initialization as problem
 
 from quantum_launcher.base import formatter, adapter
+from quantum_launcher.base.adapter_structure import FormatterParams
 
 
 @adapter('qubo', 'qubo_fn')
@@ -17,7 +18,7 @@ def qubo_to_fn(qubo):
 
 
 @formatter(problem.MaxCut, 'qubo')
-def get_maxcut_qubo(problem: problem.MaxCut):
+def get_maxcut_qubo(problem: problem.MaxCut, params: FormatterParams = None):
     """ Returns Qubo function """
     n = len(problem.instance)
     Q = np.zeros((n, n))
@@ -76,7 +77,7 @@ class ECOrca:
         # Calculate instance size for training
         return len(problem.instance)
 
-    def __call__(self, problem: problem.EC):
+    def __call__(self, problem: problem.EC, params: FormatterParams = None):
         self.num_elements = self.calculate_num_elements(problem)
         self.len_routes = self.calculate_lengths_tab(problem)
         Q = np.zeros((len(problem.instance), len(problem.instance)))
@@ -139,7 +140,7 @@ class JSSPOrca:
         self.config['parameters']['job_shop_scheduler'] = {}
         self.config['parameters']['job_shop_scheduler']['problem_version'] = "optimization"
 
-    def __call__(self, problem: problem.JSSP):
+    def __call__(self, problem: problem.JSSP, params: FormatterParams = None):
         # Define the matrix Q used for QUBO
         self.config = {}
         self.instance_size = self.calculate_instance_size(problem)
@@ -165,12 +166,12 @@ class JSSPOrca:
 
 
 @formatter(problem.Raw, 'qubo')
-def get_raw_qubo(problem: problem.Raw):
+def get_raw_qubo(problem: problem.Raw, params: FormatterParams = None):
     return problem.instance
 
 
 @formatter(problem.GraphColoring, format='qubo')
-def get_graph_coloring_qubo(problem: problem.GraphColoring):
+def get_graph_coloring_qubo(problem: problem.GraphColoring, params: FormatterParams = None):
     """ Returns Qubo function """
     num_qubits = problem.instance.number_of_nodes() * problem.num_colors
     x = Array.create('x', shape=(problem.instance.number_of_nodes(), problem.num_colors), vartype='BINARY')
