@@ -1,4 +1,5 @@
 # from .launcher import QiskitProblem
+from itertools import product
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 from qiskit import QuantumCircuit
@@ -250,3 +251,46 @@ def get_qiskit_hamiltonian(self) -> SparsePauliOp:
 @formatter(problems.TSP, 'hamiltonian')
 def get_qiskit_hamiltonian(problem: problems.TSP) -> SparsePauliOp:
     return tsp_to_hamiltonian(problem, constraints_weight=max(2, 5*(len(problem.instance.nodes) - 3)))
+
+
+@formatter(problems.GraphColoring, 'hamiltonian')
+def get_qiskit_hamiltonian(problem: problems.GraphColoring):
+    color_bit_length = int(np.ceil(np.log2(problem.num_colors)))
+    num_qubits = problem.instance.number_of_nodes() * color_bit_length
+    eq = Equation(num_qubits)
+    # Penalty for assigning the same colors to neighboring vertices
+    for node1, node2 in problem.instance.edges:
+        for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
+            if ind >= problem.num_colors:
+                break
+            eq2 = None
+            for i in range(color_bit_length):
+                qubit1 = eq[node1 * color_bit_length + i]
+                qubit2 = eq[node2 * color_bit_length + i]
+                if comb[i]:
+                    exp = qubit1 & qubit2
+                else:
+                    exp = ~qubit1 & ~qubit2
+                if eq2 is None:
+                    eq2 = exp
+                else:
+                    eq2 &= exp
+            eq += eq2
+    # Penalty for using excessive colors
+    share_of_unused_colors = (2**color_bit_length - problem.num_colors)/(2**color_bit_length)
+    penalty_coefficient = share_of_unused_colors*problem.instance.number_of_nodes()
+    for node in problem.instance.nodes:
+        for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
+            if ind < problem.num_colors:
+                continue
+            eq2 = None
+            for i in range(color_bit_length):
+                qubit = eq[node * color_bit_length + i]
+                exp = qubit if comb[i] else ~qubit
+                if eq2 is None:
+                    eq2 = exp
+                else:
+                    eq2 &= exp
+            eq += eq2 * penalty_coefficient
+            # TODO parametrize constraint coefficient
+    return eq.hamiltonian
