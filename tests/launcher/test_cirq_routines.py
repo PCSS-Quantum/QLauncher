@@ -1,6 +1,6 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.problems import MaxCut
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
+from quantum_launcher.routines.qiskit_routines import QAOA
 from quantum_launcher.routines.cirq_routines import CirqBackend
 
 
