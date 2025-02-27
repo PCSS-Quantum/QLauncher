@@ -7,6 +7,7 @@
 import os
 import sys
 import tomllib
+import better_apidoc
 
 conf_path = os.path.dirname(os.path.abspath(__file__))
 project_path = os.path.dirname(conf_path)
@@ -16,7 +17,6 @@ sys.path.insert(0, project_path)
 
 def run_apidoc(app):
     """Generate API documentation"""
-    import better_apidoc
     better_apidoc.APP = app
     better_apidoc.main([
         'better-apidoc',
@@ -69,11 +69,15 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'tests/*']
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_book_theme'
-html_logo = '_static/mocklogo.png'
-html_show_sourcelink = False  # No option to show .rst source
 html_static_path = ['_static']
 html_css_files = ['css/custom.css']
+
+html_theme = 'sphinx_book_theme'
+html_logo = '_static/logo.png'
+html_favicon = "_static/favicon.png"
+
+html_show_sourcelink = False  # Disable option to show .rst source
+
 
 
 def setup(app):
