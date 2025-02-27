@@ -36,7 +36,10 @@ class Translation(ABC):
         """ Transpiles circuit into given languages basis_gates, translates it to qasm, and from qasm into desired languages object. """
         circuit_qasm_translator = Translation.object_map[circuit.__class__]
         qasm_circuit_translator = Translation.translation_map[language]
-        transpiled_circuit = decompose_for_cirq(circuit, qasm_circuit_translator.basis_gates)
+        if isinstance(circuit, qiskit.QuantumCircuit):
+            transpiled_circuit = transpile_circuit(circuit, qasm_circuit_translator.basis_gates)
+        else:
+            transpiled_circuit = circuit  # Transpilation is usually not needed
         qasm = circuit_qasm_translator.to_qasm(transpiled_circuit)
         return qasm_circuit_translator.from_qasm(qasm)
 
@@ -67,7 +70,7 @@ class QiskitTranslation(Translation):
         return qiskit.QuantumCircuit.from_qasm_str(qasm)
 
 
-def decompose_for_cirq(qc: qiskit.QuantumCircuit, basis_gates: list[str]) -> qiskit.QuantumCircuit:
+def transpile_circuit(qc: qiskit.QuantumCircuit, basis_gates: list[str]) -> qiskit.QuantumCircuit:
     """Makes circuit compatible with cirq
 
     Args:
