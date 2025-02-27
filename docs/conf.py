@@ -23,7 +23,7 @@ def run_apidoc(app):
         '-t',
         os.path.join('.', '_templates'),
         '--force',
-        #'--separate',
+        '--separate',
         '-o',
         os.path.join('.', 'API'),
         lib_path,  # Generate docs only for quantum_launcher/
