@@ -9,23 +9,23 @@ TESTING_DIR = 'testing'
 
 def test_ec():
     """ Testing function for Exact Cover """
-    pr = EC.from_preset(onehot='quadratic', instance_name='toy')
+    pr = EC.from_preset(instance_name='toy')
     solver = DwaveSolver(1)
     backend = SimulatedAnnealingBackend()
     launcher = QuantumLauncher(pr, solver, backend)
 
-    inform = launcher.run()
+    inform = launcher.run(onehot='quadratic')
     assert inform is not None
 
 
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP.from_preset(max_time=3, onehot='quadratic', instance_name='toy', optimization_problem=True)
+    pr = JSSP.from_preset(max_time=3, instance_name='toy', optimization_problem=True)
     solver = DwaveSolver(1)
     backend = SimulatedAnnealingBackend()
     launcher = QuantumLauncher(pr, solver, backend)
 
-    inform = launcher.run()
+    inform = launcher.run(onehot='quadratic')
     assert inform is not None
 
 

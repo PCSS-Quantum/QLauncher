@@ -23,7 +23,7 @@ class EC(Problem):
 
     """
 
-    def __init__(self, onehot: Literal['exact', 'quadratic'], instance: List[Set[int]] = None,
+    def __init__(self, onehot: Literal['exact', 'quadratic'] = 'exact', instance: List[Set[int]] = None,
                  instance_name: str = 'unnamed') -> None:
         super().__init__(instance=instance, instance_name=instance_name)
         self.onehot = onehot

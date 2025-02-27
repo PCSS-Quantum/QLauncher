@@ -2,10 +2,11 @@ import numpy as np
 from qiskit_optimization.converters import QuadraticProgramToQubo
 from qiskit_optimization.translators import from_ising
 from quantum_launcher.base import adapter, formatter
-from typing import Tuple
+from typing import Tuple, Iterable
 import ast
 from pyqubo import Spin
 from quantum_launcher.problems.problem_initialization import Raw
+from quantum_launcher.base.adapter_structure import FormatterParams
 
 
 @adapter('qubo', 'bqm')
@@ -91,5 +92,5 @@ class QUBOMatrix:
 
 
 @formatter(Raw, 'bqm')
-def Rawbqm(problem: Raw):
+def Rawbqm(problem: Raw, params: FormatterParams = None):
     return problem.instance

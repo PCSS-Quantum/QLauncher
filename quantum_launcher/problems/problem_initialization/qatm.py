@@ -24,7 +24,7 @@ class QATM(Problem):
 
     """
 
-    def __init__(self, onehot: str, instance: any = None, instance_name: str | None = None,
+    def __init__(self, onehot: str = 'exact', instance: any = None, instance_name: str | None = None,
                  optimization_problem: bool = False) -> None:
         super().__init__(instance=instance, instance_name=instance_name)
         self.onehot = onehot

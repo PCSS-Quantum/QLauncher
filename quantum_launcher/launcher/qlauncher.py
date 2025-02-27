@@ -58,39 +58,6 @@ class QuantumLauncher:
 
         self.res: dict = {}
 
-    def _set_child_attr(self, child, attr, value):
-        if hasattr(child, attr):
-            self.child_attributes[child] = {attr: getattr(child, attr)}
-            setattr(child, attr, value)
-        else:
-            warnings.warn(f'Attribute {attr} not found in {child.__class__}')
-
-    def _set_attributes_from_kwargs(self, **kwargs):
-        for key, value in kwargs.items():
-            if not re.match(r'\w+__\w+', key):
-                warnings.warn(f'Invalid parameter format: {key}.\nUse [problem | algorithm | backend]__<parameter_name> instead')
-
-            obj, attr = key.split('__')
-            match obj:
-                case 'problem':
-                    self._set_child_attr(self.problem, attr, value)
-                case 'algorithm':
-                    self._set_child_attr(self.algorithm, attr, value)
-                case 'backend':
-                    self._set_child_attr(self.backend, attr, value)
-                case _:
-                    warnings.warn(f'Invalid object: {obj}.\nUse [problem | algorithm | backend]__<parameter_name> instead')
-
-    def _restore_child_attributes(self):
-        """
-        Restores all attributes changed by last call to _set_attributes_from_kwargs().
-        """
-        for child, attrs in self.child_attributes.items():
-            for attr, value in attrs.items():
-                setattr(child, attr, value)
-
-        self.child_attributes = {}
-
     def run(self, **kwargs) -> Result:
         """
         Finds proper formatter, and runs the algorithm on the problem with given backends.
@@ -101,6 +68,7 @@ class QuantumLauncher:
         
         for param,value in kwargs.items():
             self.formatter.set_param(param, value)
+            
         logging.info(f'Found proper formatter, with formatter structure: {self.formatter.__class__}')  # TODO: show formatter stacktrace
         self.result = self.algorithm.run(self.problem, self.backend, formatter=self.formatter)
         logging.info('Algorithm ended successfully!')

@@ -9,23 +9,23 @@ TESTING_DIR = 'testing'
 
 def test_ec():
     """ Testing function for Exact Cover """
-    pr = EC.from_preset(onehot='quadratic', instance_name='toy')
+    pr = EC.from_preset(instance_name='toy')
     bbs = BBS()
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
 
-    inform = launcher.run()
+    inform = launcher.run(onehot='quadratic')
     assert isinstance(inform, Result)
 
 
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP.from_preset(max_time=3, onehot='quadratic', instance_name='toy', optimization_problem=True)
+    pr = JSSP.from_preset(max_time=3, instance_name='toy', optimization_problem=True)
     bbs = BBS()
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
 
-    inform = launcher.run()
+    inform = launcher.run(onehot='quadratic')
     assert isinstance(inform, Result)
 
 
@@ -59,7 +59,7 @@ def test_tsp():
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
 
-    inform = launcher.run(problem__quadratic=True)
+    inform = launcher.run(onehot="quadratic")
 
     assert isinstance(inform, Result)
 

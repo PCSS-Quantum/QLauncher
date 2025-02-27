@@ -5,6 +5,8 @@ from quantum_launcher.problems import TSP
 
 from quantum_launcher.base.adapter_structure import Formatter
 
+import pytest
+
 
 def test_adapter_binding():
     problem = TSP.generate_tsp_instance(3)
@@ -16,7 +18,9 @@ def test_adapter_binding():
 
     inform = launcher.run(onehot="quadratic")  # This will fail if the parameter is not set by run()
 
-
+    with pytest.raises(Exception):
+        inform = launcher.run() # Should not keep past params
+        
 def test_formatter_binding():
     problem = TSP.generate_tsp_instance(3)
 
@@ -27,4 +31,4 @@ def test_formatter_binding():
     
     assert isinstance(launcher.formatter, Formatter)
 
-    inform = launcher.run(onehot="quadratic") 
+    inform = launcher.run() 
