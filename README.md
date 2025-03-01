@@ -40,9 +40,18 @@ pip install "git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0[qiskit]"
 
 to install all requirements necessary to run qiskit algorithms.
 
-## Supported backends
+## Supported problems, algorithms and backends
 
-Quantum Launcher was made to simplify using of multiple different backends, therefore adding new backends is relatively easy.
+Quantum Launcher was made to simplify using of multiple different problems, algorithms and backends, therefore adding new things is relatively easy.
+
+Supported problems:
+
+- MaxCut
+- Exact Cover
+- Job Shop Shedueling
+- Air Traffic Management
+- Traveling Salesman Problem
+- Graph Coloring
 
 For now supported backends are:
 
