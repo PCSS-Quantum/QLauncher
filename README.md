@@ -2,23 +2,23 @@
 
 ## About Project
 
-Quantum Launcher is a high-level python library simplifying process of running quantum algorithms. Library aims to make it easier to run, test, benchmark and optimize your quantum algorithms, by providing bunch of tools, that can work in almost any configuration.
+Quantum Launcher is a high-level Python library that simplifies the process of running quantum algorithms. The library aims to make it easier to run, test, benchmark, and optimize quantum algorithms by providing tools that work across diverse configurations.
 
-Library contains preset of problems and algorithms making it easier to benchmark one of them, without repeating the work multiple times (such as construction of problem's QUBO or Hamiltonian).
+The library contains a rich collection of preset problems and algorithms, eliminating the need to repeatedly implement foundational components such as problem-specific QUBO formulations or Hamiltonians. This approach significantly reduces the overhead when benchmarking different quantum approaches.
 
-Quantum Launcher tries to split currently most common quantum algorithm pipeline, by splitting it into 3 parts: Problem, Algorithm and Backend, and provide some universal interface for running them.
+Quantum Launcher introduces an intuitive architectural framework by dividing the quantum computation pipeline into three distinct components: Problem, Algorithm, and Backend. This separation creates a universal interface that allows researchers and developers to focus on specific aspects of quantum computation while maintaining compatibility across the entire ecosystem.
 
 ![Quantum Launcher](.figures/QL.png)
 
 ## Supported features
 
-Additionally to ability of quickly changing tested problem, algorithm or backend Quantum Launcher comes with bunch of useful features such as:
+Additionally to ability of quickly changing tested problem, algorithm or backend Quantum Launcher comes with a bunch of useful features such as:
 
 - Random problem instances generator.
-- Automatic translation between problem formulations (e.g. QUBO -> Hamiltonian)
+- Automatic translation between problem formulations (e.g. QUBO -> Hamiltonian).
 - QASM-based translation to match different frameworks (such as running qiskit's algorithm on cirq's computer).
 - Asynchronous architecture to execute problems either standalone or in a grid.
-- Access to more advances workflows with qcg-pilotjob.
+- Access to more advanced workflows with qcg-pilotjob.
 - Interface for simple profiling of algorithms.
 - Creation of more complex workflows using WorkflowManager enabling splitting algorithms across multiple devices.
 
@@ -84,7 +84,7 @@ launcher = QuantumLauncher(problem, algorithm, backend)
 result = launcher.run()
 ```
 
-What the best in our library is that for changing only the algorithm for such as Quantum Annealing from Dwave, you don't actually need to specify that MaxCut will need to give Qubo, as it's done behind the user view.
+A key advantage of our library is that changing algorithms (such as switching to Quantum Annealing from Dwave) doesn't require manually specifying that MaxCut needs to provide QUBO representation - this translation happens automatically behind the scenes.
 
 ```py
 # Necessary imports
