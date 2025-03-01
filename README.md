@@ -2,29 +2,25 @@
 
 ## About Project
 
-Quantum Launcher is a high-level python library that aims to simplify usage of different quantum algorithms. The goal is to make learning, using and benchmarking different quantum algorithms, hardware and problem formulations simpler.
+Quantum Launcher is a high-level python library simplifying process of running quantum algorithms. Library aims to make it easier to run, test, benchmark and optimize your quantum algorithms, by providing bunch of tools, that can work in almost any configuration.
 
-<h2 style="text-align:center;"> Main Idea </h2>
-Quantum Launcher splits solving problems on Quantum Machine into 3 main components:
+Library contains preset of problems and algorithms making it easier to benchmark one of them, without repeating the work multiple times (such as construction of problem's QUBO or Hamiltonian).
 
-- Problem: Formulation of the problem that we want to solve, for example: Maxcut or Exact Cover
-- Algorithm: Algorithm implementation that we want to use for solving problem, for example: QAOA, FALQON, BBS
-- Backend: The Hardware or local simulator that we want to use to execute our algorithm
+Quantum Launcher tries to split currently most common quantum algorithm pipeline, by splitting it into 3 parts: Problem, Algorithm and Backend, and provide some universal interface for running them.
 
 ![Quantum Launcher](.figures/QL.png)
 
-<h2 style="text-align:center;"> Supported Features </h2>
+## Supported features
 
-So far Quantum Launcher provides user with:
+Additionally to ability of quickly changing tested problem, algorithm or backend Quantum Launcher comes with bunch of useful features such as:
 
-- High-level architecture for executing problems
-- Set of predefined problems, algorithms, and backends
-- Automated processing of the problem
-- Asynchronous architecture to execute problems either standalone or in a grid
-
-Features planned to be implemented in feature:
-
-<h2 style="text-align:center;"> Installation and Examples </h2>
+- Random problem instances generator.
+- Automatic translation between problem formulations (e.g. QUBO -> Hamiltonian)
+- QASM-based translation to match different frameworks (such as running qiskit's algorithm on cirq's computer).
+- Asynchronous architecture to execute problems either standalone or in a grid.
+- Access to more advances workflows with qcg-pilotjob.
+- Interface for simple profiling of algorithms.
+- Creation of more complex workflows using WorkflowManager enabling splitting algorithms across multiple devices.
 
 ## Installation
 
