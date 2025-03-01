@@ -40,6 +40,12 @@ pip install "git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0[qiskit]"
 
 to install all requirements necessary to run qiskit algorithms.
 
+- **qiskit**: support for IBM's qiskit algorithms and backends.
+- **orca**: support for Orca Computing algorithms and backends **NOTE** library ptseries is not public therefore one needs to install it on it's own.
+- **dwave**: support for D-Wave Systems algorithms and backends.
+- **cirq**: support for Google's cirq backends.
+- **pilotjob**: support for advanced job scheduling using Quantum Launcher and QCG PilotJob for more complex algorithm.
+
 ## Supported problems, algorithms and backends
 
 Quantum Launcher was made to simplify using of multiple different problems, algorithms and backends, therefore adding new things is relatively easy.
