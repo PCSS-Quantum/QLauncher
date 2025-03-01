@@ -1,7 +1,7 @@
 import numpy as np
 from qiskit_optimization.converters import QuadraticProgramToQubo
 from qiskit_optimization.translators import from_ising
-from quantum_launcher.base import adapter, formatter
+from quantum_launcher.base import register_adapter, register_formatter
 from typing import Tuple, Iterable
 import ast
 from pyqubo import Spin
@@ -9,14 +9,14 @@ from quantum_launcher.problems.problem_initialization import Raw
 from quantum_launcher.base.adapter_structure import FormatterParams
 
 
-@adapter('qubo', 'bqm')
+@register_adapter('qubo', 'bqm')
 def qubo_to_bqm(qubo_with_offset) -> dict:
     qubo, offset = qubo_with_offset
     bqm, _ = QUBOMatrix(qubo, offset).qubo_matrix_into_bqm()
     return bqm
 
 
-@adapter('hamiltonian', 'qubo')
+@register_adapter('hamiltonian', 'qubo')
 def hamiltonian_to_qubo(hamiltonian) -> Tuple[np.ndarray, float]:
     qp = from_ising(hamiltonian)
     conv = QuadraticProgramToQubo()
@@ -91,6 +91,6 @@ class QUBOMatrix:
         return bqm, model
 
 
-@formatter(Raw, 'bqm')
+@register_formatter(Raw, 'bqm')
 def Rawbqm(problem: Raw, params: FormatterParams = None):
     return problem.instance

@@ -6,8 +6,8 @@ from qiskit import QuantumCircuit
 from qiskit_optimization.converters import QuadraticProgramToQubo
 from qiskit_optimization.translators import from_ising
 
-from quantum_launcher.base import formatter
-from quantum_launcher.base.adapter_structure import adapter, FormatterParams
+from quantum_launcher.base import register_formatter
+from quantum_launcher.base.adapter_structure import register_adapter, FormatterParams
 import quantum_launcher.problems.problem_initialization as problems
 import quantum_launcher.hampy as hampy
 from quantum_launcher.hampy import Equation, Variable
@@ -15,7 +15,7 @@ from quantum_launcher.hampy import Equation, Variable
 from quantum_launcher.problems.problem_formulations.hamiltonians.tsp import problem_to_hamiltonian as tsp_to_hamiltonian
 
 
-@adapter('hamiltonian', 'qubo')
+@register_adapter('hamiltonian', 'qubo')
 def hamiltonian_to_qubo(hamiltonian):
     qp = from_ising(hamiltonian)
     conv = QuadraticProgramToQubo()
@@ -43,7 +43,7 @@ def ring_ham(ring: set, n):
     return SparsePauliOp(total)
 
 
-@formatter(problems.EC, 'hamiltonian')
+@register_formatter(problems.EC, 'hamiltonian')
 class ECQiskit:
     def __call__(self, problem: problems.EC, params: FormatterParams = None) -> SparsePauliOp:
         """ generating hamiltonian"""
@@ -148,7 +148,7 @@ class ECQiskit:
         return mix_ham
 
 
-@formatter(problems.JSSP, 'hamiltonian')
+@register_formatter(problems.JSSP, 'hamiltonian')
 def get_qiskit_hamiltonian(problem: problems.JSSP, params: FormatterParams = None) -> SparsePauliOp:
     if problem.optimization_problem:
         return problem.h_o
@@ -156,7 +156,7 @@ def get_qiskit_hamiltonian(problem: problems.JSSP, params: FormatterParams = Non
         return problem.h_d
 
 
-@formatter(problems.MaxCut, 'hamiltonian')
+@register_formatter(problems.MaxCut, 'hamiltonian')
 def get_qiskit_hamiltonian(problem: problems.MaxCut, params: FormatterParams = None):
     ham = None
     n = problem.instance.number_of_nodes()
@@ -168,7 +168,7 @@ def get_qiskit_hamiltonian(problem: problems.MaxCut, params: FormatterParams = N
     return ham.hamiltonian.simplify()
 
 
-@formatter(problems.QATM, 'hamiltonian')
+@register_formatter(problems.QATM, 'hamiltonian')
 class QATMQiskit:
     def __call__(self, problem: problems.QATM, params: FormatterParams = None) -> SparsePauliOp:
         cm = problem.instance['cm']
@@ -242,12 +242,12 @@ class QATMQiskit:
         return qc
 
 
-@formatter(problems.Raw, 'hamiltonian')
+@register_formatter(problems.Raw, 'hamiltonian')
 def get_qiskit_hamiltonian(self, params: FormatterParams = None) -> SparsePauliOp:
     return self.instance
 
 
-@formatter(problems.TSP, 'hamiltonian')
+@register_formatter(problems.TSP, 'hamiltonian')
 def get_qiskit_hamiltonian(problem: problems.TSP, params: FormatterParams = None) -> SparsePauliOp:
     return tsp_to_hamiltonian(
         problem,
@@ -257,7 +257,7 @@ def get_qiskit_hamiltonian(problem: problems.TSP, params: FormatterParams = None
     )
 
 
-@formatter(problems.GraphColoring, 'hamiltonian')
+@register_formatter(problems.GraphColoring, 'hamiltonian')
 def get_qiskit_hamiltonian(problem: problems.GraphColoring, params: FormatterParams = None):
     color_bit_length = int(np.ceil(np.log2(problem.num_colors)))
     num_qubits = problem.instance.number_of_nodes() * color_bit_length

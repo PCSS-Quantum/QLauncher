@@ -4,7 +4,7 @@ import re
 import warnings
 import pickle
 from typing import List, Literal, Optional, Union, Callable
-from quantum_launcher.base.adapter_structure import get_formatter, Formatter
+from quantum_launcher.base.adapter_structure import get_formatter, ProblemFormatter
 from quantum_launcher.base import Problem, Algorithm, Backend, Result
 from quantum_launcher.problems import Raw
 import logging
@@ -26,7 +26,7 @@ class QuantumLauncher:
         encoding_type (type): The encoding type to be used changing the class of the problem. Defaults to None.
 
     Example of usage::
-    
+
             from templates import QuantumLauncher
             from problems import MaxCut
             from qiskit_routines import QAOA, QiskitBackend
@@ -50,7 +50,7 @@ class QuantumLauncher:
         self.problem: Problem = problem
         self.algorithm: Algorithm = algorithm
         self.backend: Backend = backend
-        self.formatter: Formatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
+        self.formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
 
         if logger is None:
             logger: logging.Logger = logging.getLogger('QuantumLauncher')
@@ -65,10 +65,10 @@ class QuantumLauncher:
         Returns:
             dict: The results of the algorithm execution.
         """
-        
-        for param,value in kwargs.items():
-            self.formatter.set_param(param, value)
-            
+
+        for param, value in kwargs.items():
+            self.formatter.set_run_param(param, value)
+
         logging.info(f'Found proper formatter, with formatter structure: {self.formatter.__class__}')  # TODO: show formatter stacktrace
         self.result = self.algorithm.run(self.problem, self.backend, formatter=self.formatter)
         logging.info('Algorithm ended successfully!')

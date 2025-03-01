@@ -3,7 +3,7 @@ from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
 from quantum_launcher.problems import TSP
 
-from quantum_launcher.base.adapter_structure import Formatter
+from quantum_launcher.base.adapter_structure import ProblemFormatter
 
 import pytest
 
@@ -29,6 +29,6 @@ def test_formatter_binding():
 
     launcher = QuantumLauncher(problem, algorithm, backend)
     
-    assert isinstance(launcher.formatter, Formatter)
+    assert isinstance(launcher.formatter, ProblemFormatter)
 
     inform = launcher.run() 
