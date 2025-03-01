@@ -12,7 +12,8 @@ qiskit_ibm_runtime
 
 # Cirq
 cirq
-numpy==1.23.0 # necessary for cirq to work :(
+numpy<=1.26.0
+ply
 
 # AQT
 qiskit_aqt_provider

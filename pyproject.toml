@@ -7,11 +7,9 @@ requires-python = ">=3.11"
 dependencies = [
     "networkx",
     "notebook>=7.3.2",
-    "numpy>=2.0.0",
+    "numpy",
     "pandas",
     "pyqubo>=1.5.0",
-    "pytest",
-    "pytest-httpx>=0.35.0",
     "scipy",
 ]
 
@@ -23,5 +21,6 @@ include = ["quantum_launcher*"]
 qiskit = ["qiskit", "qiskit_algorithms", "qiskit_aqt_provider", "qiskit_ibm_runtime", "qiskit_optimization"]
 orca = ["numba==0.60.0", "torch", "matplotlib"]
 dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
-cirq = ["cirq>=0.5.556"]
+cirq = ["cirq>=1.4.1", "ply"]
 pilotjob = ["qcg-pilotjob", "dill>=0.3.0"]
+dev = ["pytest", "pytest-httpx>=0.35.0"]
