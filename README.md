@@ -1,10 +1,8 @@
-<h1 style="text-align:center;"> Quantum Launcher </h1>
+# Quantum Launcher
 
-<h2 style="text-align:center;"> About Project </h2>
+## About Project
 
-<p style="text-align:center;">
 Quantum Launcher is a high-level python library that aims to simplify usage of different quantum algorithms. The goal is to make learning, using and benchmarking different quantum algorithms, hardware and problem formulations simpler.
-</p>
 
 <h2 style="text-align:center;"> Main Idea </h2>
 Quantum Launcher splits solving problems on Quantum Machine into 3 main components:
@@ -13,7 +11,7 @@ Quantum Launcher splits solving problems on Quantum Machine into 3 main componen
 - Algorithm: Algorithm implementation that we want to use for solving problem, for example: QAOA, FALQON, BBS
 - Backend: The Hardware or local simulator that we want to use to execute our algorithm
 
-![Quantum Launcher](.figures/QCG-QL.png)
+![Quantum Launcher](.figures/QL.png)
 
 <h2 style="text-align:center;"> Supported Features </h2>
 
@@ -28,14 +26,79 @@ Features planned to be implemented in feature:
 
 <h2 style="text-align:center;"> Installation and Examples </h2>
 
+## Installation
+
 To install the following library use the following script:
 
 ```sh
 pip install git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0
 ```
 
-Then to run any of examples run following command:
+### Optional Installs
+
+Quantum Launcher aims to work for many different architectures. Therefore in order to compatible with all of them Quantum Launcher be default installs only necessary requirements allowing user to decide what frameworks does one want to use. To make installation easier, there is a bunch of downloads that can be done with optional dependencies, for example:
 
 ```sh
-python -m examples.qiskit_example
+pip install "git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0[qiskit]"
 ```
+
+to install all requirements necessary to run qiskit algorithms.
+
+## Supported backends
+
+Quantum Launcher was made to simplify using of multiple different backends, therefore adding new backends is relatively easy.
+
+For now supported backends are:
+
+- Qiskit
+- Orca Computing
+- D-wave
+- AQT
+- Cirq
+
+## Usage examples
+
+Main idea of the project was to give a user quick and high level access to many different problems, algorithms and backends keeping interface simple.
+For example to solve MaxCut problem with QAOA on qiskit simulator all you need to type is:
+
+```py
+# Necessary imports
+from quantum_launcher import QuantumLauncher
+from quantum_launcher.problems import MaxCut
+from quantum_launcher.routines.qiskit_routines import QiskitBackend, QAOA
+
+# Selecting problem, algorithm and backend
+problem = MaxCut.from_preset('default')
+algorithm = QAOA(p=3)
+backend = QiskitBackend('local_simulator')
+
+# Selecting launcher (Quantum Launcher by default, but other can be used for profiling/parallel processing)
+launcher = QuantumLauncher(problem, algorithm, backend)
+
+# Running the algorithm
+result = launcher.run()
+```
+
+What the best in our library is that for changing only the algorithm for such as Quantum Annealing from Dwave, you don't actually need to specify that MaxCut will need to give Qubo, as it's done behind the user view.
+
+```py
+# Necessary imports
+from quantum_launcher import QuantumLauncher
+from quantum_launcher.problems import MaxCut
+from quantum_launcher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
+
+# Selecting problem, algorithm and backend
+problem = MaxCut.from_preset('default')
+algorithm = DwaveSolver()
+backend = SimulatedAnnealingBackend('local_simulator')
+
+# Selecting launcher (Quantum Launcher by default, but other can be used for profiling/parallel processing)
+launcher = QuantumLauncher(problem, algorithm, backend)
+
+# Running the algorithm
+result = launcher.run()
+```
+
+## License
+
+This project uses the [To Be determined License](LICENSE).
