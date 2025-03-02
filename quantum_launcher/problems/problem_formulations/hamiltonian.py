@@ -157,7 +157,7 @@ def get_qiskit_hamiltonian(problem: problems.JSSP, params: FormatterParams = Non
 
 
 @register_formatter(problems.MaxCut, 'hamiltonian')
-def get_qiskit_hamiltonian(problem: problems.MaxCut, params: FormatterParams = None):
+def get_qiskit_hamiltonian(problem: problems.MaxCut):
     ham = None
     n = problem.instance.number_of_nodes()
     for edge in problem.instance.edges():
@@ -243,7 +243,7 @@ class QATMQiskit:
 
 
 @register_formatter(problems.Raw, 'hamiltonian')
-def get_qiskit_hamiltonian(self, params: FormatterParams = None) -> SparsePauliOp:
+def get_qiskit_hamiltonian(self) -> SparsePauliOp:
     return self.instance
 
 
@@ -283,7 +283,7 @@ def get_qiskit_hamiltonian(problem: problems.GraphColoring, params: FormatterPar
     eq *= params['constraint_weight']
     # Penalty for using excessive colors
     share_of_unused_colors = (2**color_bit_length - problem.num_colors)/(2**color_bit_length)
-    #penalty_coefficient = share_of_unused_colors*problem.instance.number_of_nodes()
+    # penalty_coefficient = share_of_unused_colors*problem.instance.number_of_nodes()
     for node in problem.instance.nodes:
         for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
             if ind < problem.num_colors:
