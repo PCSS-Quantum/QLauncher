@@ -3,6 +3,7 @@ numpy
 pandas
 numba
 matplotlib
+networkx
 scipy
 
 # Qiskit
