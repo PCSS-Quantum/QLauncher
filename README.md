@@ -32,7 +32,7 @@ pip install git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0
 
 ### Optional Installs
 
-Quantum Launcher aims to work for many different architectures. Therefore in order to compatible with all of them Quantum Launcher be default installs only necessary requirements allowing user to decide what frameworks does one want to use. To make installation easier, there is a bunch of downloads that can be done with optional dependencies, for example:
+Quantum Launcher aims to work for many different architectures. Therefore in order to remain compatible with all of them Quantum Launcher by default installs only necessary requirements allowing user to decide what frameworks does one want to use. To make installation easier, there is a bunch of downloads that can be done with optional dependencies, for example:
 
 ```sh
 pip install "git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0[qiskit]"
