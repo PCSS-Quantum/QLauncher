@@ -7,7 +7,7 @@ from qiskit_optimization.converters import QuadraticProgramToQubo
 from qiskit_optimization.translators import from_ising
 
 from quantum_launcher.base import register_formatter
-from quantum_launcher.base.adapter_structure import register_adapter, FormatterParams
+from quantum_launcher.base.adapter_structure import register_adapter
 import quantum_launcher.problems.problem_initialization as problems
 import quantum_launcher.hampy as hampy
 from quantum_launcher.hampy import Equation, Variable
@@ -45,7 +45,7 @@ def ring_ham(ring: set, n):
 
 @register_formatter(problems.EC, 'hamiltonian')
 class ECQiskit:
-    def __call__(self, problem: problems.EC, params: FormatterParams = None) -> SparsePauliOp:
+    def __call__(self, problem: problems.EC, onehot='exact') -> SparsePauliOp:
         """ generating hamiltonian"""
         elements = set().union(*problem.instance)
         onehots = []
@@ -57,9 +57,9 @@ class ECQiskit:
             onehots.append(ohs)
         hamiltonian = None
         for ohs in onehots:
-            if params['onehot'] == 'exact':
+            if onehot == 'exact':
                 part = (~hampy.one_in_n(list(ohs), len(problem.instance))).hamiltonian
-            elif params['onehot'] == 'quadratic':
+            elif onehot == 'quadratic':
                 part = hampy.one_in_n(list(ohs), len(problem.instance), quadratic=True).hamiltonian
 
             if hamiltonian is None:
@@ -149,7 +149,7 @@ class ECQiskit:
 
 
 @register_formatter(problems.JSSP, 'hamiltonian')
-def get_qiskit_hamiltonian(problem: problems.JSSP, params: FormatterParams = None) -> SparsePauliOp:
+def get_qiskit_hamiltonian(problem: problems.JSSP) -> SparsePauliOp:
     if problem.optimization_problem:
         return problem.h_o
     else:
@@ -170,17 +170,17 @@ def get_qiskit_hamiltonian(problem: problems.MaxCut):
 
 @register_formatter(problems.QATM, 'hamiltonian')
 class QATMQiskit:
-    def __call__(self, problem: problems.QATM, params: FormatterParams = None) -> SparsePauliOp:
+    def __call__(self, problem: problems.QATM, onehot='exact') -> SparsePauliOp:
         cm = problem.instance['cm']
         aircrafts = problem.instance['aircrafts']
 
         onehot_hamiltonian = None
         for plane, manouvers in aircrafts.groupby(by='aircraft'):
-            if params['onehot'] == 'exact':
+            if onehot == 'exact':
                 h = (~hampy.one_in_n(manouvers.index.values.tolist(), len(cm))).hamiltonian
-            elif params['onehot'] == 'quadratic':
+            elif onehot == 'quadratic':
                 h = hampy.one_in_n(manouvers.index.values.tolist(), len(cm), quadratic=True).hamiltonian
-            elif params['onehot'] == 'xor':
+            elif onehot == 'xor':
                 total = None
                 eq = Equation(len(cm))
                 for part in manouvers.index.values.tolist():
@@ -248,17 +248,17 @@ def get_qiskit_hamiltonian(self) -> SparsePauliOp:
 
 
 @register_formatter(problems.TSP, 'hamiltonian')
-def get_qiskit_hamiltonian(problem: problems.TSP, params: FormatterParams = None) -> SparsePauliOp:
+def get_qiskit_hamiltonian(problem: problems.TSP, onehot='exact', constraints_weight=1, costs_weight=1) -> SparsePauliOp:
     return tsp_to_hamiltonian(
         problem,
-        quadratic=params['onehot'] == 'quadratic',
-        constraints_weight=params['constraint_weight'],
-        costs_weight=params['optimization_weight'],
+        quadratic=onehot == 'quadratic',
+        constraints_weight=constraints_weight,
+        costs_weight=costs_weight
     )
 
 
 @register_formatter(problems.GraphColoring, 'hamiltonian')
-def get_qiskit_hamiltonian(problem: problems.GraphColoring, params: FormatterParams = None):
+def get_qiskit_hamiltonian(problem: problems.GraphColoring, constraints_weight=1, costs_weight=1):
     color_bit_length = int(np.ceil(np.log2(problem.num_colors)))
     num_qubits = problem.instance.number_of_nodes() * color_bit_length
     eq = Equation(num_qubits)
@@ -280,7 +280,7 @@ def get_qiskit_hamiltonian(problem: problems.GraphColoring, params: FormatterPar
                 else:
                     eq2 &= exp
             eq += eq2
-    eq *= params['constraint_weight']
+    eq *= constraints_weight
     # Penalty for using excessive colors
     share_of_unused_colors = (2**color_bit_length - problem.num_colors)/(2**color_bit_length)
     # penalty_coefficient = share_of_unused_colors*problem.instance.number_of_nodes()
@@ -298,5 +298,5 @@ def get_qiskit_hamiltonian(problem: problems.GraphColoring, params: FormatterPar
                     eq2 &= exp
             eq += eq2
             # TODO parametrize constraint coefficient
-    eq *= params['optimization_weight']
+    eq *= costs_weight
     return eq.hamiltonian

@@ -6,7 +6,6 @@ from typing import Tuple, Iterable
 import ast
 from pyqubo import Spin
 from quantum_launcher.problems.problem_initialization import Raw
-from quantum_launcher.base.adapter_structure import FormatterParams
 
 
 @register_adapter('qubo', 'bqm')
@@ -92,5 +91,5 @@ class QUBOMatrix:
 
 
 @register_formatter(Raw, 'bqm')
-def Rawbqm(problem: Raw, params: FormatterParams = None):
+def Rawbqm(problem: Raw):
     return problem.instance

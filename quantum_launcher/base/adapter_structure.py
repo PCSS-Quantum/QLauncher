@@ -3,30 +3,20 @@ from .base import Problem
 from typing import Dict, Callable, Any
 from inspect import signature
 import networkx as nx
+import warnings
 
-__QL_ADAPTERS: Dict[str, Dict[str, Callable]] = defaultdict(lambda: {})
-__QL_FORMATTERS: Dict[type, Dict[str, Callable]] = defaultdict(lambda: {})
+__QL_ADAPTERS: Dict[str, Dict[str, Callable]] = defaultdict(lambda: {})  # adapters[to][from]
+__QL_FORMATTERS: Dict[type, Dict[str, Callable]] = defaultdict(lambda: {})  # formatters[problem][format]
 
 
-class FormatterParams(dict):
-    DEFAULT_PARAMS = {
-        'onehot': 'exact',
-        'constraint_weight': 1,
-        'optimization_weight': 1
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._set_defaults()
-
-    def _set_defaults(self):
-        for key, value in self.DEFAULT_PARAMS.items():
-            self[key] = value
-
-    def __getitem__(self, key):
-        if key not in self.keys():
-            raise ValueError(f"Parameter {key} not found in formatter")
-        return super().__getitem__(key)
+def _get_callable_name(c: Callable) -> str:
+    """
+    Gets name of input callable, made it because callable classes don't have a __name__
+    """
+    try:
+        return c.__name__
+    except AttributeError:
+        return str(c.__class__)
 
 
 class ProblemFormatter:
@@ -42,18 +32,21 @@ class ProblemFormatter:
 
         self.formatter_sig = signature(self.formatter)
 
-        self.run_params = FormatterParams()
+        self.run_params = {}
 
     def _formatter_call(self, run_params, *args, **kwargs):
-        # Add params if a given formatter function supports them
-        if "params" in self.formatter_sig.parameters.keys():
-            return self.formatter(*args, params=run_params, **kwargs)
-        return self.formatter(*args, **kwargs)
+        params_used = {k: v for k, v in run_params.items() if k in self.formatter_sig.parameters}
+
+        unused_count = len(run_params) - len(params_used)
+        if unused_count > 0:
+            warnings.warn(
+                f"{unused_count} unused parameters. {_get_callable_name(self.formatter)} does not accept {[k for k in run_params if not k in params_used]}", Warning)
+        return self.formatter(*args, **kwargs, **params_used)
 
     def __call__(self, *args, **kwargs):
         # Reset bound params
         curr_run_params = dict(self.run_params)
-        self.run_params._set_defaults()
+        self.run_params = {}
 
         out = self._formatter_call(curr_run_params, *args, **kwargs)
         for adapter in self.adapters:
@@ -68,8 +61,8 @@ class ProblemFormatter:
         """
         return " -> ".join(
             [str(self.formatter_sig.parameters['problem'])] +
-            [self.formatter.__name__] +
-            [fn.__name__ for fn in self.adapters]
+            [_get_callable_name(self.formatter)] +
+            [_get_callable_name(fn) for fn in self.adapters]
         )
 
     def set_run_param(self, param: str, value: Any) -> None:
@@ -81,6 +74,16 @@ class ProblemFormatter:
             value: parameter value
         """
         self.run_params[param] = value
+
+    def set_run_params(self, params: dict[str, Any]) -> None:
+        """
+        Sets multiple parameters to be used during next conversion.
+
+        Args:
+            params: parameters to be set
+        """
+        for k, v in params.items():
+            self.set_run_param(k, v)
 
 
 def register_adapter(translates_from: str, translates_to: str) -> Callable:

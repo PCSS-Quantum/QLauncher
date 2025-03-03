@@ -66,10 +66,9 @@ class QuantumLauncher:
             dict: The results of the algorithm execution.
         """
 
-        for param, value in kwargs.items():
-            self.formatter.set_run_param(param, value)
+        self.formatter.set_run_params(kwargs)
 
-        logging.info(f'Found proper formatter, with formatter structure: {self.formatter.__class__}')  # TODO: show formatter stacktrace
+        logging.info(f'Found proper formatter, with formatter structure: {self.formatter.get_pipeline()}')
         self.result = self.algorithm.run(self.problem, self.backend, formatter=self.formatter)
         logging.info('Algorithm ended successfully!')
         return self.result
