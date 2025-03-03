@@ -6,7 +6,7 @@ import networkx as nx
 import warnings
 
 __QL_ADAPTERS: Dict[str, Dict[str, Callable]] = defaultdict(lambda: {})  # adapters[to][from]
-__QL_FORMATTERS: Dict[type, Dict[str, Callable]] = defaultdict(lambda: {})  # formatters[problem][format]
+__QL_FORMATTERS: Dict[type[Problem] | None, Dict[str, Callable]] = defaultdict(lambda: {})  # formatters[problem][format]
 
 
 def _get_callable_name(c: Callable) -> str:
@@ -105,7 +105,7 @@ def register_adapter(translates_from: str, translates_to: str) -> Callable:
     return decorator
 
 
-def register_formatter(problem: Problem, alg_format: str):
+def register_formatter(problem: type[Problem] | None, alg_format: str):
     """
     Register a function as a formatter for a given problem type to a given format.
 
@@ -124,7 +124,7 @@ def register_formatter(problem: Problem, alg_format: str):
     return decorator
 
 
-def _find_shortest_adapter_path(problem: Problem, alg_format: str) -> list[str] | None:
+def _find_shortest_adapter_path(problem: type[Problem], alg_format: str) -> list[str] | None:
     """
     Creates directed graph of possible conversions between formats and finds shortest path of formats between problem and alg_format.
 
@@ -140,10 +140,11 @@ def _find_shortest_adapter_path(problem: Problem, alg_format: str) -> list[str] 
             G.add_edge(in_form, out_form)
 
     path = nx.shortest_path(G, "__problem__", alg_format)
+    assert isinstance(path, list) or path is None, "Something went wrong in `nx.shortest_path`"
     return path
 
 
-def get_formatter(problem: Problem, alg_format: str) -> ProblemFormatter:
+def get_formatter(problem: type[Problem], alg_format: str) -> ProblemFormatter:
     """
     Creates a ProblemFormatter that converts a given Problem subclass into the requested format.
 
