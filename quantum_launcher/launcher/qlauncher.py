@@ -1,7 +1,5 @@
 """ File with templates """
 import json
-import re
-import warnings
 import pickle
 from typing import List, Literal, Optional, Union, Callable
 from quantum_launcher.base.adapter_structure import get_formatter, ProblemFormatter
@@ -56,6 +54,8 @@ class QuantumLauncher:
             logger: logging.Logger = logging.getLogger('QuantumLauncher')
         self.logger = logger
 
+        logging.info(f'Found proper formatter, with formatter structure: {self.formatter.get_pipeline()}')
+
         self.res: dict = {}
 
     def run(self, **kwargs) -> Result:
@@ -68,7 +68,6 @@ class QuantumLauncher:
 
         self.formatter.set_run_params(kwargs)
 
-        logging.info(f'Found proper formatter, with formatter structure: {self.formatter.get_pipeline()}')
         self.result = self.algorithm.run(self.problem, self.backend, formatter=self.formatter)
         logging.info('Algorithm ended successfully!')
         return self.result

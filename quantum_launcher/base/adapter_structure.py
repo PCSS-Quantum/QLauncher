@@ -60,7 +60,7 @@ class ProblemFormatter:
             String representing the conversion process: problem -> formatter -> adapters (if applicable)
         """
         return " -> ".join(
-            [str(self.formatter_sig.parameters['problem'])] +
+            [str(list(self.formatter_sig.parameters.keys())[0])] +
             [_get_callable_name(self.formatter)] +
             [_get_callable_name(fn) for fn in self.adapters]
         )

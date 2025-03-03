@@ -243,8 +243,8 @@ class QATMQiskit:
 
 
 @register_formatter(problems.Raw, 'hamiltonian')
-def get_qiskit_hamiltonian(self) -> SparsePauliOp:
-    return self.instance
+def get_qiskit_hamiltonian(problem: problems.Raw) -> SparsePauliOp:
+    return problem.instance
 
 
 @register_formatter(problems.TSP, 'hamiltonian')
