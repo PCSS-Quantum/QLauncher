@@ -95,14 +95,14 @@ class Equation:
     def __mul__(self, other: Union["Equation", float]) -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
-        if isinstance(other, float) or isinstance(other,int):
+        if isinstance(other, float) or isinstance(other, int):
             return Equation(float(other) * self.hamiltonian)
         return Equation(self.hamiltonian.compose(other.hamiltonian))
 
     def __rmul__(self, other: Union["Equation", float]) -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
-        if isinstance(other, float) or isinstance(other,int):
+        if isinstance(other, float) or isinstance(other, int):
             return Equation(float(other) * self.hamiltonian)
         return Equation(self.hamiltonian.compose(other.hamiltonian))
 
