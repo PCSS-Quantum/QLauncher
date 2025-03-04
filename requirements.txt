@@ -10,6 +10,11 @@ qiskit
 qiskit_optimization
 qiskit_ibm_runtime
 
+# Cirq
+cirq
+numpy<=1.26.0
+ply
+
 # AQT
 qiskit_aqt_provider
 
@@ -24,7 +29,3 @@ dwave-tabu
 # Scheduling
 qcg-pilotjob
 dill
-
-# Others
-pytest
-pytest_httpx

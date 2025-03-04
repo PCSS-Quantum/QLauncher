@@ -1,8 +1,9 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
-from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP
+from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
 from quantum_launcher.base import Result
 import numpy as np
+
 TESTING_DIR = 'testing'
 
 
@@ -61,3 +62,17 @@ def test_tsp():
 
     inform = launcher.run()
     assert isinstance(inform, Result)
+
+
+def test_graph_coloring():
+    """Testing function for Graph Coloring"""
+    gc = GraphColoring.from_preset("small")
+    num_colors = gc.num_colors
+    bbs = BBS()
+    backend = OrcaBackend("local_simulator")
+    launcher = QuantumLauncher(gc, bbs, backend)
+    inform = launcher.run()
+    assert isinstance(inform, Result)
+    solution = inform.best_bitstring
+    num_qubits = len(solution)
+    assert num_qubits == gc.instance.number_of_nodes() * num_colors, "error in encoding, solution contains wrong number of qubits"

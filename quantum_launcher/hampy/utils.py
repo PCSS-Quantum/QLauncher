@@ -1,3 +1,6 @@
+"""
+Utility functions for Hampy objects.
+"""
 from qiskit.quantum_info import Pauli, SparsePauliOp
 
 from quantum_launcher.hampy.object import Equation
@@ -8,7 +11,7 @@ def shift_affected_qubits(equation: Equation, shift: int) -> Equation:
     Shifts the qubits affected by the equation by the given amount, wrapping around if the index goes out of bounds.
 
     For each Pauli in the equation hamiltonian, shifts the Pauli string by the given amount.
-    i.e (shift = 1) IIII -> IIII, IZIZ -> ZIZI, etc. !Might be unwanted! ZIII -> IIIZ
+    i.e (shift = 1) IZIZ -> ZIZI, etc. !Might be unwanted! ZIII -> IIIZ
     Keeps the coefficients the same.
 
     Args:

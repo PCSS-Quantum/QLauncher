@@ -24,14 +24,8 @@ class QuantumLauncher:
         binding_params (dict or None): The parameters to be bound to the problem and algorithm. Defaults to None.
         encoding_type (type): The encoding type to be used changing the class of the problem. Defaults to None.
 
-    Methods:
-        _bind_parameters: Binds the specified parameters to the problem and algorithm.
-        _prepare_problem: Chooses a problem and binds parameters.
-        _run: Runs the algorithm on the problem.
-        process: Runs the algorithm, processes the results, and saves them if specified.
-
-
-        Example of usage:
+    Example of usage::
+    
             from templates import QuantumLauncher
             from problems import MaxCut
             from qiskit_routines import QAOA, QiskitBackend
