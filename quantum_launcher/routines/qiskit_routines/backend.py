@@ -1,7 +1,9 @@
 """ Backend Class for Qiskit Launcher """
+from overrides import override
+from typing import Literal
+
 from qiskit_algorithms.optimizers import COBYLA
 from qiskit.primitives import Sampler
-from typing import Literal
 from qiskit_aqt_provider import AQTProvider
 from qiskit_aqt_provider.primitives import AQTSampler, AQTEstimator
 from qiskit.primitives import StatevectorEstimator as LocalEstimator
@@ -19,6 +21,37 @@ from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapte
 
 
 class QiskitBackend(Backend):
+    """
+    Base class for backends compatible with qiskit
+    """
+
+    def __init__(self, name: Literal['local_simulator', 'backendv1v2_simulator'], options: Options = None, backendv1v2: BackendV1 | BackendV2 = None):
+        super().__init__(name)
+        self.options = options
+        self.backendv1v2 = backendv1v2
+        self.estimator: LocalEstimator = None
+        self.optimizer: Optimizer = None
+        self._samplerV1: SamplerV1 | None = None
+        self._set_primitives_on_backend_name()
+
+    @property
+    def samplerV1(self) -> Sampler:
+        if self._samplerV1 is None:
+            self._samplerV1 = SamplerV2Adapter(self.sampler)
+        return self._samplerV1
+
+    def _set_primitives_on_backend_name(self):
+        if self.name == 'local_simulator':
+            self.estimator = LocalEstimator()
+            self.sampler = LocalSampler()
+            self.optimizer = COBYLA()
+        elif self.name == 'backendv1v2_simulator':
+            self.estimator = BackendEstimator(backend=self.backendv1v2)
+            self.sampler = BackendSampler(backend=self.backendv1v2)
+            self.optimizer = COBYLA()
+
+
+class QiskitIBMBackend(QiskitBackend):
     """ 
     A class representing a local backend for Qiskit routines.
 
@@ -37,15 +70,10 @@ class QiskitBackend(Backend):
     """
 
     def __init__(self, name: Literal['local_simulator', 'backendv1v2_simulator'], session: Session = None, options: Options = None, backendv1v2: BackendV1 | BackendV2 = None) -> None:
-        super().__init__(name)
+        super().__init__(name, options, backendv1v2)
         self.session = session
-        self.options = options
-        self.backendv1v2 = backendv1v2
         self.primitive_strategy = None
         self.sampler = None
-        self.estimator: LocalEstimator = None
-        self.optimizer: Optimizer = None
-        self._samplerV1: SamplerV1 | None = None
         self._set_primitives_on_backend_name()
 
     @property
@@ -55,34 +83,25 @@ class QiskitBackend(Backend):
             'session': self.session
         }
 
-    @property
-    def samplerV1(self) -> Sampler:
-        if self._samplerV1 is None:
-            self._samplerV1 = SamplerV2Adapter(self.sampler)
-        return self._samplerV1
-
     def _set_primitives_on_backend_name(self) -> None:
-        if self.name == 'local_simulator':
-            self.estimator = LocalEstimator()
-            self.sampler = LocalSampler()
-            self.optimizer = COBYLA()
-        elif self.name == 'backendv1v2_simulator':
-            self.estimator = BackendEstimator(backend=self.backendv1v2)
-            self.sampler = BackendSampler(backend=self.backendv1v2)
-            self.optimizer = COBYLA()
-        elif self.session is None:
+        super()._set_primitives_on_backend_name()
+        if self.estimator is not None:
+            return  # super() method set appropriate primitives
+
+        if self.session is None:
             raise AttributeError(
                 'Please instantiate a session if using other backend than local')
         else:
-            self.estimator = Estimator(session=self.session, options=self.options)
-            self.sampler = Sampler(session=self.session, options=self.options)
+            self.estimator = Estimator(mode=self.session, options=self.options)
+            self.sampler = Sampler(mode=self.session, options=self.options)
             self.optimizer = SPSA()
 
 
 class AQTBackend(QiskitBackend):
     def __init__(self,
-                 name: Literal['local_simulator', 'backendv1v2_simulator'],
+                 name: Literal['local_simulator', 'backendv1v2_simulator', 'device'],
                  options: Options = None,
+                 backendv1v2: BackendV1 | BackendV2 = None,
                  token: str = None,
                  dotenv_path: str = None,
                  ) -> None:
@@ -92,19 +111,24 @@ class AQTBackend(QiskitBackend):
             self.provider = AQTProvider(token if token is not None else "DEFAULT_TOKEN", load_dotenv=False)
         else:
             self.provider = AQTProvider(load_dotenv=True, dotenv_path=dotenv_path)
-        super().__init__(name, options=options)
+        super().__init__(name, options=options, backendv1v2=backendv1v2)
 
+    @override
     def _set_primitives_on_backend_name(self) -> None:
         if self.name == 'local_simulator':
             self.name = self.provider.backends(backend_type='offline_simulator', name=r".*no_noise")[0].name
         elif self.name == 'backendv1v2_simulator':
+            if self.backendv1v2 is None:
+                raise ValueError("backendv1v2 should not be None when you plan on using it.")
+        elif self.name == 'device':
             available_online_backends = self.provider.backends(backend_type='device')
             if len(available_online_backends) == 0:
                 raise ValueError(f"No online backends available for token {self.provider.access_token[:5]}...")
             self.name = available_online_backends[0].name
 
-        backend = self.provider.get_backend(name=self.name)
-        self.backendv1v2 = backend
-        self.estimator = AQTEstimator(backend, options=self.options)
-        self.sampler = AQTSampler(backend, options=self.options)
+        if self.backendv1v2 is None:
+            self.backendv1v2 = self.provider.get_backend(name=self.name)
+
+        self.estimator = AQTEstimator(self.backendv1v2, options=self.options)
+        self.sampler = AQTSampler(self.backendv1v2, options=self.options)
         self.optimizer = COBYLA()

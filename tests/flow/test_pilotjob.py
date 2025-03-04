@@ -1,7 +1,7 @@
 from quantum_launcher.workflow.pilotjob_scheduler import JobManager
 from quantum_launcher import QuantumLauncher, Result
 from quantum_launcher.problems import MaxCut
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
+from quantum_launcher.routines.qiskit_routines import QAOA, QiskitIBMBackend
 from quantum_launcher.routines.qiskit_routines.algorithms import EducatedGuess
 import shutil
 import glob
@@ -24,7 +24,7 @@ def test_job_manager(tmp_path):
 
     problem = MaxCut.from_preset('default')
     algorithm = QAOA(p=1)
-    backend = QiskitBackend('local_simulator')
+    backend = QiskitIBMBackend('local_simulator')
 
     manager.submit(problem, algorithm, backend, f'{tmp_path}/')
     for _ in range(len(manager.jobs)):
@@ -48,7 +48,7 @@ def test_educated_guess(tmp_path):
     educated_guess.output_initial = f'{tmp_path}/'
     educated_guess.output_interpolated = f'{tmp_path}/'
     educated_guess.output = f'{tmp_path}/'
-    backend = QiskitBackend('local_simulator')
+    backend = QiskitIBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, educated_guess, backend)
 
     # inform = launcher.process(save_pickle=True)
