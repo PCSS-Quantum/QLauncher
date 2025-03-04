@@ -1,4 +1,5 @@
-""" _summary_
+"""
+Routine file for Cirq library
 """
 from typing import Literal
 from collections.abc import Sequence
