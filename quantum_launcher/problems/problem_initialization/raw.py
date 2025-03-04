@@ -1,5 +1,6 @@
 """ This module contains the Raw class."""
-from quantum_launcher.base import Problem, register_formatter
+from quantum_launcher.base import Problem, formatter
+
 
 class Raw(Problem):
     """
@@ -14,7 +15,7 @@ class Raw(Problem):
     Attributes:
         instance (any): Formulated problem instance.
     """
-    
+
     def __init__(self, instance: any = None, instance_name: str | None = None) -> None:
         super().__init__(instance=instance, instance_name=instance_name)
 

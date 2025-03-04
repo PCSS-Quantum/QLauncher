@@ -92,9 +92,8 @@ class QuantumLauncher:
         Runs the algorithm, processes the data, and saves the results if specified.
 
         Args:
-            file_path Optional[str]: Flag indicating whether to save the results to a file. Defaults to None.
-            format Union[Literal['pickle', 'txt', 'json'], List[Literal['pickle', 'txt', 'json']]]:
-                format in which file should be saved. Defaults to 'pickle'
+            file_path (Optional[str]): Flag indicating whether to save the results to a file. Defaults to None.
+            format (Union[Literal['pickle', 'txt', 'json'], List[Literal['pickle', 'txt', 'json']]]): Format in which file should be saved. Defaults to 'pickle'
 
         Returns:
             dict: The processed results.

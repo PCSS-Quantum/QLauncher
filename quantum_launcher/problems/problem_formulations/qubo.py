@@ -5,10 +5,10 @@ from pyqubo import Array
 from quantum_launcher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
 import quantum_launcher.problems.problem_initialization as problem
 
-from quantum_launcher.base import register_formatter, register_adapter
+from quantum_launcher.base import formatter, adapter
 
 
-@register_adapter('qubo', 'qubo_fn')
+@adapter('qubo', 'qubo_fn')
 def qubo_to_fn(qubo):
     # TODO check
     def qubo_fn(bin_vec):
@@ -16,7 +16,7 @@ def qubo_to_fn(qubo):
     return qubo_fn
 
 
-@register_formatter(problem.MaxCut, 'qubo')
+@formatter(problem.MaxCut, 'qubo')
 def get_maxcut_qubo(problem: problem.MaxCut):
     """ Returns Qubo function """
     n = len(problem.instance)
@@ -30,7 +30,7 @@ def get_maxcut_qubo(problem: problem.MaxCut):
     return Q, 0
 
 
-@register_formatter(problem.EC, 'qubo')
+@formatter(problem.EC, 'qubo')
 class ECOrca:
     gamma = 1
     delta = 0.05
@@ -91,7 +91,7 @@ class ECOrca:
         return Q, 0
 
 
-@register_formatter(problem.JSSP, 'qubo')
+@formatter(problem.JSSP, 'qubo')
 class JSSPOrca:
     gamma = 1
     lagrange_one_hot = 1
@@ -164,12 +164,12 @@ class JSSPOrca:
         return Q / max(np.max(Q), -np.min(Q)), 0
 
 
-@register_formatter(problem.Raw, 'qubo')
+@formatter(problem.Raw, 'qubo')
 def get_raw_qubo(problem: problem.Raw):
     return problem.instance
 
 
-@register_formatter(problem.GraphColoring, 'qubo')
+@formatter(problem.GraphColoring, 'qubo')
 def get_graph_coloring_qubo(problem: problem.GraphColoring):
     """ Returns Qubo function """
     num_qubits = problem.instance.number_of_nodes() * problem.num_colors

@@ -70,8 +70,8 @@ class ProblemFormatter:
         Sets a parameter to be used during next conversion.
 
         Args:
-            param: parameter key
-            value: parameter value
+            param (str): parameter key
+            value (str): parameter value
         """
         self.run_params[param] = value
 
@@ -80,19 +80,19 @@ class ProblemFormatter:
         Sets multiple parameters to be used during next conversion.
 
         Args:
-            params: parameters to be set
+            params (dict[str, Any]): parameters to be set
         """
         for k, v in params.items():
             self.set_run_param(k, v)
 
 
-def register_adapter(translates_from: str, translates_to: str) -> Callable:
+def adapter(translates_from: str, translates_to: str) -> Callable:
     """
     Register a function as an adapter from one problem format to another.
 
     Args:
-        translates_from: Input format
-        translates_to: Output format
+        translates_from (str): Input format
+        translates_to (str): Output format
 
     Returns:
         Same function
@@ -105,13 +105,13 @@ def register_adapter(translates_from: str, translates_to: str) -> Callable:
     return decorator
 
 
-def register_formatter(problem: type[Problem] | None, alg_format: str):
+def formatter(problem: type[Problem] | None, alg_format: str):
     """
     Register a function as a formatter for a given problem type to a given format.
 
     Args:
-        problem: Input problem type
-        alg_format: Output format
+        problem (type[Problem]): Input problem type
+        alg_format (str): Output format
 
     Returns:
         Same function
@@ -132,11 +132,11 @@ def _find_shortest_adapter_path(problem: type[Problem], alg_format: str) -> list
         List of formats or None if no path was found.
     """
     G = nx.DiGraph()
-    for problem_node in set(__QL_FORMATTERS[problem].keys()):
+    for problem_node in __QL_FORMATTERS[problem]:
         G.add_edge("__problem__", problem_node)
 
-    for out_form in set(__QL_ADAPTERS.keys()):
-        for in_form in set(__QL_ADAPTERS[out_form].keys()):
+    for out_form in __QL_ADAPTERS:
+        for in_form in __QL_ADAPTERS[out_form]:
             G.add_edge(in_form, out_form)
 
     path = nx.shortest_path(G, "__problem__", alg_format)
@@ -149,8 +149,8 @@ def get_formatter(problem: type[Problem], alg_format: str) -> ProblemFormatter:
     Creates a ProblemFormatter that converts a given Problem subclass into the requested format.
 
     Args:
-        problem: Input problem type
-        alg_format: Desired output format
+        problem (type[Problem]): Input problem type
+        alg_format (str): Desired output format
 
     Returns:
         ProblemFormatter meeting the desired criteria.
@@ -176,6 +176,6 @@ def get_formatter(problem: type[Problem], alg_format: str) -> ProblemFormatter:
     return ProblemFormatter(formatter, adapters)
 
 
-@register_formatter(None, 'none')
+@formatter(None, 'none')
 def default_formatter(problem: Problem):
     return problem.instance
