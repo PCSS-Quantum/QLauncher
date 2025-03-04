@@ -15,13 +15,13 @@ class Translation(ABC):
     """ Translation layer for circuits written in different languages """
     basis_gates: list[str] = []
     language: str = 'None'
-    circuit_object: type | None = None
-    translation_map: dict[str, "Translation"] = {}
-    object_map: dict[Any, "Translation"] = {}
+    circuit_object: type = type
+    language_name_mapping: dict[str, "Translation"] = {}
+    circuit_class_mapping: dict[type, "Translation"] = {}
 
     def __init_subclass__(cls):
-        Translation.translation_map[cls.language] = cls()
-        Translation.object_map[cls.circuit_object] = cls()
+        Translation.language_name_mapping[cls.language] = cls()
+        Translation.circuit_class_mapping[cls.circuit_object] = cls()
 
     @abstractmethod
     def to_qasm(self, circuit: Any) -> str:
@@ -34,8 +34,8 @@ class Translation(ABC):
     @staticmethod
     def get_translation(circuit: Any, language: str) -> Any:
         """ Transpiles circuit into given languages basis_gates, translates it to qasm, and from qasm into desired languages object. """
-        circuit_qasm_translator = Translation.object_map[circuit.__class__]
-        qasm_circuit_translator = Translation.translation_map[language]
+        circuit_qasm_translator = Translation.circuit_class_mapping[circuit.__class__]
+        qasm_circuit_translator = Translation.language_name_mapping[language]
         if isinstance(circuit, qiskit.QuantumCircuit):
             transpiled_circuit = transpile_circuit(circuit, qasm_circuit_translator.basis_gates)
         else:
