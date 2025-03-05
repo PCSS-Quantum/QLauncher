@@ -18,3 +18,4 @@ build
 uv.lock
 *.DS_Store
 .private
+.coverage

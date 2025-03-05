@@ -36,11 +36,14 @@ class BBS(Algorithm):
     """
     _algorithm_format = 'qubo'
 
-    def __init__(self, format: Literal['qubo', 'qubo_fn'] = 'qubo', **kwargs) -> None:
+    def __init__(self, format: Literal['qubo', 'qubo_fn'] = 'qubo', bbs_params: dict | None = None, training_params: dict | None = None, **kwargs) -> None:
         super().__init__()
         self._algorithm_format = format
-        self.kwargs = kwargs
         self.input_state = kwargs.get('input_state', None)
+
+        self.kwargs = kwargs
+        self.bbs_params = bbs_params if bbs_params is not None else dict()
+        self.training_params = training_params if training_params is not None else dict()
 
     def run(self, problem: Problem, backend: OrcaBackend, formatter: Callable[[Problem], np.ndarray]):
         # params = {"tbi_type": self.kwarga['tbi_type']}
@@ -56,9 +59,9 @@ class BBS(Algorithm):
             len(self.input_state),
             objective,
             self.input_state,
-            **self.kwargs
+            **self.bbs_params
         )
-        self.bbs.train(**self.kwargs)
+        self.bbs.train(**self.training_params)
 
         return self.construct_results(self.bbs)
 
