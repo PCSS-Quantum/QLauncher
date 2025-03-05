@@ -7,7 +7,7 @@ from quantum_launcher.routines.qiskit_routines.backend import AQTBackend
 import pytest
 
 
-class DummyProvider(AQTProvider):
+class DummyAQTProvider(AQTProvider):
     def backends(self, name=None, *, backend_type=None, workspace=None):
         if backend_type == "device":
             offline_no_noise = super().backends(name=r".*no_noise", backend_type="offline_simulator", workspace=workspace)[0]
@@ -50,7 +50,7 @@ def test_AQT_backend_online_device():
 
     backend = AQTBackend(token="test_token", name='local_simulator')
 
-    backend.provider = DummyProvider()
+    backend.provider = DummyAQTProvider()
     backend.name = 'device'
     backend._set_primitives_on_backend_name()
 

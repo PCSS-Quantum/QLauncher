@@ -22,10 +22,20 @@ from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapte
 
 class QiskitBackend(Backend):
     """
-    Base class for backends compatible with qiskit
+    Base class for backends compatible with qiskit.
+
+    Attributes:
+        name (str): The name of the backend.        
+        options (Options): The options for the backend.
+        backendv1v2 (BackendV1 | BackendV2 | None, optional): Predefined backend to use with name 'backendv1v2_simulator'
+        sampler (BaseSampler): The sampler used for sampling.
+        estimator (LocalEstimator): The estimator used for estimation.
+        optimizer (Optimizer): The optimizer used for optimization.
+
+
     """
 
-    def __init__(self, name: Literal['local_simulator', 'backendv1v2_simulator'], options: Options = None, backendv1v2: BackendV1 | BackendV2 = None):
+    def __init__(self, name: Literal['local_simulator', 'backendv1v2_simulator', 'device'], options: Options = None, backendv1v2: BackendV1 | BackendV2 | None = None):
         super().__init__(name)
         self.options = options
         self.backendv1v2 = backendv1v2
@@ -49,31 +59,29 @@ class QiskitBackend(Backend):
             self.estimator = BackendEstimator(backend=self.backendv1v2)
             self.sampler = BackendSampler(backend=self.backendv1v2)
             self.optimizer = COBYLA()
+        else:
+            self.estimator = None
+            self.sampler = None
+            self.optimizer = None
 
 
 class QiskitIBMBackend(QiskitBackend):
     """ 
-    A class representing a local backend for Qiskit routines.
-
-    This class extends the `Backend` and `QiskitRoutine` classes and provides functionality for a local backend.
-    It allows for setting up a session, options, and various primitives such as estimators, samplers, and optimizers.
+    An extension of QiskitBackend providing support for IBM sessions.
 
     Attributes:
-        name (str): The name of the backend.
         session (Session): The session associated with the backend.
-        options (Options): The options for the backend.
-        primitive_strategy: The strategy for selecting primitives based on the backend name.
-        sampler (BaseSampler): The sampler used for sampling.
-        estimator (LocalEstimator): The estimator used for estimation.
-        optimizer (Optimizer): The optimizer used for optimization.
-
     """
 
-    def __init__(self, name: Literal['local_simulator', 'backendv1v2_simulator'], session: Session = None, options: Options = None, backendv1v2: BackendV1 | BackendV2 = None) -> None:
+    def __init__(
+        self,
+        name: Literal['local_simulator', 'backendv1v2_simulator', 'device'],
+        options: Options = None,
+        backendv1v2: BackendV1 | BackendV2 = None,
+        session: Session = None,
+    ) -> None:
         super().__init__(name, options, backendv1v2)
         self.session = session
-        self.primitive_strategy = None
-        self.sampler = None
         self._set_primitives_on_backend_name()
 
     @property
@@ -98,13 +106,40 @@ class QiskitIBMBackend(QiskitBackend):
 
 
 class AQTBackend(QiskitBackend):
-    def __init__(self,
-                 name: Literal['local_simulator', 'backendv1v2_simulator', 'device'],
-                 options: Options = None,
-                 backendv1v2: BackendV1 | BackendV2 = None,
-                 token: str = None,
-                 dotenv_path: str = None,
-                 ) -> None:
+    """
+    An extension of QiskitBackend providing support for Alpine Quantum Technologies (AQT) devices.
+
+    Attributes:
+        token (str, optional): AQT token, used for authorization when using real device backends.
+        dotenv_path (str,optional): Path to a .env file containing the AQT token. (recommended to use)
+
+    Usage Example
+    -------------
+    ::
+
+        backend = AQTBackend(token="valid_token", name='device')
+
+    or
+    ::
+
+        backend = AQTBackend(dotenv_path="./.env", name='device')
+
+    with a .env file:
+    ::
+
+        AQT_TOKEN=valid_token
+
+
+    """
+
+    def __init__(
+        self,
+        name: Literal['local_simulator', 'backendv1v2_simulator', 'device'],
+        options: Options = None,
+        backendv1v2: BackendV1 | BackendV2 = None,
+        token: str = None,
+        dotenv_path: str = None,
+    ) -> None:
 
         # TODO: This will probably need to be updated to handle custom backend urls, when we get our own computer
         if dotenv_path is None:
