@@ -48,13 +48,12 @@ class QuantumLauncher:
         self.problem: Problem = problem
         self.algorithm: Algorithm = algorithm
         self.backend: Backend = backend
-        self.formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
 
         if logger is None:
             logger: logging.Logger = logging.getLogger('QuantumLauncher')
         self.logger = logger
 
-        logging.info(f'Found proper formatter, with formatter structure: {self.formatter.get_pipeline()}')
+        # logging.info(f'Found proper formatter, with formatter structure: {self.formatter.get_pipeline()}')
 
         self.res: dict = {}
 
@@ -66,9 +65,10 @@ class QuantumLauncher:
             dict: The results of the algorithm execution.
         """
 
-        self.formatter.set_run_params(kwargs)
+        formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
+        formatter.set_run_params(kwargs)
 
-        self.result = self.algorithm.run(self.problem, self.backend, formatter=self.formatter)
+        self.result = self.algorithm.run(self.problem, self.backend, formatter=formatter)
         logging.info('Algorithm ended successfully!')
         return self.result
 
