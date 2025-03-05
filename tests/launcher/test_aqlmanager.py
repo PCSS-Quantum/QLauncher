@@ -3,11 +3,9 @@ from quantum_launcher.problems import MaxCut, EC
 from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
 from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
-import asyncio
 import pytest
 
 
-@pytest.mark.asyncio
 def test_runtime():
     with AQLManager('test') as launcher:
         launcher.add(backend=SimulatedAnnealingBackend(),
@@ -18,7 +16,6 @@ def test_runtime():
     assert len(result) == 2
 
 
-@pytest.mark.asyncio
 def test_runtime_dwave():
     with AQLManager('test') as launcher:
         launcher.add(backend=SimulatedAnnealingBackend(),
@@ -37,7 +34,6 @@ def test_runtime_dwave():
         assert len(x) == 6 or len(x) == 2
 
 
-@pytest.mark.asyncio
 def test_runtime_qiskit():
     with AQLManager('test') as launcher:
         launcher.add(backend=QiskitBackend('local_simulator'),
@@ -55,10 +51,8 @@ def test_runtime_qiskit():
         assert len(x) == 6 or len(x) == 2
 
 
-@pytest.mark.asyncio
 def test_runtime_orca():
     # TODO Fix this test, it is not working as expected, it is not ending
-    return
     with AQLManager('test') as launcher:
         launcher.add(backend=OrcaBackend('local'),
                      algorithm=BBS(), problem=MaxCut.from_preset(instance_name='default'))
