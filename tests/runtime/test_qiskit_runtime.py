@@ -2,7 +2,7 @@ import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitIBMBackend
+from quantum_launcher.routines.qiskit_routines import QAOA, IBMBackend
 from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
 
 TESTING_DIR = 'testing'
@@ -12,7 +12,7 @@ def test_ec():
     """ Testing function for Exact Cover """
     pr = EC.from_preset(onehot='exact', instance_name='micro')
     qaoa = QAOA(p=3)
-    backend = QiskitIBMBackend('local_simulator')
+    backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True, save_txt=True)
@@ -24,7 +24,7 @@ def test_qatm():
     """ Testing function for QATM """
     pr = QATM.from_file(instance_name='RCP_3.txt', instance_path='data/qatm/')
     qaoa = QAOA(p=3)
-    backend = QiskitIBMBackend('local_simulator')
+    backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True)
@@ -36,7 +36,7 @@ def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
     pr = JSSP.from_preset('toy', max_time=3, onehot='exact', optimization_problem=True)
     qaoa = QAOA(p=3)
-    backend = QiskitIBMBackend('local_simulator')
+    backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True)
@@ -48,7 +48,7 @@ def test_maxcut():
     """ Testing function for Max Cut """
     pr = MaxCut.from_preset(instance_name='default')
     qaoa = QAOA()
-    backend = QiskitIBMBackend('local_simulator')
+    backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True)
@@ -62,7 +62,7 @@ def test_raw():
         [("ZZ", -1), ("ZI", 2), ("IZ", 2), ("II", -1)])
     pr = Raw(hamiltonian)
     qaoa = QAOA()
-    backend = QiskitIBMBackend('local_simulator')
+    backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     results = launcher.run()
@@ -75,7 +75,7 @@ def test_tsp():
     """ Testing function for TSP """
     pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
     qaoa = QAOA()
-    backend = QiskitIBMBackend('local_simulator')
+    backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     results = launcher.run()
@@ -92,7 +92,7 @@ def test_graph_coloring():
     num_colors = gc.num_colors
     color_bit_length = int(np.ceil(np.log2(num_colors)))
     qaoa = QAOA()
-    backend = QiskitIBMBackend("local_simulator")
+    backend = IBMBackend("local_simulator")
     launcher = QuantumLauncher(gc, qaoa, backend)
     inform = launcher.run()
     assert isinstance(inform, Result)

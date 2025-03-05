@@ -3,9 +3,13 @@ import os
 from qiskit_aqt_provider.aqt_resource import OfflineSimulatorResource
 from qiskit_aqt_provider.primitives import AQTSampler, AQTEstimator
 from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
+from qiskit_ibm_runtime import Session
+
 from qiskit_aqt_provider import AQTProvider
 
-from quantum_launcher.routines.qiskit_routines.backend import AQTBackend
+
+from quantum_launcher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend
+
 import pytest
 
 
@@ -67,3 +71,31 @@ def test_AQT_backend_loads_env(tmp_path):
     backend = AQTBackend('local_simulator', dotenv_path=env_path)
 
     assert backend.provider.access_token == 'test'
+
+
+def test_IBM_session():
+    backend = FakeAlmadenV2()
+
+    with Session(backend=backend) as session:
+        ql_backend = IBMBackend('device', session=session)
+
+        assert ql_backend.sampler.mode == session
+        assert ql_backend.estimator.mode == session
+
+
+def test_Qiskit_local_session():
+    backend = QiskitBackend('local_simulator')
+
+    assert backend.sampler is not None
+    assert backend.estimator is not None
+    assert backend.optimizer is not None
+
+
+def test_Qiskit_backendv1v2_session():
+    backend = QiskitBackend('backendv1v2_simulator', backendv1v2=FakeAlmadenV2())
+
+    assert backend.sampler is not None
+    assert backend.estimator is not None
+    assert backend.optimizer is not None
+
+    assert isinstance(backend.backendv1v2, FakeAlmadenV2)

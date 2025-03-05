@@ -160,10 +160,10 @@ class AQLManager:
 
 if __name__ == '__main__':
     from problems import MaxCut, EC
-    from ..routines.qiskit_routines import QAOA, QiskitIBMBackend
+    from ..routines.qiskit_routines import QAOA, IBMBackend
 
     with AQLManager('test') as launcher:
-        launcher.add(backend=QiskitIBMBackend('local_simulator'),
+        launcher.add(backend=IBMBackend('local_simulator'),
                      algorithm=QAOA(p=1), problem=EC('exact', instance_name='toy'))
         for i in range(2, 3):
             launcher.add_algorithm(QAOA(p=i))
