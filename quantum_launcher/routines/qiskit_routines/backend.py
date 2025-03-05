@@ -111,18 +111,20 @@ class AQTBackend(QiskitBackend):
 
     Attributes:
         token (str, optional): AQT token, used for authorization when using real device backends.
-        dotenv_path (str,optional): Path to a .env file containing the AQT token. (recommended to use)
+        dotenv_path (str,optional): (recommended) Path to a .env file containing the AQT token. 
+                                    If dotenv_path is not None, the token will be ignored and the token from the .env file will be used. 
+
 
     Usage Example
     -------------
     ::
 
-        backend = AQTBackend(token="valid_token", name='device')
+        backend = AQTBackend(token='valid_token', name='device')
 
     or
     ::
 
-        backend = AQTBackend(dotenv_path="./.env", name='device')
+        backend = AQTBackend(dotenv_path='./.env', name='device')
 
     with a .env file:
     ::

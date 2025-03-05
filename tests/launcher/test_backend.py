@@ -1,3 +1,5 @@
+import os
+
 from qiskit_aqt_provider.aqt_resource import OfflineSimulatorResource
 from qiskit_aqt_provider.primitives import AQTSampler, AQTEstimator
 from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
@@ -55,3 +57,13 @@ def test_AQT_backend_online_device():
     backend._set_primitives_on_backend_name()
 
     assert backend.name == 'ibex_dummy'
+
+
+def test_AQT_backend_loads_env(tmp_path):
+    env_path = os.path.join(tmp_path, '.env')
+    with open(env_path, 'w+') as f:
+        f.write('AQT_TOKEN=test')
+
+    backend = AQTBackend('local_simulator', dotenv_path=env_path)
+
+    assert backend.provider.access_token == 'test'
