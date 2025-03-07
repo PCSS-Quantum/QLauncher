@@ -1,9 +1,14 @@
-from quantum_launcher.launcher.aql import AQLManager, AQL
+from concurrent.futures import ThreadPoolExecutor
+
+from quantum_launcher.launcher.aql import AQL, AQLTask
+from quantum_launcher.launcher.qlauncher import QuantumLauncher
 from quantum_launcher.problems import MaxCut, EC
 from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
 from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
 import pytest
+
+import numpy as np
 
 
 def test_runtime():
@@ -73,16 +78,66 @@ def test_runtime_orca():
         # assert len(x) == 10 or len(x) == 2
 
 
-def test_AQL():
+def test_AQL_individual_tasks():
     aql = AQL()
-    tasks = [
-        (MaxCut.from_preset('default'), BBS(), OrcaBackend('local')),
-        (MaxCut.from_preset('default'), BBS(), OrcaBackend('local')),
-        (MaxCut.from_preset('default'), BBS(), OrcaBackend('local'))
-    ]
-    aql.add_task(tasks)
+
+    aql.add_task((MaxCut.from_preset('default'), BBS(), OrcaBackend('local')))
+    aql.add_task((MaxCut.from_preset('default'), BBS(), OrcaBackend('local')))
+    aql.add_task((MaxCut.from_preset('default'), BBS(), OrcaBackend('local')))
+
     aql.start()
     aql.wait_for_finish(timeout=10)
 
     res, bitres = aql.get_results()
     assert len(res) == len(bitres) == 3
+
+
+def test_AQL_chained_tasks():
+    """
+    Check that tasks in a chain execute one after another.
+    """
+    launchers = [QuantumLauncher(MaxCut.from_preset('default'), BBS(), OrcaBackend('local'))
+                 for _ in range(5)]  # TODO change to DwaveBackend with minimal work to make this faster
+
+    order = []
+
+    def newrun(func, i):
+        def wrapper(*args, **kwargs):
+            order.append(i)
+            return func(*args, **kwargs)
+        return wrapper
+
+    for i, l in enumerate(launchers):
+        l.run = newrun(l.run, i)
+
+    aql = AQL()
+    aql.add_task_chain(launchers)
+    np.random.shuffle(aql.tasks)  # Shuffle the order of starting tasks, if dependencies work correctly, this should make no difference.
+    aql.start()
+    aql.wait_for_finish(10)
+
+    assert order == list(range(5))
+
+
+def test_AQL_task_basic():
+    ex = ThreadPoolExecutor()
+    t1 = AQLTask(lambda: 2, executor=ex)
+    t2 = AQLTask(lambda prev: prev+2, dependencies=[t1], executor=ex, pipe_dependencies=True)
+    t2._start()
+    t1._start()
+    assert t2.result(timeout=1) == 4
+
+
+def test_AQL_task_result_passing():
+    """
+    Test if values from dependencies are passed in the correct order, i.e if dependencies=[dep1,dep2], [res(dep1),res(dep2)] is passed to the task function.
+    """
+    ex = ThreadPoolExecutor()
+    t_string = AQLTask(lambda: "Value:", executor=ex)
+    t_int = AQLTask(lambda: 42, executor=ex)
+    t_concat = AQLTask(lambda s, i: s + str(i), dependencies=[t_string, t_int], executor=ex, pipe_dependencies=True)
+
+    for t in [t_string, t_concat, t_int]:
+        t._start()
+
+    assert t_concat.result(timeout=1) == "Value:42"

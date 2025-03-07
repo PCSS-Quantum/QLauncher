@@ -1,10 +1,75 @@
-# TODO update to new QL version
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, Callable
 from concurrent import futures
-
+from threading import Event
 
 from quantum_launcher.base.base import Backend, Algorithm, Problem
 from quantum_launcher.launcher.qlauncher import QuantumLauncher
+
+
+class AQLTask:
+    def __init__(
+        self,
+        task: Callable,
+        dependencies: Iterable['AQLTask'] | None = None,
+        callbacks: Iterable[Callable] | None = None,
+        executor: futures.Executor | None = None,
+        pipe_dependencies: bool = False
+    ) -> None:
+        """
+        Task object returned to user, so that dependencies can be created. Basically a Future wrapper, that doesn't start immediately and can have other tasks it depends on.
+
+        Args:
+            task (Callable): function that gets executed asynchronously
+            dependencies (Iterable[&#39;AQLTask&#39;] | None, optional): Optional dependencies. The task will wait for all its dependencies to finish, before starting. Defaults to None.
+            callbacks (Iterable[Callable] | None, optional): Callbacks ran when the task finishes executing. Defaults to None.
+            executor (futures.Executor | None, optional): Executor to use for submitting jobs. Defaults to None.
+            pipe_dependencies (bool, optional): If True results of tasks defined as dependencies will be passed as arguments to self.task. Defaults to False.
+        """
+
+        self.task = task
+        self.dependencies = dependencies if dependencies is not None else []
+        self.callbacks = callbacks if callbacks is not None else []
+        self.pipe_dependencies = pipe_dependencies
+
+        self._future = None
+        self._future_made = Event()
+        self._executor = executor
+
+    def _async_task(self):
+        dep_results = [d.result() for d in self.dependencies]
+        return self.task(*dep_results) if self.pipe_dependencies else self.task()
+
+    def _set_future(self):
+        self._future = self._executor.submit(self._async_task)
+        self._future.add_done_callback(lambda fut: [cb(self) for cb in self.callbacks])  # pass AQLTask instead of future
+        self._future_made.set()
+
+    def _start(self):
+        self._set_future()
+
+    def cancel(self) -> bool:
+        if self._future is None:
+            return False
+        return self._future.cancel()
+
+    def cancelled(self) -> bool:
+        if self._future is None:
+            return False
+        return self._future.cancelled()
+
+    def done(self) -> bool:
+        if self._future is None:
+            return False
+        return self._future.done()
+
+    def running(self) -> bool:
+        if self._future is None:
+            return False
+        return self._future.running()
+
+    def result(self, timeout=None):
+        self._future_made.wait(timeout=timeout)  # Wait until we submit a task to the executor
+        return self._future.result(timeout=timeout)
 
 
 class AQL:
@@ -12,60 +77,64 @@ class AQL:
         self
     ) -> None:
 
-        self.launchers = []
+        self.tasks: list[AQLTask] = []
         self._results = []
         self._results_bitstring = []
 
-        self._futures = set()
-        self._executor = futures.ThreadPoolExecutor(thread_name_prefix="aql")
+        self._executor = futures.ThreadPoolExecutor()
 
-    def _future_done(self, f: futures.Future):
+    def _task_done(self, t: AQLTask):
         """
-        Callback added to all submitted futures. Runs when future finishes (either gets cancelled or finished)
+        Callback added to all started tasks. Runs when a task finishes (either gets cancelled or finished)
 
         Args:
-            f (futures.Future): future passed by futures
-
-        Raises:
-            RuntimeError: When processing a future not in self._futures (something went very wrong)
+            t (AQLTask): finished task.
         """
-        if not f in self._futures:
-            raise RuntimeError(f"Attempted to finish a task that was not kept track of {f}")
-
-        self._futures.remove(f)
-        if f.cancelled():
+        if t.cancelled():
             return
 
-        res = f.result()
+        res = t.result()
         self._results.append(res)
         self._results_bitstring.append(res.best_bitstring)
 
-    def _launch_future(self, fn, *args, **kwargs):
-        f = self._executor.submit(fn, *args, **kwargs)
-        f.add_done_callback(lambda fut: self._future_done(fut))  # Lambda needed here (I assume because of some arg passing shenanigans)
-        self._futures.add(f)
-
     def wait_for_finish(self, timeout: float | int | None = None) -> None:
-        futures.wait(self._futures, timeout=timeout)
+        r = [t.result(timeout) for t in self.tasks]
 
     def running_feature_count(self) -> bool:
-        return len(self._futures)
+        return len([t for t in self.tasks if t.running()])
 
     def get_results(self) -> tuple[list, list]:
         return self._results, self._results_bitstring
 
-    def add_task(self, launcher: QuantumLauncher | Iterable[QuantumLauncher] | Tuple[Problem, Algorithm, Backend] | Iterable[Tuple[Problem, Algorithm, Backend]]):
-        if isinstance(launcher, QuantumLauncher):
-            launcher = [launcher]
-        elif isinstance(launcher, tuple):
-            launcher = [QuantumLauncher(*launcher)]
-        elif not isinstance(launcher, list):
-            launcher = list(launcher)
+    def add_task(self, launcher: QuantumLauncher | Tuple[Problem, Algorithm, Backend], dependencies: Iterable[AQLTask] | None = None, callbacks=None) -> AQLTask:
+        if isinstance(launcher, tuple):
+            launcher = QuantumLauncher(*launcher)
 
-        if not isinstance(launcher[0], QuantumLauncher):
-            launcher = [QuantumLauncher(*l) for l in launcher]
+        task = AQLTask(launcher.run, dependencies=dependencies, callbacks=[self._task_done] +
+                       (callbacks if callbacks is not None else []), executor=self._executor)
+        self.tasks.append(task)
+        return task
 
-        self.launchers += launcher
+    def add_task_chain(self, chain: Iterable[QuantumLauncher] | Iterable[Tuple[Problem, Algorithm, Backend]]) -> AQLTask:
+        """
+        Add a chain of tasks that should be executed one after another.
+
+        Args:
+            chain (Iterable[QuantumLauncher] | Iterable[Tuple[Problem, Algorithm, Backend]]): Chain of tasks to execute.
+
+        Returns:
+            Last task in the chain.
+        """
+
+        if len(chain) == 0:
+            raise ValueError("Chains must have at least 1 element.")
+
+        prev_task = self.add_task(chain[0])
+        for t in chain[1:]:
+            new_task = self.add_task(t, dependencies=[prev_task])
+            prev_task = new_task
+
+        return prev_task
 
     def start(self):
         self._results = []
@@ -74,87 +143,5 @@ class AQL:
         self._run_async()
 
     def _run_async(self):
-        for l in self.launchers:
-            self._launch_future(self._run_async_task, l)
-        self.launchers = []
-
-    def _run_async_task(self, launcher: QuantumLauncher):
-        return launcher.run()
-
-
-class AQLManager:
-    """
-    Context manager for asyncQuantumLauncher
-    Simplified high-level context manager to support asynchronous flow of asyncQuantumLauncher.
-
-    Inside is only initialization and whole processing is done at the end.
-
-    To save the results it's recommended to assign manager's variables to local ones, so they don't get destroyed.
-
-
-    Usage Example
-    -------------
-    ::
-
-        with AQLManager('my_path') as launcher:
-            launcher.add()
-            launcher.add()
-            launcher.add()
-            result = aql.result
-        print(result)
-
-    """
-
-    def __init__(self, path: str = None):
-        self.aql = None
-        self.path = path
-        self.result = []
-        self.result_bitstring = []
-        self._backends: list[Backend] = []
-        self._algorithms: list[Algorithm] = []
-        self._problems: list[Problem] = []
-
-    def __enter__(self):
-        return self
-
-    def add_backend(self, backend: Backend, times: int = 1):
-        self._backends.append((backend, times))
-
-    def add_algorithm(self, algorithm, times: int = 1):
-        self._algorithms.append((algorithm, times))
-
-    def add_problem(self, problem, times: int = 1):
-        self._problems.append((problem, times))
-
-    def add(self, backend: Backend = None, algorithm: Algorithm = None, problem: Problem = None, times: int = 1):
-        self._backends.append((backend, times))
-        self._algorithms.append((algorithm, 1))
-        self._problems.append((problem, 1))
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is not None:
-            raise exc_type(exc_val).with_traceback(exc_tb)
-        aql = AQL()
-        aql.start()
-        aql.wait_for_finish()
-        result, result_bitstring = aql.get_results()
-        self.result.extend(result)
-        self.result_bitstring.extend(result_bitstring)
-
-
-if __name__ == '__main__':
-    from quantum_launcher.problems import EC
-    from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
-
-    with AQLManager('test') as launcher:
-        launcher.add(backend=QiskitBackend('local_simulator'),
-                     algorithm=QAOA(p=1), problem=EC('exact', instance_name='toy'))
-        for i in range(2, 3):
-            launcher.add_algorithm(QAOA(p=i))
-        result = launcher.result
-        result_bitstring = launcher.result_bitstring
-    print(len(result))
-    print(result_bitstring)
-
-    for ind, i in enumerate(result):
-        print(ind, i['SamplingVQEResult'].best_measurement)
+        for t in self.tasks:
+            t._start()
