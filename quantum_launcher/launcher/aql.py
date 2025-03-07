@@ -1,10 +1,11 @@
-from typing import Iterable, Tuple, Callable
+from typing import Iterable, Tuple, Callable, Literal
 from concurrent import futures
 from threading import Event
 from pathos.multiprocessing import ProcessingPool
 
 from quantum_launcher.base.base import Backend, Algorithm, Problem
 from quantum_launcher.launcher.qlauncher import QuantumLauncher
+from quantum_launcher.problems import Raw
 
 
 class AQLTask:
@@ -77,12 +78,17 @@ class AQLTask:
 
 class AQL:
     def __init__(
-        self
+        self,
+        mode: Literal['default', 'optimize_session'] = 'default'
     ) -> None:
 
         self.tasks: list[AQLTask] = []
         self._results = []
         self._results_bitstring = []
+
+        self.mode = mode
+        self.classical_tasks = []
+        self.quantum_tasks = []
 
         self._executor = futures.ThreadPoolExecutor()
 
@@ -113,10 +119,50 @@ class AQL:
         if isinstance(launcher, tuple):
             launcher = QuantumLauncher(*launcher)
 
-        task = AQLTask(launcher.run, dependencies=dependencies, callbacks=[self._task_done] +
-                       (callbacks if callbacks is not None else []), executor=self._executor)
-        self.tasks.append(task)
-        return task
+        dependencies_list = dependencies if dependencies is not None else []
+
+        if not self.mode == 'optimize_session' or not launcher.backend.is_device:
+            # This is a solution until I think of something smarter...
+            if len(set(self.quantum_tasks).intersection(set(dependencies_list))) != 0:
+                raise ValueError("Quantum tasks run last, you cannot depend on them for classical tasks.")
+
+            task = AQLTask(
+                launcher.run,
+                dependencies=dependencies,
+                callbacks=[self._task_done] + (callbacks if callbacks is not None else []),
+                executor=self._executor
+            )
+            self.tasks.append(task)
+            self.classical_tasks.append(task)
+            return task
+
+        # Split real device task into generation and actual run on a QC
+        t_gen = AQLTask(
+            launcher.format,
+            dependencies=[dep for dep in dependencies_list if not dep in self.quantum_tasks],
+            executor=self._executor
+        )
+
+        def quant_task(formatted, *rest):
+            ql = QuantumLauncher(
+                Raw(formatted, launcher.problem.instance_name),
+                launcher.algorithm,
+                launcher.backend
+            )
+            return ql.run()
+
+        t_quant = AQLTask(
+            quant_task,
+            dependencies=[t_gen] + [dep for dep in dependencies_list if dep in self.quantum_tasks],
+            callbacks=[self._task_done] + (callbacks if callbacks is not None else []),
+            pipe_dependencies=True,  # Receive output from formatter
+            executor=self._executor)
+
+        self.classical_tasks.append(t_gen)
+        self.quantum_tasks.append(t_quant)
+        self.tasks.append(t_quant)
+
+        return t_quant
 
     def add_task_chain(self, chain: Iterable[QuantumLauncher] | Iterable[Tuple[Problem, Algorithm, Backend]]) -> AQLTask:
         """
@@ -146,5 +192,19 @@ class AQL:
         self._run_async()
 
     def _run_async(self):
-        for t in self.tasks:
+        # This task will wait for all classical tasks to execute
+        gateway_task = AQLTask(
+            lambda: 42,
+            dependencies=self.classical_tasks,
+            executor=self._executor
+        )
+
+        # Which means that all quantum tasks will execute after the main workload
+        for qt in self.quantum_tasks:
+            qt.dependencies.append(gateway_task)
+
+        for t in self.classical_tasks:
             t._start()
+        for qt in self.quantum_tasks:
+            qt._start()
+        gateway_task._start()

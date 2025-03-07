@@ -25,7 +25,7 @@ class QuantumLauncher:
         encoding_type (type): The encoding type to be used changing the class of the problem. Defaults to None.
 
     Example of usage::
-    
+
             from templates import QuantumLauncher
             from problems import MaxCut
             from qiskit_routines import QAOA, QiskitBackend
@@ -51,6 +51,10 @@ class QuantumLauncher:
             logger: logging.Logger = logging.getLogger('QuantumLauncher')
         self.logger = logger
         self.res: dict = {}
+
+    def format(self):
+        formatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
+        return formatter(self.problem)
 
     def run(self) -> Result:
         """

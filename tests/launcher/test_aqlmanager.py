@@ -115,6 +115,37 @@ def test_AQL_chained_tasks():
     assert order == wanted
 
 
+def test_AQL_session_optimization():
+    classical_backend = QiskitBackend('local_simulator')
+    totally_real_backend = QiskitBackend('local_simulator')
+    totally_real_backend.is_device = True
+
+    aql = AQL(mode='optimize_session')
+
+    t1_temp = (MaxCut.from_preset('default'), QAOA(), totally_real_backend)
+    t2_temp = (MaxCut.from_preset('default'), QAOA(), totally_real_backend)
+    t3_temp = (MaxCut.from_preset('default'), QAOA(), classical_backend)
+
+    order = []
+    t1 = aql.add_task(t1_temp)
+    t2 = aql.add_task(t2_temp, dependencies=[t1])
+    t3 = aql.add_task(t3_temp)
+
+    with pytest.raises(ValueError):
+        t4 = aql.add_task(t3_temp, dependencies=[t1])
+
+    for t in aql.tasks:
+        t.callbacks.append(order.append)
+
+    assert aql.quantum_tasks == [t1, t2]
+    assert len(aql.classical_tasks) == 3
+    assert aql.tasks == [t1, t2, t3]
+
+    aql.start()
+    aql.wait_for_finish(10)
+    assert order == [t3, t1, t2]  # Classical - quantum 1 - quantum 2 dependent on quantum 1
+
+
 def test_AQL_task_basic():
     ex = ThreadPoolExecutor()
     t1 = AQLTask(lambda: 2, executor=ex)
