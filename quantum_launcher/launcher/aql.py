@@ -1,7 +1,6 @@
 # TODO update to new QL version
-from typing import Tuple
+from typing import Iterable, Tuple
 from concurrent import futures
-from itertools import product
 
 
 from quantum_launcher.base.base import Backend, Algorithm, Problem
@@ -10,21 +9,15 @@ from quantum_launcher.launcher.qlauncher import QuantumLauncher
 
 class AQL:
     def __init__(
-        self,
-        backends: list[Tuple[Backend, int]],
-        algorithms: list[Tuple[Algorithm, int]],
-        problems: list[Tuple[Problem, int]],
+        self
     ) -> None:
 
-        self.backends = backends
-        self.algorithms = algorithms
-        self.problems = problems
+        self.launchers = []
         self._results = []
         self._results_bitstring = []
 
         self._futures = set()
-        # TODO: determine num workers (heuristic? param?)
-        self._executor = futures.ThreadPoolExecutor(max_workers=42, thread_name_prefix="aql")
+        self._executor = futures.ThreadPoolExecutor(thread_name_prefix="aql")
 
     def _future_done(self, f: futures.Future):
         """
@@ -52,8 +45,8 @@ class AQL:
         f.add_done_callback(lambda fut: self._future_done(fut))  # Lambda needed here (I assume because of some arg passing shenanigans)
         self._futures.add(f)
 
-    def wait_for_finish(self) -> None:
-        futures.wait(self._futures)
+    def wait_for_finish(self, timeout: float | int | None = None) -> None:
+        futures.wait(self._futures, timeout=timeout)
 
     def running_feature_count(self) -> bool:
         return len(self._futures)
@@ -61,24 +54,32 @@ class AQL:
     def get_results(self) -> tuple[list, list]:
         return self._results, self._results_bitstring
 
+    def add_task(self, launcher: QuantumLauncher | Iterable[QuantumLauncher] | Tuple[Problem, Algorithm, Backend] | Iterable[Tuple[Problem, Algorithm, Backend]]):
+        if isinstance(launcher, QuantumLauncher):
+            launcher = [launcher]
+        elif isinstance(launcher, tuple):
+            launcher = [QuantumLauncher(*launcher)]
+        elif not isinstance(launcher, list):
+            launcher = list(launcher)
+
+        if not isinstance(launcher[0], QuantumLauncher):
+            launcher = [QuantumLauncher(*l) for l in launcher]
+
+        self.launchers += launcher
+
     def start(self):
         self._results = []
         self._results_bitstring = []
 
-        self.run_async()
+        self._run_async()
 
-    def run_async(self):
-        for back_tup, alg_tup, prob_tup in product(self.backends, self.algorithms, self.problems):
-            backend, b_times = back_tup
-            algorithm, a_times = alg_tup
-            problem, p_times = prob_tup
-            times = b_times * a_times * p_times
-            for _ in range(times):
-                self._launch_future(self.run_async_task, algorithm, problem, backend)
+    def _run_async(self):
+        for l in self.launchers:
+            self._launch_future(self._run_async_task, l)
+        self.launchers = []
 
-    def run_async_task(self, algorithm: Algorithm, problem: Problem, backend: Backend):
-        ql = QuantumLauncher(problem, algorithm, backend)
-        return ql.run()
+    def _run_async_task(self, launcher: QuantumLauncher):
+        return launcher.run()
 
 
 class AQLManager:
@@ -133,7 +134,7 @@ class AQLManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
             raise exc_type(exc_val).with_traceback(exc_tb)
-        aql = AQL(self._backends, self._algorithms, self._problems)
+        aql = AQL()
         aql.start()
         aql.wait_for_finish()
         result, result_bitstring = aql.get_results()
