@@ -1,8 +1,8 @@
-from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
 from qiskit_aer.primitives import Sampler, SamplerV2
 from qiskit_aer import AerSimulator
 from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 from qiskit import QuantumCircuit
+from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
 
 
 def test_v2_sampler_adapter():
