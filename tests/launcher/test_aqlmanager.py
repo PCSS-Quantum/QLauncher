@@ -81,9 +81,9 @@ def test_runtime_orca():
 def test_AQL_individual_tasks():
     aql = AQL()
 
-    aql.add_task((MaxCut.from_preset('default'), BBS(), OrcaBackend('local')))
-    aql.add_task((MaxCut.from_preset('default'), BBS(), OrcaBackend('local')))
-    aql.add_task((MaxCut.from_preset('default'), BBS(), OrcaBackend('local')))
+    aql.add_task((MaxCut.from_preset('default'), QAOA(), QiskitBackend('local_simulator')))
+    aql.add_task((MaxCut.from_preset('default'), BBS(), OrcaBackend('local_simulator')))
+    aql.add_task((MaxCut.from_preset('default'), DwaveSolver(), SimulatedAnnealingBackend('local_simulator')))
 
     aql.start()
     aql.wait_for_finish(timeout=10)
@@ -96,27 +96,23 @@ def test_AQL_chained_tasks():
     """
     Check that tasks in a chain execute one after another.
     """
-    launchers = [QuantumLauncher(MaxCut.from_preset('default'), BBS(), OrcaBackend('local'))
-                 for _ in range(5)]  # TODO change to DwaveBackend with minimal work to make this faster
+    # TODO change to DwaveBackend with minimal work to make this faster
+    launchers = [QuantumLauncher(MaxCut.from_preset('default'), QAOA(), QiskitBackend('local_simulator')) for _ in range(5)]
 
     order = []
 
-    def newrun(func, i):
-        def wrapper(*args, **kwargs):
-            order.append(i)
-            return func(*args, **kwargs)
-        return wrapper
-
-    for i, l in enumerate(launchers):
-        l.run = newrun(l.run, i)
-
     aql = AQL()
     aql.add_task_chain(launchers)
+    wanted = aql.tasks.copy()
+    for t in aql.tasks:
+        t.callbacks.append(order.append)
+
     np.random.shuffle(aql.tasks)  # Shuffle the order of starting tasks, if dependencies work correctly, this should make no difference.
     aql.start()
     aql.wait_for_finish(10)
 
-    assert order == list(range(5))
+    assert len(aql.get_results()[0]) == 5
+    assert order == wanted
 
 
 def test_AQL_task_basic():

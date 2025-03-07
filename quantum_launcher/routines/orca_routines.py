@@ -79,4 +79,4 @@ class BBS(Algorithm):
         energy_std = None
         return Result(best_bitstring, best_energy, most_common_bitstring,
                       most_common_bitstring_energy, distribution, energy,
-                      num_of_samples, average_energy, energy_std, results)
+                      num_of_samples, average_energy, energy_std, None)

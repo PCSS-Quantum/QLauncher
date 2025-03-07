@@ -1,6 +1,7 @@
 from typing import Iterable, Tuple, Callable
 from concurrent import futures
 from threading import Event
+from pathos.multiprocessing import ProcessingPool
 
 from quantum_launcher.base.base import Backend, Algorithm, Problem
 from quantum_launcher.launcher.qlauncher import QuantumLauncher
@@ -37,7 +38,9 @@ class AQLTask:
 
     def _async_task(self):
         dep_results = [d.result() for d in self.dependencies]
-        return self.task(*dep_results) if self.pipe_dependencies else self.task()
+        pool = ProcessingPool(nodes=1)
+        res = pool.pipe(self.task, *(dep_results if self.pipe_dependencies else []))
+        return res
 
     def _set_future(self):
         self._future = self._executor.submit(self._async_task)

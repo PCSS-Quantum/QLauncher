@@ -9,6 +9,7 @@ dependencies = [
     "notebook>=7.3.2",
     "numpy",
     "pandas",
+    "pathos>=0.3.3",
     "pyqubo>=1.5.0",
     "scipy",
 ]
