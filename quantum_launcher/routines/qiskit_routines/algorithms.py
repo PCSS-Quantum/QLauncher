@@ -16,7 +16,7 @@ from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
 import scipy
 
 from quantum_launcher.base import Problem, Algorithm, Result
-from .backend import QiskitBackend
+from quantum_launcher.routines.qiskit_routines.backends.ibm_backend import IBMBackend
 from quantum_launcher.workflow.pilotjob_scheduler import JobManager
 from typing import Callable
 
@@ -24,7 +24,7 @@ from typing import Callable
 class QiskitOptimizationAlgorithm(Algorithm):
     """ Abstract class for Qiskit optimization algorithms """
 
-    def make_tag(self, problem: Problem, backend: QiskitBackend) -> str:
+    def make_tag(self, problem: Problem, backend: IBMBackend) -> str:
         tag = problem.__class__.__name__ + '-' + \
             backend.__class__.__name__ + '-' + \
             self.__class__.__name__ + '-' + \
@@ -66,7 +66,6 @@ class QAOA(QiskitOptimizationAlgorithm):
         alternating_ansatz (bool): Whether to use an alternating ansatz.
         parameters (list): List of parameters for the algorithm.
         mixer_h (SparsePauliOp | None): The mixer Hamiltonian.
-        mixer_h (QuantumCircuit | None): The initial state of the circuit.
 
     """
     _algorithm_format = 'hamiltonian'
@@ -121,7 +120,7 @@ class QAOA(QiskitOptimizationAlgorithm):
                     res_dict = {**res_dict, **{key: path}}
         return res_dict
 
-    def run(self, problem: Problem, backend: QiskitBackend, formatter=Callable) -> Result:
+    def run(self, problem: Problem, backend: IBMBackend, formatter=Callable) -> Result:
         """ Runs the QAOA algorithm """
         hamiltonian: SparsePauliOp = formatter(problem)
         energies = []
@@ -228,7 +227,7 @@ class FALQON(QiskitOptimizationAlgorithm):
     def _get_path(self) -> str:
         return f'{self.name}@{self.n}@{self.delta_t}@{self.beta_0}'
 
-    def run(self, problem: Problem, backend: QiskitBackend):
+    def run(self, problem: Problem, backend: IBMBackend):
         """ Runs the FALQON algorithm """
         # TODO implement aux operator
         hamiltonian = problem.get_qiskit_hamiltonian()
@@ -344,7 +343,7 @@ class EducatedGuess(Algorithm):
         self.manager = JobManager()
         self.best_job_id = ''
 
-    def run(self, problem: Problem, backend: QiskitBackend, formatter) -> Result:
+    def run(self, problem: Problem, backend: IBMBackend, formatter) -> Result:
         self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial)
         print(f'{len(self.manager.jobs)} jobs submitted to qcg')
 
