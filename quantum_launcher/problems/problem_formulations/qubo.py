@@ -1,6 +1,6 @@
 """ Basic problems for Orca """
-import numpy as np
 from typing import Tuple
+import numpy as np
 from pyqubo import Array
 from quantum_launcher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
 import quantum_launcher.problems.problem_initialization as problem

@@ -1,4 +1,4 @@
-# from .launcher import QiskitProblem
+""" Hamiltonian formulation of problems """
 from itertools import product
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
