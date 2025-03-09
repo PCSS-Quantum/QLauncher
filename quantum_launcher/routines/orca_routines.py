@@ -1,11 +1,15 @@
 """ file with orca algorithms subclasses """
 from typing import List, Literal
-from ptseries.algorithms.binary_solvers import BinaryBosonicSolver
-from ptseries.common.logger import Logger
+from collections.abc import Callable
+import numpy as np
 
 from quantum_launcher.base import Problem, Algorithm, Result, Backend
-from typing import Callable
-import numpy as np
+from quantum_launcher.launcher.import_management import check_dependency, CHECK_DEPENDENCIES, DependencyError
+if CHECK_DEPENDENCIES:
+    check_dependency('ptseries', install_hint='orca')
+    from ptseries.algorithms.binary_solvers import BinaryBosonicSolver
+else:
+    raise DependencyError(install_hint='orca')
 
 
 class OrcaBackend(Backend):

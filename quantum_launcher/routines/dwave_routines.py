@@ -1,10 +1,15 @@
 from typing import Callable
 from quantum_launcher.base import Algorithm, Problem, Backend, Result
-from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
-from dimod import Sampler, SampleSet
-from tabu import TabuSampler
-from dwave.system import DWaveSampler, EmbeddingComposite
-from dwave.samplers import SimulatedAnnealingSampler
+from quantum_launcher.launcher.import_management import CHECK_DEPENDENCIES, check_dependency, DependencyError
+if CHECK_DEPENDENCIES:
+    check_dependency('dimod', 'tabu', 'dwave', install_hint='dwave')
+    from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
+    from dimod import Sampler, SampleSet
+    from tabu import TabuSampler
+    from dwave.system import DWaveSampler, EmbeddingComposite
+    from dwave.samplers import SimulatedAnnealingSampler
+else:
+    raise DependencyError(install_hint='dwave')
 
 
 class DwaveSolver(Algorithm):
