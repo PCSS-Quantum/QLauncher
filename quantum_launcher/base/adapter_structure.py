@@ -1,9 +1,9 @@
 from collections import defaultdict
-from .base import Problem
 from typing import Dict, Callable, Any
 from inspect import signature
-import networkx as nx
 import warnings
+import networkx as nx
+from .base import Problem
 
 __QL_ADAPTERS: Dict[str, Dict[str, Callable]] = defaultdict(lambda: {})  # adapters[to][from]
 __QL_FORMATTERS: Dict[type[Problem] | None, Dict[str, Callable]] = defaultdict(lambda: {})  # formatters[problem][format]
