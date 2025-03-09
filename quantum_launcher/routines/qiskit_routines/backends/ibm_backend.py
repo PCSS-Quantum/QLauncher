@@ -1,12 +1,15 @@
 """ Backend Class for Qiskit Launcher """
 from typing import Literal
 
-from qiskit.providers import BackendV1, BackendV2
-from qiskit_algorithms.optimizers import SPSA
-from qiskit_ibm_runtime import Estimator, Sampler
-from qiskit_ibm_runtime import Session, Options
-
 from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
+from quantum_launcher.import_management import DependencyError
+try:
+    from qiskit.providers import BackendV1, BackendV2
+    from qiskit_algorithms.optimizers import SPSA
+    from qiskit_ibm_runtime import Estimator, Sampler
+    from qiskit_ibm_runtime import Session, Options
+except ImportError as e:
+    raise DependencyError(e, 'qiskit') from e
 
 
 class IBMBackend(QiskitBackend):
