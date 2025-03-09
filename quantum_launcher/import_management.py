@@ -2,33 +2,32 @@
 from importlib.util import find_spec
 # TODO: Consider moving this module to quantum_launcher.utils
 
-CHECK_DEPENDENCIES: bool = True
 
-
-def check_dependency(*module_names: str, install_hint: str = ""):
+def check_dependencies(*module_names: str) -> str | None:
     """ Checks whether given module exists, if not shows how it should be downloaded
 
     Args:
         *module_name (str): Names of module to be checked
-        install_hint (str, optional): Name of optional dependency that will install it. Defaults to "".
 
-    Raises:
-        DependencyError: Raised if some dependency is not found.
+    Returns:
+        str | None: returns name of not installed module, and None if all are installed.
 
     Usage example
     ---
     ::
-
-        if CHECK_DEPENDENCIES:
-            check_dependency("qiskit", "ibm_qiskit_runtime", install_hint="qiskit"):
-            import qiskit
-            import ibm_qiskit_runtime
+        from quantum_launcher.launcher.import_management import check_dependency, DependencyError
+        NOT_INSTALLED_DEPENDENCY = check_dependency('dill', 'qcg.pilotjob')
+        if NOT_INSTALLED_DEPENDENCY is not None:
+            raise DependencyError(NOT_INSTALLED_DEPENDENCY, 'pilotjob')
         else:
-            raise DependencyError(None, "qiskit")
+            import dill
+            from qcg.pilotjob.api.job import Jobs
+            from qcg.pilotjob.api.manager import LocalManager, Manager
     """
     for module in module_names:
         if find_spec(module) is None:
-            raise DependencyError(module, install_hint)
+            return module
+    return None
 
 
 class DependencyError(ImportError):
@@ -39,4 +38,4 @@ class DependencyError(ImportError):
             message = f"Some modules are not installed. Install it with: pip install quantum_launcher[{install_hint}]"
         else:
             message = f"Module '{module}' is required but not installed. Install it with: pip install quantum_launcher[{install_hint}]"
-        super().__init__(message)
+        super().__init__(message, name='DependencyError')

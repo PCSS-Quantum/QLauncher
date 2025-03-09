@@ -4,12 +4,12 @@ from collections.abc import Callable
 import numpy as np
 
 from quantum_launcher.base import Problem, Algorithm, Result, Backend
-from quantum_launcher.launcher.import_management import check_dependency, CHECK_DEPENDENCIES, DependencyError
-if CHECK_DEPENDENCIES:
-    check_dependency('ptseries', install_hint='orca')
-    from ptseries.algorithms.binary_solvers import BinaryBosonicSolver
+from quantum_launcher.import_management import check_dependencies, DependencyError
+NOT_INSTALLED_DEPENDENCY = check_dependencies('ptseries')
+if NOT_INSTALLED_DEPENDENCY is not None:
+    raise DependencyError(NOT_INSTALLED_DEPENDENCY, install_hint='orca')
 else:
-    raise DependencyError(install_hint='orca')
+    from ptseries.algorithms.binary_solvers import BinaryBosonicSolver
 
 
 class OrcaBackend(Backend):
