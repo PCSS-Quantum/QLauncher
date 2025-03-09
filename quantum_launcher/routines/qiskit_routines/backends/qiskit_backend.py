@@ -1,16 +1,21 @@
 from typing import Literal
 
-from qiskit.providers import BackendV1, BackendV2
-from qiskit.primitives import StatevectorEstimator as LocalEstimator
-from qiskit.primitives import StatevectorSampler as LocalSampler
-from qiskit_algorithms.optimizers import COBYLA, Optimizer
-from qiskit.primitives import BackendSampler, BackendEstimator
-from qiskit.primitives import Sampler as SamplerV1
-
-from qiskit_ibm_runtime import Options
 
 from quantum_launcher.base import Backend
 from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
+
+
+from quantum_launcher.import_management import DependencyError
+try:
+    from qiskit.providers import BackendV1, BackendV2
+    from qiskit.primitives import StatevectorEstimator as LocalEstimator
+    from qiskit.primitives import StatevectorSampler as LocalSampler
+    from qiskit.primitives import BackendSampler, BackendEstimator
+    from qiskit.primitives import Sampler as SamplerV1
+    from qiskit_algorithms.optimizers import COBYLA, Optimizer
+    from qiskit_ibm_runtime import Options
+except ImportError as e:
+    raise DependencyError(e, install_hint='qiskit') from e
 
 
 class QiskitBackend(Backend):

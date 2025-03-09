@@ -2,16 +2,16 @@ import os
 import pickle
 import sys
 from typing import List, Optional
+
 from quantum_launcher.base.base import Algorithm, Backend, Problem, Result
 from quantum_launcher.launcher.qlauncher import QuantumLauncher
-from quantum_launcher.import_management import check_dependencies, DependencyError
-NOT_INSTALLED_DEPENDENCY = check_dependencies('dill', 'qcg.pilotjob')
-if NOT_INSTALLED_DEPENDENCY is not None:
-    raise DependencyError(NOT_INSTALLED_DEPENDENCY, 'pilotjob')
-else:
+from quantum_launcher.import_management import DependencyError
+try:
     import dill
     from qcg.pilotjob.api.job import Jobs
     from qcg.pilotjob.api.manager import LocalManager, Manager
+except ImportError as e:
+    raise DependencyError(e, install_hint='pilotjob') from e
 
 
 class JobManager:

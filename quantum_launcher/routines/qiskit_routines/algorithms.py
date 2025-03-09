@@ -3,22 +3,27 @@ import json
 from datetime import datetime
 import math
 import os
+from typing import Callable
 
 import numpy as np
-from qiskit import qpy, QuantumCircuit
-from qiskit.circuit import ParameterVector
-from qiskit.circuit.library import PauliEvolutionGate
-# from qiskit.opflow import H
-from qiskit.primitives.base.base_primitive import BasePrimitive
-from qiskit.quantum_info import SparsePauliOp
-from qiskit_algorithms.minimum_eigensolvers import QAOA as QiskitQAOA
-from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
 import scipy
 
 from quantum_launcher.base import Problem, Algorithm, Result
 from quantum_launcher.routines.qiskit_routines.backends.ibm_backend import IBMBackend
 from quantum_launcher.workflow.pilotjob_scheduler import JobManager
-from typing import Callable
+from quantum_launcher.import_management import DependencyError
+
+try:
+    from qiskit import qpy, QuantumCircuit
+    from qiskit.circuit import ParameterVector
+    from qiskit.circuit.library import PauliEvolutionGate
+    # from qiskit.opflow import H
+    from qiskit.primitives.base.base_primitive import BasePrimitive
+    from qiskit.quantum_info import SparsePauliOp
+    from qiskit_algorithms.minimum_eigensolvers import QAOA as QiskitQAOA
+    from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
+except ImportError as e:
+    raise DependencyError(e, install_hint='qiskit') from e
 
 
 class QiskitOptimizationAlgorithm(Algorithm):
