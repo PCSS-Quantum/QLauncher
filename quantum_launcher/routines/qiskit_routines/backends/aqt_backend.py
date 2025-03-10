@@ -1,3 +1,4 @@
+""" AQT backend class for Qiskit routines """
 from overrides import override
 from typing import Literal
 

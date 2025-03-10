@@ -1,4 +1,4 @@
-""" Backend Class for Qiskit Launcher """
+""" IBM backend class for Qiskit routines """
 from typing import Literal
 
 from qiskit.providers import BackendV1, BackendV2
@@ -35,9 +35,9 @@ class IBMBackend(QiskitBackend):
         }
 
     def _set_primitives_on_backend_name(self) -> None:
-        super()._set_primitives_on_backend_name()
-        if self.estimator is not None:
-            return  # super() method set appropriate primitives
+        if self.name != 'device':
+            super()._set_primitives_on_backend_name()
+            return
 
         if self.session is None:
             raise AttributeError(
