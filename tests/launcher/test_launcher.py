@@ -1,6 +1,6 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
+from quantum_launcher.base.base import Result
 from quantum_launcher.problems import TSP
 import warnings
 import pytest
@@ -22,12 +22,16 @@ def test_params_are_bound():
 
     inform = launcher.run()
 
+    assert isinstance(inform, Result)
+
 
 def test_unused_params_raise_warning():
     launcher = prepare_launcher()
 
     with pytest.warns(Warning):
         inform = launcher.run(unused=123)
+
+    assert isinstance(inform, Result)
 
 
 def test_override_params_raise_warning():
@@ -41,3 +45,5 @@ def test_override_params_raise_warning():
     with warnings.catch_warnings():
         warnings.simplefilter('error')
         inform = launcher.run(constraints_weight=10)
+
+    assert isinstance(inform, Result)

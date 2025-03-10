@@ -251,7 +251,7 @@ def get_qiskit_hamiltonian(problem: problems.Raw) -> SparsePauliOp:
 def get_qiskit_hamiltonian(problem: problems.TSP, onehot='exact', constraints_weight=1, costs_weight=1) -> SparsePauliOp:
     return tsp_to_hamiltonian(
         problem,
-        quadratic=onehot == 'quadratic',
+        onehot=onehot,
         constraints_weight=constraints_weight,
         costs_weight=costs_weight
     )
@@ -282,8 +282,6 @@ def get_qiskit_hamiltonian(problem: problems.GraphColoring, constraints_weight=1
             eq += eq2
     eq *= costs_weight
     # Penalty for using excessive colors
-    share_of_unused_colors = (2**color_bit_length - problem.num_colors)/(2**color_bit_length)
-    # penalty_coefficient = share_of_unused_colors*problem.instance.number_of_nodes()
     for node in problem.instance.nodes:
         for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
             if ind < problem.num_colors:

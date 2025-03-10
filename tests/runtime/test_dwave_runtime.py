@@ -1,20 +1,19 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
 from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
-from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP
+from quantum_launcher.problems import EC, JSSP, MaxCut, Raw, TSP
 from pyqubo import Spin
-import numpy as np
 TESTING_DIR = 'testing'
 
 
 def test_ec():
     """ Testing function for Exact Cover """
-    pr = EC.from_preset(instance_name='toy')
+    pr = EC.from_preset(instance_name='micro')
     solver = DwaveSolver(1)
     backend = SimulatedAnnealingBackend()
     launcher = QuantumLauncher(pr, solver, backend)
 
-    inform = launcher.run(onehot='quadratic')
+    inform = launcher.run()
     assert inform is not None
 
 
@@ -25,7 +24,7 @@ def test_jssp():
     backend = SimulatedAnnealingBackend()
     launcher = QuantumLauncher(pr, solver, backend)
 
-    inform = launcher.run(onehot='quadratic')
+    inform = launcher.run()
     assert inform is not None
 
 
@@ -66,6 +65,6 @@ def test_tsp():
     backend = SimulatedAnnealingBackend()
     launcher = QuantumLauncher(pr, solver, backend)
 
-    inform = launcher.run(onehot="quadratic")
+    inform = launcher.run()
 
     assert isinstance(inform, Result)

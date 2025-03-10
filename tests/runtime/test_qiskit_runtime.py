@@ -16,7 +16,7 @@ def test_ec():
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True, save_txt=True)
-    results = launcher.run(onehot='exact')
+    results = launcher.run()
     assert isinstance(results, Result)
 
 
@@ -40,7 +40,7 @@ def test_jssp():
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True)
-    results = launcher.run(onehot='exact')
+    results = launcher.run()
     assert isinstance(results, Result)
 
 

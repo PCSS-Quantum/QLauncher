@@ -9,12 +9,12 @@ TESTING_DIR = 'testing'
 
 def test_ec():
     """ Testing function for Exact Cover """
-    pr = EC.from_preset(instance_name='toy')
+    pr = EC.from_preset(instance_name='micro')
     bbs = BBS()
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
 
-    inform = launcher.run(onehot='quadratic')
+    inform = launcher.run()
     assert isinstance(inform, Result)
 
 
@@ -25,7 +25,7 @@ def test_jssp():
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
 
-    inform = launcher.run(onehot='quadratic')
+    inform = launcher.run()
     assert isinstance(inform, Result)
 
 
@@ -59,7 +59,7 @@ def test_tsp():
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
 
-    inform = launcher.run(onehot="quadratic")
+    inform = launcher.run()
 
     assert isinstance(inform, Result)
 
