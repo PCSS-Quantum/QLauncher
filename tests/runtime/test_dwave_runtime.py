@@ -25,7 +25,7 @@ def test_jssp():
     backend = SimulatedAnnealingBackend()
     launcher = QuantumLauncher(pr, solver, backend)
 
-    inform = launcher.run(onehot='quadratic')
+    inform = launcher.run()
     assert inform is not None
 
 
