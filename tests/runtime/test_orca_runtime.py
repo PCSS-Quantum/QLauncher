@@ -25,7 +25,7 @@ def test_jssp():
     backend = OrcaBackend('local_simulator')
     launcher = QuantumLauncher(pr, bbs, backend)
 
-    inform = launcher.run(onehot='quadratic')
+    inform = launcher.run()
     assert isinstance(inform, Result)
 
 
