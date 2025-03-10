@@ -19,6 +19,13 @@ def _get_callable_name(c: Callable) -> str:
         return str(c.__class__)
 
 
+def _merge_dicts(dicts: list[dict]) -> dict:
+    out = {}
+    for d in dicts:
+        out = out | d
+    return out
+
+
 class ProblemFormatter:
     """
     Converts input problem to a given format (input and output types determined by formatter and adapters in __init__)
@@ -28,7 +35,8 @@ class ProblemFormatter:
 
     def __init__(self, formatter: Callable, adapters: list[Callable] | None = None):
         self.formatter = formatter
-        self.adapters = adapters if adapters is not None else []
+        self.adapters = [a['func'] for a in adapters] if adapters is not None else []
+        self.adapter_requirements = _merge_dicts([a['formatter_requirements'] for a in adapters] if adapters is not None else [])
 
         self.formatter_sig = signature(self.formatter)
 
@@ -48,9 +56,16 @@ class ProblemFormatter:
         curr_run_params = dict(self.run_params)
         self.run_params = {}
 
+        common_params = set(curr_run_params.keys()).intersection(set(self.adapter_requirements.keys()))
+        if len(common_params) > 0:
+            warnings.warn(
+                f"Attempting to reassign parameter values required by one of the adapters: {common_params}, those params will not be set.")
+
+        curr_run_params = curr_run_params | self.adapter_requirements
+
         out = self._formatter_call(curr_run_params, *args, **kwargs)
-        for adapter in self.adapters:
-            out = adapter(out)
+        for a in self.adapters:
+            out = a(out)
 
         return out
 
@@ -86,7 +101,7 @@ class ProblemFormatter:
             self.set_run_param(k, v)
 
 
-def adapter(translates_from: str, translates_to: str) -> Callable:
+def adapter(translates_from: str, translates_to: str, **kwargs) -> Callable:
     """
     Register a function as an adapter from one problem format to another.
 
@@ -100,7 +115,7 @@ def adapter(translates_from: str, translates_to: str) -> Callable:
     def decorator(func):
         if isinstance(func, type):
             func = func()
-        __QL_ADAPTERS[translates_to][translates_from] = func
+        __QL_ADAPTERS[translates_to][translates_from] = {'func': func, 'formatter_requirements': kwargs}
         return func
     return decorator
 

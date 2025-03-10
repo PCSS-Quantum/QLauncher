@@ -15,12 +15,12 @@ def qubo_to_bqm(qubo_with_offset) -> dict:
     return bqm
 
 
-@adapter('hamiltonian', 'qubo')
-def hamiltonian_to_qubo(hamiltonian) -> Tuple[np.ndarray, float]:
-    qp = from_ising(hamiltonian)
-    conv = QuadraticProgramToQubo()
-    qubo = conv.convert(qp).objective
-    return qubo.quadratic.to_array(), qubo.constant
+# @adapter('hamiltonian', 'qubo', onehot='quadratic')
+# def hamiltonian_to_qubo(hamiltonian) -> Tuple[np.ndarray, float]:
+#     qp = from_ising(hamiltonian)
+#     conv = QuadraticProgramToQubo()
+#     qubo = conv.convert(qp).objective
+#     return qubo.quadratic.to_array(), qubo.constant
 
 
 class QUBOMatrix:

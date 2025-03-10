@@ -15,7 +15,7 @@ from quantum_launcher.hampy import Equation, Variable
 from quantum_launcher.problems.problem_formulations.hamiltonians.tsp import problem_to_hamiltonian as tsp_to_hamiltonian
 
 
-@adapter('hamiltonian', 'qubo')
+@adapter('hamiltonian', 'qubo', onehot='quadratic')
 def hamiltonian_to_qubo(hamiltonian):
     qp = from_ising(hamiltonian)
     conv = QuadraticProgramToQubo()
@@ -280,7 +280,7 @@ def get_qiskit_hamiltonian(problem: problems.GraphColoring, constraints_weight=1
                 else:
                     eq2 &= exp
             eq += eq2
-    eq *= constraints_weight
+    eq *= costs_weight
     # Penalty for using excessive colors
     share_of_unused_colors = (2**color_bit_length - problem.num_colors)/(2**color_bit_length)
     # penalty_coefficient = share_of_unused_colors*problem.instance.number_of_nodes()
@@ -297,6 +297,5 @@ def get_qiskit_hamiltonian(problem: problems.GraphColoring, constraints_weight=1
                 else:
                     eq2 &= exp
             eq += eq2
-            # TODO parametrize constraint coefficient
-    eq *= costs_weight
+    eq *= constraints_weight
     return eq.hamiltonian
