@@ -86,7 +86,6 @@ def test_AQL_individual_tasks():
     aql.add_task((MaxCut.from_preset('default'), DwaveSolver(), SimulatedAnnealingBackend('local_simulator')))
 
     aql.start()
-    aql.wait_for_finish(timeout=10)
 
     res, bitres = aql.get_results()
     assert len(res) == len(bitres) == 3
@@ -109,7 +108,6 @@ def test_AQL_chained_tasks():
 
     np.random.shuffle(aql.tasks)  # Shuffle the order of starting tasks, if dependencies work correctly, this should make no difference.
     aql.start()
-    aql.wait_for_finish(10)
 
     assert len(aql.get_results()[0]) == 5
     assert order == wanted

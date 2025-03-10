@@ -92,28 +92,17 @@ class AQL:
 
         self._executor = futures.ThreadPoolExecutor()
 
-    def _task_done(self, t: AQLTask):
-        """
-        Callback added to all started tasks. Runs when a task finishes (either gets cancelled or finished)
-
-        Args:
-            t (AQLTask): finished task.
-        """
-        if t.cancelled():
-            return
-
-        res = t.result()
-        self._results.append(res)
-        self._results_bitstring.append(res.best_bitstring)
-
     def wait_for_finish(self, timeout: float | int | None = None) -> None:
         r = [t.result(timeout) for t in self.tasks]
 
     def running_feature_count(self) -> bool:
         return len([t for t in self.tasks if t.running()])
 
-    def get_results(self) -> tuple[list, list]:
-        return self._results, self._results_bitstring
+    def get_results(self, timeout: float | int | None = None) -> tuple[list, list]:
+        task_outputs = [(t.result(timeout=timeout), t.result(timeout=timeout).best_bitstring)
+                        if not t.cancelled() else (None, None) for t in self.tasks]
+        results, bitstrings = tuple(zip(*task_outputs))
+        return list(results), list(bitstrings)
 
     def add_task(self, launcher: QuantumLauncher | Tuple[Problem, Algorithm, Backend], dependencies: Iterable[AQLTask] | None = None, callbacks=None) -> AQLTask:
         if isinstance(launcher, tuple):
@@ -129,7 +118,7 @@ class AQL:
             task = AQLTask(
                 launcher.run,
                 dependencies=dependencies,
-                callbacks=[self._task_done] + (callbacks if callbacks is not None else []),
+                callbacks=(callbacks if callbacks is not None else []),
                 executor=self._executor
             )
             self.tasks.append(task)
@@ -154,7 +143,7 @@ class AQL:
         t_quant = AQLTask(
             quant_task,
             dependencies=[t_gen] + [dep for dep in dependencies_list if dep in self.quantum_tasks],
-            callbacks=[self._task_done] + (callbacks if callbacks is not None else []),
+            callbacks=(callbacks if callbacks is not None else []),
             pipe_dependencies=True,  # Receive output from formatter
             executor=self._executor)
 
