@@ -40,6 +40,8 @@ class AQTBackend(QiskitBackend):
         AQT_TOKEN=valid_token
 
     """
+    sampler: AQTSampler
+    estimator: AQTEstimator
 
     def __init__(
         self,
