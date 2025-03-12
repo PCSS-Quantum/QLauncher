@@ -26,8 +26,8 @@ class JSSP(Problem):
 
     """
 
-    def __init__(self, max_time: int, onehot: Literal['exact', 'quadratic'], instance: Dict[str, List[Tuple[str, int]]],
-                 instance_name: str = 'unnamed', optimization_problem: bool = False) -> None:
+    def __init__(self, max_time: int, instance: Dict[str, List[Tuple[str, int]]],
+                 instance_name: str = 'unnamed', optimization_problem: bool = False, onehot: Literal['exact', 'quadratic'] = 'exact') -> None:
         super().__init__(instance=instance, instance_name=instance_name)
         self.max_time = max_time
         self.onehot = onehot

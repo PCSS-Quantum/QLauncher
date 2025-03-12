@@ -50,8 +50,8 @@ release = version
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 suppress_warnings = [
-    'myst.header', # ipynb linter
-    'docutils' # rst linter
+    'myst.header',  # ipynb linter
+    'docutils'  # rst linter
 ]
 
 extensions = [
@@ -63,9 +63,12 @@ extensions = [
     'myst_nb',
 ]
 
-napoleon_use_param = False
-
 viewcode_line_numbers = True
+
+autodoc_typehints = "both"
+autodoc_typehints_description_target = "documented"
+
+napoleon_numpy_docstring = False
 
 templates_path = ['_templates']
 exclude_patterns = [
@@ -75,7 +78,7 @@ exclude_patterns = [
     'tests/*',
     '*.md',
     'API/modules.rst'
-    ]
+]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -89,7 +92,6 @@ html_logo = '_static/logo.png'
 html_favicon = "_static/favicon.png"
 
 html_show_sourcelink = False  # Disable option to show .rst source
-
 
 
 def setup(app):
