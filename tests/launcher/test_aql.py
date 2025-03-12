@@ -1,5 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 
+import pytest
+
 from quantum_launcher.base.base import Result
 from quantum_launcher.launcher.aql import AQL, AQLTask
 from quantum_launcher.problems import EC
@@ -17,10 +19,20 @@ def test_AQL_individual_tasks():
 
     aql.start()
 
-    res = aql.get_results()
+    res = aql.results()
     assert len(res) == 3
     for r in res:
         assert isinstance(r, Result)
+
+
+def test_AQL_binds_params():
+    aql = AQL()
+    aql.add_task((EC.from_preset('micro'), BBS(), OrcaBackend('local_simulator')), onehot='exact')
+
+    # we are redefining arg set by adapter, if we bind params we should get a warning
+    with pytest.warns(Warning):
+        aql.start()
+        aql.wait_for_finish(10)
 
 
 def test_AQL_session_optimization():
@@ -48,8 +60,8 @@ def test_AQL_session_optimization():
     for t in aql.tasks:
         t.callbacks.append(order.append)
 
-    assert aql.quantum_tasks == [t1, t2]
-    assert len(aql.classical_tasks) == 4
+    assert aql._quantum_tasks == [t1, t2]
+    assert len(aql._classical_tasks) == 4
     assert aql.tasks == [t3, t1, t2, t4]
 
     aql.start()

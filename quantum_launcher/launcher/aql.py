@@ -1,6 +1,9 @@
-from typing import Tuple, Callable, Literal
+"""Wrapper for QuantumLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
+from typing import Tuple, Literal
+from collections.abc import Callable
 from concurrent import futures
 from threading import Event
+
 from pathos.multiprocessing import ProcessingPool
 
 from quantum_launcher.base.base import Backend, Algorithm, Problem, Result
@@ -9,11 +12,16 @@ from quantum_launcher.problems import Raw
 
 
 class AQLTask:
+    """
+        Task object returned to user, so that dependencies can be created. Basically a Future wrapper, that doesn't start immediately and can have other tasks it depends on.
 
-    task: Callable
-    dependencies: list['AQLTask']
-    callbacks: list[Callable]
-    pipe_dependencies: bool
+        Attributes:
+            task (Callable): function that gets executed asynchronously
+            executor (futures.Executor): Executor to use for submitting jobs.
+            dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
+            callbacks (list[Callable]): Callbacks ran when the task finishes executing.
+            pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task. Defaults to False.
+    """
 
     def __init__(
         self,
@@ -23,16 +31,6 @@ class AQLTask:
         callbacks: list[Callable] | None = None,
         pipe_dependencies: bool = False
     ) -> None:
-        """
-        Task object returned to user, so that dependencies can be created. Basically a Future wrapper, that doesn't start immediately and can have other tasks it depends on.
-
-        Args:
-            task (Callable): function that gets executed asynchronously
-            dependencies (list[&#39;AQLTask&#39;] | None, optional): Optional dependencies. The task will wait for all its dependencies to finish, before starting. Defaults to None.
-            callbacks (list[Callable] | None, optional): Callbacks ran when the task finishes executing. Defaults to None.
-            executor (futures.Executor | None, optional): Executor to use for submitting jobs. Defaults to None.
-            pipe_dependencies (bool, optional): If True results of tasks defined as dependencies will be passed as arguments to self.task. Defaults to False.
-        """
 
         self.task = task
         self.dependencies = dependencies if dependencies is not None else []
@@ -96,13 +94,13 @@ class AQLTask:
             return False
         return self._future.running()
 
-    def result(self, timeout=None) -> Result:
+    def result(self, timeout: float | int | None = None) -> Result:
         """
         Get result of running the task.
         Blocks the thread until task is finished.
 
         Args:
-            timeout (_type_, optional): The maximum amount to wait for execution to finish. If None, wait forever. If not None and time runs out, raises TimeoutError. Defaults to None.
+            timeout (float | int | None, optional): The maximum amount to wait for execution to finish. If None, wait forever. If not None and time runs out, raises TimeoutError. Defaults to None.
         Returns:
             Result
         """
@@ -111,22 +109,60 @@ class AQLTask:
 
 
 class AQL:
+    """
+    Launches QuantumLauncher task asynchronously.
+
+    Attributes:
+        tasks (list[AQLTask]): list of submitted tasks.
+        mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;]): Execution mode.
+
+    Usage Example
+    -------------
+    ::
+
+        aql = AQL(mode='optimize_session')
+
+        t_real = aql.add_task(
+            (
+                GraphColoring.from_preset('small'), 
+                QAOA(),
+                AQTBackend(token='valid_token', name='device')
+            ),
+            constraints_weight=5,
+            costs_weight=1
+            )
+
+        aql.add_task(
+            (
+                GraphColoring.from_preset('small'), 
+                QAOA(),
+                QiskitBackend('local_simulator')
+            ),
+            dependencies=[t_real],
+            constraints_weight=5,
+            costs_weight=1
+        )
+
+        aql.start()
+        result_real, result_sim = aql.results(timeout=15)
+
+
+    """
+
     def __init__(
         self,
         mode: Literal['default', 'optimize_session'] = 'default'
     ) -> None:
         """
         Args:
-            mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;], optional): Task execution mode. +If 'optimize_session' all tasks running on a real quantum device get split into separate generation and run subtasks, then the quantum tasks are ran in one shorter block. Defaults to 'default'.
+            mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;], optional): Task execution mode. If 'optimize_session' all tasks running on a real quantum device get split into separate generation and run subtasks, then the quantum tasks are ran in one shorter block. Defaults to 'default'.
         """
 
         self.tasks: list[AQLTask] = []
-        self._results = []
-        self._results_bitstring = []
-
         self.mode = mode
-        self.classical_tasks = []
-        self.quantum_tasks = []
+
+        self._classical_tasks = []
+        self._quantum_tasks = []
 
         self._executor = futures.ThreadPoolExecutor()
 
@@ -137,7 +173,7 @@ class AQL:
         Args:
             timeout (float | int | None, optional): The maximum amount to wait for execution to finish. If None, wait forever. If not None and time runs out, raises TimeoutError. Defaults to None.
         """
-        self.get_results(timeout=timeout)
+        self.results(timeout=timeout)
 
     def running_feature_count(self) -> int:
         """
@@ -146,7 +182,7 @@ class AQL:
         """
         return len([t for t in self.tasks if t.running()])
 
-    def get_results(self, timeout: float | int | None = None) -> list[Result | None]:
+    def results(self, timeout: float | int | None = None) -> list[Result | None]:
         """
         Get a list of results from tasks.
         Results are ordered in the same way the tasks were added.
@@ -185,7 +221,7 @@ class AQL:
                 executor=self._executor
             )
             self.tasks.append(task)
-            self.classical_tasks.append(task)
+            self._classical_tasks.append(task)
             return task
 
         def gen_task():
@@ -195,7 +231,7 @@ class AQL:
         # Split real device task into generation and actual run on a QC
         t_gen = AQLTask(
             gen_task,
-            dependencies=[dep for dep in dependencies_list if not dep in self.quantum_tasks],
+            dependencies=[dep for dep in dependencies_list if not dep in self._quantum_tasks],
             executor=self._executor
         )
 
@@ -209,13 +245,13 @@ class AQL:
 
         t_quant = AQLTask(
             quantum_task,
-            dependencies=[t_gen] + [dep for dep in dependencies_list if dep in self.quantum_tasks],
+            dependencies=[t_gen] + [dep for dep in dependencies_list if dep in self._quantum_tasks],
             callbacks=(callbacks if callbacks is not None else []),
             pipe_dependencies=True,  # Receive output from formatter
             executor=self._executor)
 
-        self.classical_tasks.append(t_gen)
-        self.quantum_tasks.append(t_quant)
+        self._classical_tasks.append(t_gen)
+        self._quantum_tasks.append(t_quant)
         self.tasks.append(t_quant)
 
         return t_quant
@@ -226,13 +262,13 @@ class AQL:
 
     def _run_async(self):
         quantum_dependencies = set()
-        dependency_queue = self.quantum_tasks.copy()
+        dependency_queue = self._quantum_tasks.copy()
         while dependency_queue:
             t = dependency_queue.pop(0)
             quantum_dependencies |= set(t.dependencies)
             dependency_queue += t.dependencies
 
-        quantum_dependencies = quantum_dependencies.difference(self.quantum_tasks)
+        quantum_dependencies = quantum_dependencies.difference(self._quantum_tasks)
         # The gateway tasks will ensure execution order of (all classical tasks that quantum tasks depend on) - (all quantum tasks) - (rest of the classical tasks)
         gateway_task_classical = AQLTask(
             lambda: 42,
@@ -240,24 +276,24 @@ class AQL:
             executor=self._executor
         )
 
-        for qt in self.quantum_tasks:
+        for qt in self._quantum_tasks:
             qt.dependencies.append(gateway_task_classical)
 
         gateway_task_quantum = AQLTask(
             lambda: 42,
-            dependencies=self.quantum_tasks.copy(),
+            dependencies=self._quantum_tasks.copy(),
             executor=self._executor
         )
 
-        for ct in [t for t in self.classical_tasks if (not t in quantum_dependencies)]:
+        for ct in [t for t in self._classical_tasks if (not t in quantum_dependencies)]:
             ct.dependencies.append(gateway_task_quantum)
 
-        self.classical_tasks.append(gateway_task_classical)
-        self.quantum_tasks.append(gateway_task_quantum)
+        self._classical_tasks.append(gateway_task_classical)
+        self._quantum_tasks.append(gateway_task_quantum)
 
         # Start all tasks
-        for t in self.classical_tasks:
+        for t in self._classical_tasks:
             t.start()
 
-        for qt in self.quantum_tasks:
+        for qt in self._quantum_tasks:
             qt.start()

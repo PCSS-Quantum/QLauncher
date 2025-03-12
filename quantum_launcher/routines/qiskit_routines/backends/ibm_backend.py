@@ -23,8 +23,8 @@ class IBMBackend(QiskitBackend):
     def __init__(
         self,
         name: Literal['local_simulator', 'backendv1v2_simulator', 'device'],
-        options: Options = None,
-        backendv1v2: BackendV1 | BackendV2 = None,
+        options: Options | None = None,
+        backendv1v2: BackendV1 | BackendV2 | None = None,
         session: Session | None = None,
     ) -> None:
         self.session = session
