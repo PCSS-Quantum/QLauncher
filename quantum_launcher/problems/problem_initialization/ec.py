@@ -3,6 +3,7 @@ import ast
 from collections import defaultdict
 from typing import List, Literal, Optional, Set
 import networkx as nx
+import matplotlib.pyplot as plt
 
 from quantum_launcher.base import Problem
 
@@ -66,7 +67,6 @@ class EC(Problem):
         self.instance = ast.literal_eval(read_file)
 
     def visualize(self, marked: Optional[str] = None):
-        import matplotlib.pyplot as plt
         G = nx.Graph()
         size = len(self.instance)
         ec = list(map(lambda x: set(map(str, x)), self.instance))

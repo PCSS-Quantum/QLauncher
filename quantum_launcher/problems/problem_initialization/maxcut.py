@@ -1,6 +1,7 @@
 """  This module contains the MaxCut class."""
-from typing import Literal, Optional, overload
+from typing import Optional
 import networkx as nx
+import matplotlib.pyplot as plt
 
 from quantum_launcher.base import Problem
 
@@ -43,7 +44,6 @@ class MaxCut(Problem):
         return f'{self.name}@{self.instance_name}'
 
     def visualize(self, bitstring: Optional[str] = None):
-        import matplotlib.pyplot as plt
         pos = nx.spring_layout(self.instance)
         plt.figure(figsize=(8, 6))
         if bitstring is None:
