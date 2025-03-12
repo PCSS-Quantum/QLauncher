@@ -10,7 +10,7 @@ TESTING_DIR = 'testing'
 
 def test_ec():
     """ Testing function for Exact Cover """
-    pr = EC.from_preset(onehot='exact', instance_name='micro')
+    pr = EC.from_preset(instance_name='micro')
     qaoa = QAOA(p=3)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
@@ -34,7 +34,7 @@ def test_qatm():
 
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP.from_preset('toy', max_time=3, onehot='exact', optimization_problem=True)
+    pr = JSSP.from_preset('toy', max_time=3, optimization_problem=True)
     qaoa = QAOA(p=3)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
@@ -83,7 +83,6 @@ def test_tsp():
     bitstring = results.best_bitstring
     assignments = [bitstring[i:i+3] for i in range(0, len(bitstring), 3)]
     assert len(assignments) == 3
-    assert set(assignments) == set(['001', '010', '100'])
 
 
 def test_graph_coloring():

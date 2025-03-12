@@ -95,7 +95,7 @@ class AQL:
     def wait_for_finish(self, timeout: float | int | None = None) -> None:
         r = [t.result(timeout) for t in self.tasks]
 
-    def running_feature_count(self) -> bool:
+    def running_feature_count(self) -> int:
         return len([t for t in self.tasks if t.running()])
 
     def get_results(self, timeout: float | int | None = None) -> tuple[list, list]:

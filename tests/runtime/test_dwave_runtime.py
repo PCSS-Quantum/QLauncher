@@ -1,15 +1,14 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
 from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
-from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw
+from quantum_launcher.problems import EC, JSSP, MaxCut, Raw, TSP
 from pyqubo import Spin
-import numpy as np
 TESTING_DIR = 'testing'
 
 
 def test_ec():
     """ Testing function for Exact Cover """
-    pr = EC.from_preset(onehot='quadratic', instance_name='toy')
+    pr = EC.from_preset(instance_name='micro')
     solver = DwaveSolver(1)
     backend = SimulatedAnnealingBackend()
     launcher = QuantumLauncher(pr, solver, backend)
@@ -20,7 +19,7 @@ def test_ec():
 
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP.from_preset(max_time=3, onehot='quadratic', instance_name='toy', optimization_problem=True)
+    pr = JSSP.from_preset(max_time=3, instance_name='toy', optimization_problem=True)
     solver = DwaveSolver(1)
     backend = SimulatedAnnealingBackend()
     launcher = QuantumLauncher(pr, solver, backend)
@@ -57,3 +56,15 @@ def test_raw():
     assert isinstance(inform, Result)
     bitstring = inform.best_bitstring
     assert bitstring in ['00', '01', '10', '11']
+
+
+def test_tsp():
+    """ Testing function for TSP """
+    pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
+    solver = DwaveSolver(1)
+    backend = SimulatedAnnealingBackend()
+    launcher = QuantumLauncher(pr, solver, backend)
+
+    inform = launcher.run()
+
+    assert isinstance(inform, Result)
