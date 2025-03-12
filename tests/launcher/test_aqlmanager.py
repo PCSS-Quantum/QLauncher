@@ -41,7 +41,7 @@ def test_runtime_dwave():
 def test_runtime_qiskit():
     with AQLManager('test') as launcher:
         launcher.add(backend=IBMBackend('local_simulator'),
-                     algorithm=QAOA(2), problem=EC.from_preset(onehot='exact', instance_name='micro'))
+                     algorithm=QAOA(2), problem=EC.from_preset(instance_name='micro'))
         launcher.add_problem(MaxCut.from_preset(instance_name='default'), times=3)
         result = launcher.result
         result_bitstring = launcher.result_bitstring
