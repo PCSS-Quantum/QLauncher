@@ -1,7 +1,7 @@
 from quantum_launcher.launcher.aql import AQLManager
 from quantum_launcher.problems import MaxCut, EC
 from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
+from quantum_launcher.routines.qiskit_routines import QAOA, IBMBackend
 from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
 import asyncio
 import pytest
@@ -40,7 +40,7 @@ def test_runtime_dwave():
 @pytest.mark.asyncio
 def test_runtime_qiskit():
     with AQLManager('test') as launcher:
-        launcher.add(backend=QiskitBackend('local_simulator'),
+        launcher.add(backend=IBMBackend('local_simulator'),
                      algorithm=QAOA(2), problem=EC.from_preset(instance_name='micro'))
         launcher.add_problem(MaxCut.from_preset(instance_name='default'), times=3)
         result = launcher.result
