@@ -1,6 +1,7 @@
 import networkx as nx
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from qiskit_algorithms import SamplingMinimumEigensolverResult
 
@@ -122,7 +123,6 @@ class TSP(Problem):
         """
         Show plot of the TSP instance.
         """
-        import matplotlib.pyplot as plt
 
         pos = nx.spring_layout(self.instance, weight=None, seed=42)
         plt.figure(figsize=(8, 6))

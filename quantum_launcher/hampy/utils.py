@@ -1,9 +1,12 @@
 """
 Utility functions for Hampy objects.
 """
-from qiskit.quantum_info import Pauli, SparsePauliOp
-
 from quantum_launcher.hampy.object import Equation
+from quantum_launcher.import_management import DependencyError
+try:
+    from qiskit.quantum_info import SparsePauliOp, Pauli
+except ImportError as e:
+    raise DependencyError(e, 'qiskit') from e
 
 
 def shift_affected_qubits(equation: Equation, shift: int) -> Equation:

@@ -4,18 +4,22 @@ Routine file for Cirq library
 from typing import Literal
 from collections.abc import Sequence
 
-import cirq
-from cirq.sim.sparse_simulator import Simulator
-
-
-import qiskit
-from qiskit.primitives import Sampler
-from qiskit.primitives.base.sampler_result import SamplerResult
-from qiskit.result import QuasiDistribution
-from qiskit_algorithms.optimizers import COBYLA
-
 from quantum_launcher.base import Backend
 from quantum_launcher.base.translator import Translation
+from quantum_launcher.import_management import DependencyError
+try:
+    import cirq
+    from cirq.sim.sparse_simulator import Simulator
+except ImportError as e:
+    raise DependencyError(e, install_hint='cirq') from e
+try:
+    import qiskit
+    from qiskit.primitives import Sampler
+    from qiskit.primitives.base.sampler_result import SamplerResult
+    from qiskit.result import QuasiDistribution
+    from qiskit_algorithms.optimizers import COBYLA
+except ImportError as e:
+    raise DependencyError(e, install_hint='qiskit') from e
 
 
 class _CirqRunner:
