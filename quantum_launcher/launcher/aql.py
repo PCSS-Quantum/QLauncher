@@ -13,14 +13,16 @@ from quantum_launcher.problems import Raw
 
 class AQLTask:
     """
-        Task object returned to user, so that dependencies can be created. Basically a Future wrapper, that doesn't start immediately and can have other tasks it depends on.
+        Task object returned to user, so that dependencies can be created. 
+        Basically a Future wrapper, that doesn't start immediately and can have other tasks it depends on.
 
         Attributes:
             task (Callable): function that gets executed asynchronously
             executor (futures.Executor): Executor to use for submitting jobs.
             dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
             callbacks (list[Callable]): Callbacks ran when the task finishes executing.
-            pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task. Defaults to False.
+            pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task. 
+            Defaults to False.
     """
 
     def __init__(
@@ -100,7 +102,10 @@ class AQLTask:
         Blocks the thread until task is finished.
 
         Args:
-            timeout (float | int | None, optional): The maximum amount to wait for execution to finish. If None, wait forever. If not None and time runs out, raises TimeoutError. Defaults to None.
+            timeout (float | int | None, optional): 
+                    The maximum amount to wait for execution to finish.
+                    If None, wait forever. If not None and time runs out, raises TimeoutError. 
+                    Defaults to None.
         Returns:
             Result
         """
@@ -155,7 +160,11 @@ class AQL:
     ) -> None:
         """
         Args:
-            mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;], optional): Task execution mode. If 'optimize_session' all tasks running on a real quantum device get split into separate generation and run subtasks, then the quantum tasks are ran in one shorter block. Defaults to 'default'.
+            mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;], optional): 
+                    Task execution mode. 
+                    If 'optimize_session' all tasks running on a real quantum device get split into separate generation and run subtasks,
+                    then the quantum tasks are ran in one shorter block. 
+                    Defaults to 'default'.
         """
 
         self.tasks: list[AQLTask] = []
@@ -171,7 +180,10 @@ class AQL:
         Blocks the thread until all tasks are finished.
 
         Args:
-            timeout (float | int | None, optional): The maximum amount to wait for execution to finish. If None, wait forever. If not None and time runs out, raises TimeoutError. Defaults to None.
+            timeout (float | int | None, optional): 
+                    The maximum amount to wait for execution to finish. 
+                    If None, wait forever. If not None and time runs out, raises TimeoutError. 
+                    Defaults to None.
         """
         self.results(timeout=timeout)
 
@@ -189,21 +201,38 @@ class AQL:
         Blocks the thread until all tasks are finished.
 
         Args:
-            timeout (float | int | None, optional): The maximum amount to wait for execution to finish. If None, wait forever. If not None and time runs out, raises TimeoutError. Defaults to None.
+            timeout (float | int | None, optional): 
+                    The maximum amount to wait for execution to finish. 
+                    If None, wait forever. If not None and time runs out, raises TimeoutError. 
+                    Defaults to None.
 
         Returns:
             list[Result | None]: Task results.
         """
-        return [t.result(timeout=timeout) if not t.cancelled() else None for t in self.tasks]
+        try:
+            return [t.result(timeout=timeout) if not t.cancelled() else None for t in self.tasks]
+        except TimeoutError as e:
+            for t in self._classical_tasks + self._quantum_tasks:
+                t.cancel()
+            raise e
 
-    def add_task(self, launcher: QuantumLauncher | Tuple[Problem, Algorithm, Backend], dependencies: list[AQLTask] | None = None, callbacks: list[Callable] | None = None, **kwargs) -> AQLTask:
+    def add_task(
+        self,
+        launcher: QuantumLauncher | Tuple[Problem, Algorithm, Backend],
+        dependencies: list[AQLTask] | None = None,
+        callbacks: list[Callable] | None = None,
+        **kwargs
+    ) -> AQLTask:
         """
         Add a Quantum launcher task to the execution queue.
 
         Args:
             launcher (QuantumLauncher | Tuple[Problem, Algorithm, Backend]): Launcher instance that will be run.
             dependencies (list[AQLTask] | None, optional): Tasks that must finish first before this task. Defaults to None.
-            callbacks (list[Callable] | None, optional): Functions to run when the task finishes. The task will be passed to the function as the only parameter. Defaults to None.
+            callbacks (list[Callable] | None, optional): 
+                    Functions to run when the task finishes. 
+                    The task will be passed to the function as the only parameter. 
+                    Defaults to None.
 
         Returns:
             AQLTask: Pointer to the submitted task.
@@ -269,7 +298,8 @@ class AQL:
             dependency_queue += t.dependencies
 
         quantum_dependencies = quantum_dependencies.difference(self._quantum_tasks)
-        # The gateway tasks will ensure execution order of (all classical tasks that quantum tasks depend on) - (all quantum tasks) - (rest of the classical tasks)
+        # The gateway tasks will ensure execution order of
+        # (all classical tasks that quantum tasks depend on) - (all quantum tasks) - (rest of the classical tasks)
         gateway_task_classical = AQLTask(
             lambda: 42,
             dependencies=list(quantum_dependencies),
@@ -285,7 +315,7 @@ class AQL:
             executor=self._executor
         )
 
-        for ct in [t for t in self._classical_tasks if (not t in quantum_dependencies)]:
+        for ct in [t for t in self._classical_tasks if not t in quantum_dependencies]:
             ct.dependencies.append(gateway_task_quantum)
 
         self._classical_tasks.append(gateway_task_classical)

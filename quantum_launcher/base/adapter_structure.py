@@ -59,7 +59,8 @@ class ProblemFormatter:
         common_params = set(curr_run_params.keys()).intersection(set(self.adapter_requirements.keys()))
         if len(common_params) > 0:
             warnings.warn(
-                f"Attempting to reassign parameter values required by one of the adapters: {common_params}, those params will not be set.")
+                f"Attempting to reassign parameter values required by one of the adapters: {common_params}, those params will not be set."
+            )
 
         curr_run_params = curr_run_params | self.adapter_requirements
 

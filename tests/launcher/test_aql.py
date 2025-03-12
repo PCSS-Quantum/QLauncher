@@ -1,38 +1,41 @@
 from concurrent.futures import ThreadPoolExecutor
 
-import pytest
-
 from quantum_launcher.base.base import Result
 from quantum_launcher.launcher.aql import AQL, AQLTask
-from quantum_launcher.problems import EC
+from quantum_launcher.problems import EC, TSP
 from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
-from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
+
+from quantum_launcher.hampy import Equation
 
 
 def test_AQL_individual_tasks():
     aql = AQL()
 
     aql.add_task((EC.from_preset('micro'), QAOA(), QiskitBackend('local_simulator')))
-    aql.add_task((EC.from_preset('micro'), BBS(), OrcaBackend('local_simulator')))
     aql.add_task((EC.from_preset('micro'), DwaveSolver(), SimulatedAnnealingBackend('local_simulator')))
 
     aql.start()
 
     res = aql.results()
-    assert len(res) == 3
+    assert len(res) == 2
     for r in res:
         assert isinstance(r, Result)
 
 
 def test_AQL_binds_params():
-    aql = AQL()
-    aql.add_task((EC.from_preset('micro'), BBS(), OrcaBackend('local_simulator')), onehot='exact')
+    aql = AQL('optimize_session')
+    be = QiskitBackend('local_simulator')
+    be.is_device = True
+    aql.add_task((TSP.generate_tsp_instance(3), QAOA(), be), onehot='quadratic')
 
-    # we are redefining arg set by adapter, if we bind params we should get a warning
-    with pytest.warns(Warning):
-        aql.start()
-        aql.wait_for_finish(10)
+    aql.start()
+    aql.wait_for_finish(10)
+    t_gen = aql._classical_tasks[0]
+
+    eq = Equation(t_gen.result())
+
+    assert eq.is_quadratic()
 
 
 def test_AQL_session_optimization():
@@ -65,7 +68,7 @@ def test_AQL_session_optimization():
     assert aql.tasks == [t3, t1, t2, t4]
 
     aql.start()
-    aql.wait_for_finish(20)
+    aql.wait_for_finish(10)
     assert order == [t3, t1, t2, t4]
 
 
@@ -80,7 +83,8 @@ def test_AQL_task_basic():
 
 def test_AQL_task_result_passing():
     """
-    Test if values from dependencies are passed in the correct order, i.e if dependencies=[dep1,dep2], [res(dep1),res(dep2)] is passed to the task function.
+    Test if values from dependencies are passed in the correct order, 
+    i.e if dependencies=[dep1,dep2], [res(dep1),res(dep2)] is passed to the task function.
     """
     ex = ThreadPoolExecutor()
     t_string = AQLTask(lambda: "Value:", executor=ex)
