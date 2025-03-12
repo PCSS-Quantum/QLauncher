@@ -182,10 +182,14 @@ class AQL:
 
     def _run_async(self):
         quantum_dependencies = set()
-        for qt in self.quantum_tasks:
-            quantum_dependencies |= set(qt.dependencies)
+        dependency_queue = self.quantum_tasks.copy()
+        while dependency_queue:
+            t = dependency_queue.pop(0)
+            quantum_dependencies |= set(t.dependencies)
+            dependency_queue += t.dependencies
+
         quantum_dependencies = quantum_dependencies.difference(self.quantum_tasks)
-        # This task will wait for all classical tasks to execute
+        # The gateway tasks will ensure execution order of (all classical tasks that quantum tasks depend on) - (all quantum tasks) - (rest of the classical tasks)
         gateway_task_classical = AQLTask(
             lambda: 42,
             dependencies=list(quantum_dependencies),

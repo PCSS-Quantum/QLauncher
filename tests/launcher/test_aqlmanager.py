@@ -113,7 +113,7 @@ def test_AQL_chained_tasks():
     assert order == wanted
 
 
-def test_AQL_session_op3timization():
+def test_AQL_session_optimization():
     classical_backend = QiskitBackend('local_simulator')
     totally_real_backend = QiskitBackend('local_simulator')
     totally_real_backend.is_device = True
