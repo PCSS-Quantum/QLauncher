@@ -39,8 +39,7 @@ class QuantumLauncher:
 
     """
 
-    def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend = None,
-                 logger: Optional[logging.Logger] = None) -> None:
+    def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend = None, logger: Optional[logging.Logger] = None) -> None:
 
         if not isinstance(problem, Problem):
             problem = Raw(problem)
@@ -48,6 +47,7 @@ class QuantumLauncher:
         self.problem: Problem = problem
         self.algorithm: Algorithm = algorithm
         self.backend: Backend = backend
+        self.formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
 
         if logger is None:
             logger: logging.Logger = logging.getLogger('QuantumLauncher')
@@ -57,11 +57,7 @@ class QuantumLauncher:
 
         self.res: dict = {}
 
-    def format(self):
-        formatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
-        return formatter(self.problem)
-
-    def run(self) -> Result:
+    def run(self, **kwargs) -> Result:
         """
         Finds proper formatter, and runs the algorithm on the problem with given backends.
 
@@ -69,10 +65,9 @@ class QuantumLauncher:
             dict: The results of the algorithm execution.
         """
 
-        formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
-        formatter.set_run_params(kwargs)
+        self.formatter.set_run_params(kwargs)
 
-        self.result = self.algorithm.run(self.problem, self.backend, formatter=formatter)
+        self.result = self.algorithm.run(self.problem, self.backend, formatter=self.formatter)
         logging.info('Algorithm ended successfully!')
         return self.result
 

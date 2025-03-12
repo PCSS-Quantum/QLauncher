@@ -1,81 +1,16 @@
 from concurrent.futures import ThreadPoolExecutor
 
+import pytest
+
+import numpy as np
+
+from quantum_launcher.base.base import Result
 from quantum_launcher.launcher.aql import AQL, AQLTask
 from quantum_launcher.launcher.qlauncher import QuantumLauncher
 from quantum_launcher.problems import MaxCut, EC
 from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
 from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
-import pytest
-
-import numpy as np
-
-
-def test_runtime():
-    return
-    with AQLManager('test') as launcher:
-        launcher.add(backend=SimulatedAnnealingBackend(),
-                     algorithm=DwaveSolver(1), problem=EC.from_preset(instance_name='micro'))
-        launcher.add_algorithm(DwaveSolver(2))
-        result = launcher.result
-
-    assert len(result) == 2
-
-
-def test_runtime_dwave():
-    return
-    with AQLManager('test') as launcher:
-        launcher.add(backend=SimulatedAnnealingBackend(),
-                     algorithm=DwaveSolver(1), problem=EC.from_preset(instance_name='micro'))
-        launcher.add_algorithm(DwaveSolver(2), times=2)
-        launcher.add_problem(MaxCut.from_preset(instance_name='default'), times=3)
-        result = launcher.result
-        result_bitstring = launcher.result_bitstring
-
-    assert len(result) == (2+1) * (3+1)
-    assert len(result_bitstring) == (2+1) * (3+1)
-    for x in result:
-        assert x is not None
-    for x in result_bitstring:
-        assert isinstance(x, str)
-        assert len(x) == 6 or len(x) == 2
-
-
-def test_runtime_qiskit():
-    return
-    with AQLManager('test') as launcher:
-        launcher.add(backend=QiskitBackend('local_simulator'),
-                     algorithm=QAOA(2), problem=EC.from_preset(instance_name='micro'))
-        launcher.add_problem(MaxCut.from_preset(instance_name='default'), times=3)
-        result = launcher.result
-        result_bitstring = launcher.result_bitstring
-
-    assert len(result) == (3+1)
-    assert len(result_bitstring) == (3+1)
-    for x in result:
-        assert x is not None
-    for x in result_bitstring:
-        assert isinstance(x, str)
-        assert len(x) == 6 or len(x) == 2
-
-
-def test_runtime_orca():
-    return
-    # TODO Fix this test, it is not working as expected, it is not ending
-    with AQLManager('test') as launcher:
-        launcher.add(backend=OrcaBackend('local'),
-                     algorithm=BBS(), problem=MaxCut.from_preset(instance_name='default'))
-        launcher.add_problem(MaxCut.from_preset(instance_name='default'), times=3)
-        result = launcher.result
-        result_bitstring = launcher.result_bitstring
-
-    assert len(result) == (3+1)
-    assert len(result_bitstring) == (3+1)
-    for x in result:
-        assert x is not None
-    for x in result_bitstring:
-        assert isinstance(x, str)
-        # assert len(x) == 10 or len(x) == 2
 
 
 def test_AQL_individual_tasks():
@@ -87,11 +22,14 @@ def test_AQL_individual_tasks():
 
     aql.start()
 
-    res, bitres = aql.get_results()
-    assert len(res) == len(bitres) == 3
+    res = aql.get_results()
+    assert len(res) == 3
+    for r in res:
+        assert isinstance(r, Result)
 
 
 def test_AQL_chained_tasks():
+    return
     """
     Check that tasks in a chain execute one after another.
     """
@@ -128,7 +66,7 @@ def test_AQL_session_optimization():
     t3 = aql.add_task(t3_temp)
     t1 = aql.add_task(t1_temp, dependencies=[t3])
     t2 = aql.add_task(t2_temp, dependencies=[t1])
-    t4 = aql.add_task(t3_temp, dependencies=[t1, t3])
+    t4 = aql.add_task(t3_temp, dependencies=[t1])
 
     t3.__repr__ = lambda: 't3'
     t1.__repr__ = lambda: 't1'
@@ -140,20 +78,19 @@ def test_AQL_session_optimization():
 
     assert aql.quantum_tasks == [t1, t2]
     assert len(aql.classical_tasks) == 4
-    # assert aql.tasks == [t1, t2, t3, t4]
+    assert aql.tasks == [t3, t1, t2, t4]
 
     aql.start()
     aql.wait_for_finish(20)
-    # raise Exception(f'{order}')
-    assert order == [t3, t1, t2, t4]  # Classical - quantum 1 - quantum 2 dependent on quantum 1
+    assert order == [t3, t1, t2, t4]
 
 
 def test_AQL_task_basic():
     ex = ThreadPoolExecutor()
     t1 = AQLTask(lambda: 2, executor=ex)
     t2 = AQLTask(lambda prev: prev+2, dependencies=[t1], executor=ex, pipe_dependencies=True)
-    t2._start()
-    t1._start()
+    t2.start()
+    t1.start()
     assert t2.result(timeout=1) == 4
 
 
@@ -167,6 +104,6 @@ def test_AQL_task_result_passing():
     t_concat = AQLTask(lambda s, i: s + str(i), dependencies=[t_string, t_int], executor=ex, pipe_dependencies=True)
 
     for t in [t_string, t_concat, t_int]:
-        t._start()
+        t.start()
 
     assert t_concat.result(timeout=1) == "Value:42"

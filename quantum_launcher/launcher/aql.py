@@ -1,20 +1,26 @@
-from typing import Iterable, Tuple, Callable, Literal
+from typing import Tuple, Callable, Literal
 from concurrent import futures
 from threading import Event
 from pathos.multiprocessing import ProcessingPool
 
-from quantum_launcher.base.base import Backend, Algorithm, Problem
+from quantum_launcher.base.base import Backend, Algorithm, Problem, Result
 from quantum_launcher.launcher.qlauncher import QuantumLauncher
 from quantum_launcher.problems import Raw
 
 
 class AQLTask:
+
+    task: Callable
+    dependencies: list['AQLTask']
+    callbacks: list[Callable]
+    pipe_dependencies: bool
+
     def __init__(
         self,
         task: Callable,
-        dependencies: Iterable['AQLTask'] | None = None,
-        callbacks: Iterable[Callable] | None = None,
-        executor: futures.Executor | None = None,
+        executor: futures.Executor,
+        dependencies: list['AQLTask'] | None = None,
+        callbacks: list[Callable] | None = None,
         pipe_dependencies: bool = False
     ) -> None:
         """
@@ -22,8 +28,8 @@ class AQLTask:
 
         Args:
             task (Callable): function that gets executed asynchronously
-            dependencies (Iterable[&#39;AQLTask&#39;] | None, optional): Optional dependencies. The task will wait for all its dependencies to finish, before starting. Defaults to None.
-            callbacks (Iterable[Callable] | None, optional): Callbacks ran when the task finishes executing. Defaults to None.
+            dependencies (list[&#39;AQLTask&#39;] | None, optional): Optional dependencies. The task will wait for all its dependencies to finish, before starting. Defaults to None.
+            callbacks (list[Callable] | None, optional): Callbacks ran when the task finishes executing. Defaults to None.
             executor (futures.Executor | None, optional): Executor to use for submitting jobs. Defaults to None.
             pipe_dependencies (bool, optional): If True results of tasks defined as dependencies will be passed as arguments to self.task. Defaults to False.
         """
@@ -48,7 +54,8 @@ class AQLTask:
         self._future.add_done_callback(lambda fut: [cb(self) for cb in self.callbacks])  # pass AQLTask instead of future
         self._future_made.set()
 
-    def _start(self):
+    def start(self):
+        """Start task execution."""
         self._set_future()
 
     def cancel(self) -> bool:
@@ -71,7 +78,7 @@ class AQLTask:
             return False
         return self._future.running()
 
-    def result(self, timeout=None):
+    def result(self, timeout=None) -> Result:
         self._future_made.wait(timeout=timeout)  # Wait until we submit a task to the executor
         return self._future.result(timeout=timeout)
 
@@ -98,25 +105,18 @@ class AQL:
     def running_feature_count(self) -> int:
         return len([t for t in self.tasks if t.running()])
 
-    def get_results(self, timeout: float | int | None = None) -> tuple[list, list]:
-        task_outputs = [(t.result(timeout=timeout), t.result(timeout=timeout).best_bitstring)
-                        if not t.cancelled() else (None, None) for t in self.tasks]
-        results, bitstrings = tuple(zip(*task_outputs))
-        return list(results), list(bitstrings)
+    def get_results(self, timeout: float | int | None = None) -> list[Result | None]:
+        return [t.result(timeout=timeout) if not t.cancelled() else None for t in self.tasks]
 
-    def add_task(self, launcher: QuantumLauncher | Tuple[Problem, Algorithm, Backend], dependencies: Iterable[AQLTask] | None = None, callbacks=None) -> AQLTask:
+    def add_task(self, launcher: QuantumLauncher | Tuple[Problem, Algorithm, Backend], dependencies: list[AQLTask] | None = None, callbacks: list[Callable] | None = None, **kwargs) -> AQLTask:
         if isinstance(launcher, tuple):
             launcher = QuantumLauncher(*launcher)
 
         dependencies_list = dependencies if dependencies is not None else []
 
         if not self.mode == 'optimize_session' or not launcher.backend.is_device:
-            # This is a solution until I think of something smarter...
-            # if len(set(self.quantum_tasks).intersection(set(dependencies_list))) != 0:
-            #    raise ValueError("Quantum tasks run last, you cannot depend on them for classical tasks.")
-
             task = AQLTask(
-                launcher.run,
+                lambda: launcher.run(**kwargs),
                 dependencies=dependencies,
                 callbacks=(callbacks if callbacks is not None else []),
                 executor=self._executor
@@ -125,14 +125,18 @@ class AQL:
             self.classical_tasks.append(task)
             return task
 
+        def gen_task():
+            launcher.formatter.set_run_params(kwargs)
+            return launcher.formatter(launcher.problem)
+
         # Split real device task into generation and actual run on a QC
         t_gen = AQLTask(
-            launcher.format,
+            gen_task,
             dependencies=[dep for dep in dependencies_list if not dep in self.quantum_tasks],
             executor=self._executor
         )
 
-        def quant_task(formatted, *rest):
+        def quantum_task(formatted, *rest):
             ql = QuantumLauncher(
                 Raw(formatted, launcher.problem.instance_name),
                 launcher.algorithm,
@@ -141,7 +145,7 @@ class AQL:
             return ql.run()
 
         t_quant = AQLTask(
-            quant_task,
+            quantum_task,
             dependencies=[t_gen] + [dep for dep in dependencies_list if dep in self.quantum_tasks],
             callbacks=(callbacks if callbacks is not None else []),
             pipe_dependencies=True,  # Receive output from formatter
@@ -153,31 +157,31 @@ class AQL:
 
         return t_quant
 
-    def add_task_chain(self, chain: Iterable[QuantumLauncher] | Iterable[Tuple[Problem, Algorithm, Backend]]) -> AQLTask:
-        """
-        Add a chain of tasks that should be executed one after another.
+    # def add_task_chain(self, chain: Iterable[QuantumLauncher] | Iterable[Tuple[Problem, Algorithm, Backend]]) -> AQLTask:
+    #     """
+    #     Add a chain of tasks that should be executed one after another.
 
-        Args:
-            chain (Iterable[QuantumLauncher] | Iterable[Tuple[Problem, Algorithm, Backend]]): Chain of tasks to execute.
+    #     Args:
+    #         chain (Iterable[QuantumLauncher] | Iterable[Tuple[Problem, Algorithm, Backend]]): Chain of tasks to execute.
 
-        Returns:
-            Last task in the chain.
-        """
+    #     Returns:
+    #         Last task in the chain.
+    #     """
 
-        if len(chain) == 0:
-            raise ValueError("Chains must have at least 1 element.")
+    #     if len(chain) == 0:
+    #         raise ValueError("Chains must have at least 1 element.")
 
-        prev_task = self.add_task(chain[0])
-        for t in chain[1:]:
-            new_task = self.add_task(t, dependencies=[prev_task])
-            prev_task = new_task
+    #     if
 
-        return prev_task
+    #     prev_task = self.add_task(chain[0])
+    #     for t in chain[1:]:
+    #         new_task = self.add_task(t, dependencies=[prev_task])
+    #         prev_task = new_task
+
+    #     return prev_task
 
     def start(self):
-        self._results = []
-        self._results_bitstring = []
-
+        """Start tasks execution."""
         self._run_async()
 
     def _run_async(self):
@@ -211,7 +215,9 @@ class AQL:
         self.classical_tasks.append(gateway_task_classical)
         self.quantum_tasks.append(gateway_task_quantum)
 
+        # Start all tasks
         for t in self.classical_tasks:
-            t._start()
+            t.start()
+
         for qt in self.quantum_tasks:
-            qt._start()
+            qt.start()
