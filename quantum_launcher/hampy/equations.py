@@ -3,10 +3,14 @@
 
 It's goal is too simplify the creation of more complex problem implementations, by creating them with use of smaller ones.
 """
-from qiskit.quantum_info import SparsePauliOp
 from typing import Optional
-from .object import Equation, Variable
 from copy import copy
+from .object import Equation, Variable
+from quantum_launcher.import_management import DependencyError
+try:
+    from qiskit.quantum_info import SparsePauliOp
+except ImportError as e:
+    raise DependencyError(e, 'qiskit') from e
 
 
 def one_in_n(variables: list[int | Variable], size: Optional[int] = None, quadratic: bool = False) -> Equation:

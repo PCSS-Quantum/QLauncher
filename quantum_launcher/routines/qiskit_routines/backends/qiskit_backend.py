@@ -1,15 +1,21 @@
 """ Base backend class for Qiskit routines. """
 from typing import Literal
 
-from qiskit.providers import BackendV1, BackendV2
-from qiskit_algorithms.optimizers import COBYLA, Optimizer
-from qiskit.primitives import BackendSamplerV2, BackendEstimatorV2, StatevectorEstimator as LocalEstimator, StatevectorSampler as LocalSampler, Sampler as SamplerV1
-from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
-
-from qiskit_ibm_runtime import Options
 
 from quantum_launcher.base import Backend
 from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
+
+
+from quantum_launcher.import_management import DependencyError
+try:
+    from qiskit.providers import BackendV1, BackendV2
+    from qiskit.primitives import (BackendSamplerV2, BackendEstimatorV2, StatevectorEstimator,
+                                   StatevectorSampler, Sampler, BaseSamplerV2, BaseEstimatorV2)
+
+    from qiskit_algorithms.optimizers import COBYLA, Optimizer
+    from qiskit_ibm_runtime import Options
+except ImportError as e:
+    raise DependencyError(e, install_hint='qiskit') from e
 
 
 class QiskitBackend(Backend):
@@ -25,7 +31,7 @@ class QiskitBackend(Backend):
         optimizer (Optimizer): The optimizer used for optimization.
     """
     sampler: BaseSamplerV2
-    estimator: BackendEstimatorV2
+    estimator: BaseEstimatorV2
     optimizer: Optimizer
 
     def __init__(
@@ -37,19 +43,19 @@ class QiskitBackend(Backend):
         super().__init__(name)
         self.options = options
         self.backendv1v2 = backendv1v2
-        self._samplerV1: SamplerV1 | None = None
+        self._samplerV1: Sampler | None = None
         self._set_primitives_on_backend_name()
 
     @property
-    def samplerV1(self) -> SamplerV1:
+    def samplerV1(self) -> Sampler:
         if self._samplerV1 is None:
             self._samplerV1 = SamplerV2Adapter(self.sampler)
         return self._samplerV1
 
     def _set_primitives_on_backend_name(self):
         if self.name == 'local_simulator':
-            self.estimator = LocalEstimator()
-            self.sampler = LocalSampler()
+            self.estimator = StatevectorEstimator()
+            self.sampler = StatevectorSampler()
             self.optimizer = COBYLA()
         elif self.name == 'backendv1v2_simulator':
             self.estimator = BackendEstimatorV2(backend=self.backendv1v2)

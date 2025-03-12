@@ -1,8 +1,13 @@
 from typing import Sequence
-from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2, BaseEstimatorV1, BaseEstimatorV2
-from qiskit.primitives import SamplerResult, EstimatorResult, BasePrimitiveJob
-from qiskit import transpile
-from qiskit.result import QuasiDistribution
+
+from quantum_launcher.import_management import DependencyError
+try:
+    from qiskit import transpile
+    from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2
+    from qiskit.primitives import SamplerResult, BasePrimitiveJob
+    from qiskit.result import QuasiDistribution
+except ImportError as e:
+    raise DependencyError(e, 'qiskit') from e
 
 
 class RuntimeJobV2Adapter(BasePrimitiveJob):
