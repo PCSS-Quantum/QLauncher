@@ -51,7 +51,7 @@ class EC(Problem):
                             {3, 5, 6},
                             {2, 3, 6, 7},
                             {2, 7}]
-        return EC(instance=instance, instance_name=instance_name, **kwargs)
+        return EC(instance=instance, instance_name=instance_name, onehot='quadratic', **kwargs)
 
     @classmethod
     def from_file(cls, path: str, **kwargs) -> "EC":

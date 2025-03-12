@@ -112,8 +112,8 @@ class AQL:
 
         if not self.mode == 'optimize_session' or not launcher.backend.is_device:
             # This is a solution until I think of something smarter...
-            if len(set(self.quantum_tasks).intersection(set(dependencies_list))) != 0:
-                raise ValueError("Quantum tasks run last, you cannot depend on them for classical tasks.")
+            # if len(set(self.quantum_tasks).intersection(set(dependencies_list))) != 0:
+            #    raise ValueError("Quantum tasks run last, you cannot depend on them for classical tasks.")
 
             task = AQLTask(
                 launcher.run,
@@ -181,19 +181,33 @@ class AQL:
         self._run_async()
 
     def _run_async(self):
+        quantum_dependencies = set()
+        for qt in self.quantum_tasks:
+            quantum_dependencies |= set(qt.dependencies)
+        quantum_dependencies = quantum_dependencies.difference(self.quantum_tasks)
         # This task will wait for all classical tasks to execute
-        gateway_task = AQLTask(
+        gateway_task_classical = AQLTask(
             lambda: 42,
-            dependencies=self.classical_tasks,
+            dependencies=list(quantum_dependencies),
             executor=self._executor
         )
 
-        # Which means that all quantum tasks will execute after the main workload
         for qt in self.quantum_tasks:
-            qt.dependencies.append(gateway_task)
+            qt.dependencies.append(gateway_task_classical)
+
+        gateway_task_quantum = AQLTask(
+            lambda: 42,
+            dependencies=self.quantum_tasks.copy(),
+            executor=self._executor
+        )
+
+        for ct in [t for t in self.classical_tasks if (not t in quantum_dependencies)]:
+            ct.dependencies.append(gateway_task_quantum)
+
+        self.classical_tasks.append(gateway_task_classical)
+        self.quantum_tasks.append(gateway_task_quantum)
 
         for t in self.classical_tasks:
             t._start()
         for qt in self.quantum_tasks:
             qt._start()
-        gateway_task._start()
