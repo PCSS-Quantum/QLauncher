@@ -1,7 +1,7 @@
 """  This module contains the EC class."""
 import ast
 from collections import defaultdict
-from typing import List, Literal, Optional, Set
+from typing import List, Optional, Set
 import networkx as nx
 
 from quantum_launcher.base import Problem
@@ -23,20 +23,17 @@ class EC(Problem):
 
     """
 
-    def __init__(self, onehot: Literal['exact', 'quadratic'], instance: List[Set[int]] = None,
-                 instance_name: str = 'unnamed') -> None:
+    def __init__(self, instance: List[Set[int]] = None, instance_name: str = 'unnamed') -> None:
         super().__init__(instance=instance, instance_name=instance_name)
-        self.onehot = onehot
 
     @property
     def setup(self) -> dict:
         return {
-            'onehot': self.onehot,
             'instance_name': self.instance_name
         }
 
     def _get_path(self) -> str:
-        return f'{self.name}@{self.instance_name}@{self.onehot}'
+        return f'{self.name}@{self.instance_name}'
 
     @staticmethod
     def from_preset(instance_name: str, **kwargs) -> "EC":
