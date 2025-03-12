@@ -59,26 +59,53 @@ class AQLTask:
         self._set_future()
 
     def cancel(self) -> bool:
+        """
+        Attempt to cancel the task.
+
+        Returns:
+            bool: True if cancellation was successful
+        """
         if self._future is None:
             return False
         return self._future.cancel()
 
     def cancelled(self) -> bool:
+        """
+        Returns:
+            bool: True if the task was cancelled by the user.
+        """
         if self._future is None:
             return False
         return self._future.cancelled()
 
     def done(self) -> bool:
+        """
+        Returns:
+            bool: True if the task had finished execution.
+        """
         if self._future is None:
             return False
         return self._future.done()
 
     def running(self) -> bool:
+        """
+        Returns:
+            bool: True if the task is currently executing.
+        """
         if self._future is None:
             return False
         return self._future.running()
 
     def result(self, timeout=None) -> Result:
+        """
+        Get result of running the task.
+        Blocks the thread until task is finished.
+
+        Args:
+            timeout (_type_, optional): The maximum amount to wait for execution to finish. If None, wait forever. If not None and time runs out, raises TimeoutError. Defaults to None.
+        Returns:
+            Result
+        """
         self._future_made.wait(timeout=timeout)  # Wait until we submit a task to the executor
         return self._future.result(timeout=timeout)
 
@@ -88,6 +115,10 @@ class AQL:
         self,
         mode: Literal['default', 'optimize_session'] = 'default'
     ) -> None:
+        """
+        Args:
+            mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;], optional): Task execution mode. +If 'optimize_session' all tasks running on a real quantum device get split into separate generation and run subtasks, then the quantum tasks are ran in one shorter block. Defaults to 'default'.
+        """
 
         self.tasks: list[AQLTask] = []
         self._results = []
@@ -100,21 +131,53 @@ class AQL:
         self._executor = futures.ThreadPoolExecutor()
 
     def wait_for_finish(self, timeout: float | int | None = None) -> None:
-        r = [t.result(timeout) for t in self.tasks]
+        """
+        Blocks the thread until all tasks are finished.
+
+        Args:
+            timeout (float | int | None, optional): The maximum amount to wait for execution to finish. If None, wait forever. If not None and time runs out, raises TimeoutError. Defaults to None.
+        """
+        self.get_results(timeout=timeout)
 
     def running_feature_count(self) -> int:
+        """
+        Returns:
+            int: Amount of tasks that are currently executing.
+        """
         return len([t for t in self.tasks if t.running()])
 
     def get_results(self, timeout: float | int | None = None) -> list[Result | None]:
+        """
+        Get a list of results from tasks.
+        Results are ordered in the same way the tasks were added.
+        Blocks the thread until all tasks are finished.
+
+        Args:
+            timeout (float | int | None, optional): The maximum amount to wait for execution to finish. If None, wait forever. If not None and time runs out, raises TimeoutError. Defaults to None.
+
+        Returns:
+            list[Result | None]: Task results.
+        """
         return [t.result(timeout=timeout) if not t.cancelled() else None for t in self.tasks]
 
     def add_task(self, launcher: QuantumLauncher | Tuple[Problem, Algorithm, Backend], dependencies: list[AQLTask] | None = None, callbacks: list[Callable] | None = None, **kwargs) -> AQLTask:
+        """
+        Add a Quantum launcher task to the execution queue.
+
+        Args:
+            launcher (QuantumLauncher | Tuple[Problem, Algorithm, Backend]): Launcher instance that will be run.
+            dependencies (list[AQLTask] | None, optional): Tasks that must finish first before this task. Defaults to None.
+            callbacks (list[Callable] | None, optional): Functions to run when the task finishes. The task will be passed to the function as the only parameter. Defaults to None.
+
+        Returns:
+            AQLTask: Pointer to the submitted task.
+        """
         if isinstance(launcher, tuple):
             launcher = QuantumLauncher(*launcher)
 
         dependencies_list = dependencies if dependencies is not None else []
 
-        if not self.mode == 'optimize_session' or not launcher.backend.is_device:
+        if self.mode != 'optimize_session' or not launcher.backend.is_device:
             task = AQLTask(
                 lambda: launcher.run(**kwargs),
                 dependencies=dependencies,
@@ -156,29 +219,6 @@ class AQL:
         self.tasks.append(t_quant)
 
         return t_quant
-
-    # def add_task_chain(self, chain: Iterable[QuantumLauncher] | Iterable[Tuple[Problem, Algorithm, Backend]]) -> AQLTask:
-    #     """
-    #     Add a chain of tasks that should be executed one after another.
-
-    #     Args:
-    #         chain (Iterable[QuantumLauncher] | Iterable[Tuple[Problem, Algorithm, Backend]]): Chain of tasks to execute.
-
-    #     Returns:
-    #         Last task in the chain.
-    #     """
-
-    #     if len(chain) == 0:
-    #         raise ValueError("Chains must have at least 1 element.")
-
-    #     if
-
-    #     prev_task = self.add_task(chain[0])
-    #     for t in chain[1:]:
-    #         new_task = self.add_task(t, dependencies=[prev_task])
-    #         prev_task = new_task
-
-    #     return prev_task
 
     def start(self):
         """Start tasks execution."""
