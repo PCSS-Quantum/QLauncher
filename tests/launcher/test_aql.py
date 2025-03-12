@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+import time
 
 from quantum_launcher.base.base import Result
 from quantum_launcher.launcher.aql import AQL, AQLTask
@@ -36,6 +37,52 @@ def test_AQL_binds_params():
     eq = Equation(t_gen.result())
 
     assert eq.is_quadratic()
+
+
+def prepare_AQL(mode='default'):
+    aql = AQL(mode)
+
+    be = QiskitBackend('local_simulator')
+    be.is_device = True
+    t1 = aql.add_task((TSP.generate_tsp_instance(2), QAOA(), be))
+    t2 = aql.add_task((TSP.generate_tsp_instance(2), QAOA(), be), dependencies=[t1])
+
+    return aql
+
+
+def test_AQL_cancels_tasks():
+    aql = prepare_AQL()
+
+    aql.start()
+    time.sleep(0.1)
+    aql.cancel_running_tasks()
+
+    for t in aql.tasks:
+        assert t.cancelled()
+
+    assert aql.results() == [None] * len(aql.tasks)
+
+    # Check if we can launch aql again
+    aql.start()
+    for r in aql.results(5):
+        assert isinstance(r, Result)
+
+
+def test_AQL_cancels_tasks_in_opt_mode():
+    aql = prepare_AQL('optimize_session')
+    aql.start()
+    time.sleep(0.1)
+    aql.cancel_running_tasks()
+
+    for t in aql.tasks:
+        assert t.cancelled()
+
+    assert aql.results() == [None] * len(aql.tasks)
+
+    # Check if we can launch aql again
+    aql.start()
+    for r in aql.results(5):
+        assert isinstance(r, Result)
 
 
 def test_AQL_session_optimization():

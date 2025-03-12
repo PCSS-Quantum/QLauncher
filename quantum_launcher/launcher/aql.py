@@ -3,6 +3,7 @@ from typing import Tuple, Literal
 from collections.abc import Callable
 from concurrent import futures
 from threading import Event
+import time
 
 from pathos.multiprocessing import ProcessingPool
 
@@ -39,15 +40,26 @@ class AQLTask:
         self.callbacks = callbacks if callbacks is not None else []
         self.pipe_dependencies = pipe_dependencies
 
-        self._future = None
-        self._future_made = Event()
         self._executor = executor
+
+        self._cancelled = False
+        self._future = None
+        self._pool = ProcessingPool(nodes=1)
+        self._future_made = Event()
+
+    def _set_initial_state(self):
+        self._cancelled = False
+        self._future = None
+        self._pool = ProcessingPool(nodes=1)
+        self._future_made = Event()
 
     def _async_task(self):
         dep_results = [d.result() for d in self.dependencies]
-        pool = ProcessingPool(nodes=1)
-        res = pool.pipe(self.task, *(dep_results if self.pipe_dependencies else []))
-        return res
+        res = self._pool.apipe(self.task, *(dep_results if self.pipe_dependencies else []))
+        # Turns out you can't just outright kill threads (or futures) is so I have to do this busywait, so that the thread knows to exit.
+        while not self._cancelled and not res.ready():
+            time.sleep(0.1)
+        return res.get() if res.ready() else None
 
     def _set_future(self):
         self._future = self._executor.submit(self._async_task)
@@ -65,9 +77,13 @@ class AQLTask:
         Returns:
             bool: True if cancellation was successful
         """
+        self._pool.terminate()  # Shutdown launched process
+        self._cancelled = True  # Shutdown threaded future
+        self._pool.restart()    # Restart pool so that other mp tasks can be executed later
         if self._future is None:
-            return False
-        return self._future.cancel()
+            return True
+        futures.wait([self._future], 2)  # Wait for future to join
+        return not self._future.running()
 
     def cancelled(self) -> bool:
         """
@@ -76,7 +92,7 @@ class AQLTask:
         """
         if self._future is None:
             return False
-        return self._future.cancelled()
+        return self._cancelled and not self._future.running()
 
     def done(self) -> bool:
         """
@@ -194,6 +210,11 @@ class AQL:
         """
         return len([t for t in self.tasks if t.running()])
 
+    def cancel_running_tasks(self):
+        """Cancel all running tasks assigned to this AQL instance."""
+        for t in self._classical_tasks + self._quantum_tasks:
+            t.cancel()
+
     def results(self, timeout: float | int | None = None) -> list[Result | None]:
         """
         Get a list of results from tasks.
@@ -212,8 +233,7 @@ class AQL:
         try:
             return [t.result(timeout=timeout) if not t.cancelled() else None for t in self.tasks]
         except TimeoutError as e:
-            for t in self._classical_tasks + self._quantum_tasks:
-                t.cancel()
+            self.cancel_running_tasks()
             raise e
 
     def add_task(
@@ -287,6 +307,10 @@ class AQL:
 
     def start(self):
         """Start tasks execution."""
+        for t in self._classical_tasks+self._quantum_tasks:
+            if t.cancelled():
+                t._set_initial_state()
+
         self._run_async()
 
     def _run_async(self):
