@@ -1,4 +1,4 @@
-""" Backend Class for Qiskit Launcher """
+""" IBM backend class for Qiskit routines """
 from typing import Literal
 
 from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
@@ -17,7 +17,7 @@ class IBMBackend(QiskitBackend):
     An extension of QiskitBackend providing support for IBM sessions.
 
     Attributes:
-        session (Session): The session associated with the backend.
+        session (Session | None, optional): The session to use with name 'device'.
     """
 
     def __init__(
@@ -25,7 +25,7 @@ class IBMBackend(QiskitBackend):
         name: Literal['local_simulator', 'backendv1v2_simulator', 'device'],
         options: Options = None,
         backendv1v2: BackendV1 | BackendV2 = None,
-        session: Session = None,
+        session: Session | None = None,
     ) -> None:
         self.session = session
         super().__init__(name, options, backendv1v2)
@@ -38,9 +38,9 @@ class IBMBackend(QiskitBackend):
         }
 
     def _set_primitives_on_backend_name(self) -> None:
-        super()._set_primitives_on_backend_name()
-        if self.estimator is not None:
-            return  # super() method set appropriate primitives
+        if self.name != 'device':
+            super()._set_primitives_on_backend_name()
+            return
 
         if self.session is None:
             raise AttributeError(

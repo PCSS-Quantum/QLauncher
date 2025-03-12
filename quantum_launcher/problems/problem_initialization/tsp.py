@@ -13,7 +13,7 @@ class TSP(Problem):
     Traveling Salesman Problem (TSP) definition.
     """
 
-    def __init__(self, instance: nx.Graph, instance_name: str = "unnamed", quadratic: bool = False):
+    def __init__(self, instance: nx.Graph, instance_name: str = "unnamed"):
         """
         Args:
             instance (nx.Graph): Graph representing the TSP instance.
@@ -21,7 +21,6 @@ class TSP(Problem):
             quadratic (bool): Whether to use quadratic constraints
         """
         super().__init__(instance=instance, instance_name=instance_name)
-        self.quadratic = quadratic
 
     @property
     def setup(self) -> dict:
@@ -72,6 +71,8 @@ class TSP(Problem):
             chain = solution
         else:
             chain = self._solution_to_node_chain(solution)
+
+        import matplotlib.pyplot as plt
 
         pos = nx.spring_layout(self.instance, weight=None, seed=42)
         problem_edges = list(self.instance.edges)
@@ -187,9 +188,7 @@ class TSP(Problem):
             for j in range(i + 1, n):  # No connections to self
                 G.add_edge(i, j, weight=edge_costs[i, j])
 
-        quadratic = kwargs.get("quadratic", False)
-
-        return TSP(instance=G, instance_name=instance_name, quadratic=quadratic)
+        return TSP(instance=G, instance_name=instance_name)
 
     @staticmethod
     def generate_tsp_instance(num_vertices: int, min_distance: float = 1.0, max_distance: float = 10.0, **kwargs) -> "TSP":
@@ -217,6 +216,4 @@ class TSP(Problem):
                 g.add_edge(i, j, weight=int(
                     np.random.uniform(min_distance, max_distance)))
 
-        quadratic = kwargs.get("quadratic", False)
-
-        return TSP(instance=g, instance_name="generated", quadratic=quadratic)
+        return TSP(instance=g, instance_name="generated")

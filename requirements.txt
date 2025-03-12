@@ -1,10 +1,11 @@
 # Basic
-numpy
+#numpy
 pandas
 numba
 matplotlib
 networkx
 scipy
+overrides
 
 # Qiskit
 qiskit

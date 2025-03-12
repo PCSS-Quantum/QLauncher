@@ -169,7 +169,7 @@ def get_raw_qubo(problem: problem.Raw):
     return problem.instance
 
 
-@formatter(problem.GraphColoring, format='qubo')
+@formatter(problem.GraphColoring, 'qubo')
 def get_graph_coloring_qubo(problem: problem.GraphColoring):
     """ Returns Qubo function """
     num_qubits = problem.instance.number_of_nodes() * problem.num_colors

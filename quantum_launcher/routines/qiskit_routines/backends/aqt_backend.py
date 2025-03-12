@@ -1,6 +1,6 @@
+""" AQT backend class for Qiskit routines """
 from typing import Literal
 from overrides import override
-
 
 from quantum_launcher.routines.qiskit_routines import QiskitBackend
 from quantum_launcher.import_management import DependencyError
@@ -25,9 +25,7 @@ class AQTBackend(QiskitBackend):
 
     Attributes:
         token (str, optional): AQT token, used for authorization when using real device backends.
-        dotenv_path (str,optional): (recommended) Path to a .env file containing the AQT token. 
-                                    If dotenv_path is not None, the token will be ignored and the token from the .env file will be used. 
-
+        dotenv_path (str,optional): (recommended) Path to a .env file containing the AQT token. If dotenv_path is not None, the token will be ignored and the token from the .env file will be used.
 
     Usage Example
     -------------
@@ -47,16 +45,17 @@ class AQTBackend(QiskitBackend):
 
         AQT_TOKEN=valid_token
 
-
     """
+    sampler: AQTSampler
+    estimator: AQTEstimator
 
     def __init__(
         self,
         name: Literal['local_simulator', 'backendv1v2_simulator', 'device'],
-        options: Options = None,
-        backendv1v2: BackendV1 | BackendV2 = None,
-        token: str = None,
-        dotenv_path: str = None,
+        options: Options | None = None,
+        backendv1v2: BackendV1 | BackendV2 | None = None,
+        token: str | None = None,
+        dotenv_path: str | None = None,
     ) -> None:
 
         # TODO: This will probably need to be updated to handle custom backend urls, when we get our own computer
