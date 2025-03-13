@@ -3,6 +3,7 @@ from typing import Tuple, Literal, Any
 from collections.abc import Callable
 from threading import Event, Thread
 import time
+import weakref
 import multiprocess
 
 from pathos.multiprocessing import _ProcessPool
@@ -38,7 +39,7 @@ class AQLTask:
             callbacks (list[Callable]): Callbacks ran when the task finishes executing. 
                                         Task result is inserted as an argument to the function.
             pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task. 
-            Defaults to False.
+                                      Defaults to False.
     """
 
     def __init__(
@@ -62,22 +63,10 @@ class AQLTask:
         self._result = None
         self._done = False
 
-    def _set_initial_state(self):
-        self._cancelled = False
-        self._thread = None
-        self._pool = _ProcessPool(processes=1)
-        self._thread_made = Event()
-
-        self._result = None
-        self._done = False
-
     def _shutdown_subprocess(self):
         self._pool.close()
         self._pool.terminate()
         self._pool.join()
-
-    def __del__(self):
-        self._shutdown_subprocess()
 
     def _async_task(self) -> Any:
         dep_results = [d.result() for d in self.dependencies]
@@ -110,20 +99,21 @@ class AQLTask:
         self._done = True
         return
 
-    def _set_thread(self):
-        def target():
-            self._async_task()
-            for cb in self.callbacks:
-                cb(self._result)
+    def _target_task(self):
+        # Main task + callbacks launch
+        self._async_task()
+        for cb in self.callbacks:
+            cb(self._result)
 
-        self._thread = Thread(target=target, daemon=True)  # set daemon so that thread quits as main process quits
+    def _set_thread(self):
+        self._thread = Thread(target=weakref.proxy(self)._target_task, daemon=True)  # set daemon so that thread quits as main process quits
         self._thread.start()
         self._thread_made.set()
 
     def start(self):
         """Start task execution."""
-        if self._thread is not None:
-            return
+        if self._thread is not None or self._cancelled:
+            raise ValueError("Cannot start, task already started or cancelled.")
         self._set_thread()
 
     def cancel(self) -> bool:
@@ -133,7 +123,7 @@ class AQLTask:
         Returns:
             bool: True if cancellation was successful
         """
-        self._cancelled = True  # Shutdown threaded future
+        self._cancelled = True
         if self._thread is None:
             return True
         self._thread.join(0.1)
@@ -144,9 +134,7 @@ class AQLTask:
         Returns:
             bool: True if the task was cancelled by the user.
         """
-        if self._thread is None:
-            return False
-        return self._cancelled and not self._thread.is_alive()
+        return self._cancelled
 
     def done(self) -> bool:
         """
@@ -178,7 +166,7 @@ class AQLTask:
             Result if future returned result or None when cancelled.
         """
         start = time.time()
-        self._thread_made.wait(timeout=get_timeout(timeout, start))  # Wait until we submit a task to the executor
+        self._thread_made.wait(timeout=get_timeout(timeout, start))  # Wait until we start a thread
         self._thread.join(timeout=get_timeout(timeout, start))
         if self._thread.is_alive():
             self.cancel()
@@ -248,7 +236,7 @@ class AQL:
         self._classical_tasks = []
         self._quantum_tasks = []
 
-    def running_feature_count(self) -> int:
+    def running_task_count(self) -> int:
         """
         Returns:
             int: Amount of tasks that are currently executing.
@@ -283,7 +271,7 @@ class AQL:
             if cancel_tasks_on_timeout:
                 self.cancel_running_tasks()
             raise e
-        except KeyboardInterrupt as e:
+        except Exception as e:
             self.cancel_running_tasks()
             raise e
 
@@ -357,8 +345,8 @@ class AQL:
     def start(self):
         """Start tasks execution."""
         for t in self._classical_tasks+self._quantum_tasks:
-            if t.cancelled():
-                raise ValueError("Cannot restart cancelled task")
+            if t.cancelled() or t.done() or t.running():
+                raise ValueError("Cannot start again, some tasks were already ran or are currently running.")
 
         self._run_async()
 

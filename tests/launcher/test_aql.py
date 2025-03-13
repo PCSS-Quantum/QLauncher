@@ -200,5 +200,6 @@ def test_AQL_task_raises_error_from_target_fn():
 def test_task_dies_after_timeout_error():
     t = AQLTask(lambda: time.sleep(20))
     t.start()
+
     with pytest.raises(TimeoutError):
         t.result(0.1)
