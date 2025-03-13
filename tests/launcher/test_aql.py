@@ -11,6 +11,37 @@ from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
 from quantum_launcher.hampy import Equation
 
 
+def test_AQL_cancels_tasks():
+    aql = prepare_AQL()
+
+    aql.start()
+    time.sleep(0.5)
+    aql.cancel_running_tasks()
+
+    for t in aql.tasks:
+        assert t.cancelled()
+
+    assert aql.results() == [None] * len(aql.tasks)
+
+    with pytest.raises(ValueError):
+        aql.start()
+
+
+def test_AQL_cancels_tasks_in_opt_mode():
+    aql = prepare_AQL('optimize_session')
+    aql.start()
+    time.sleep(0.5)
+    aql.cancel_running_tasks()
+
+    for t in aql.tasks:
+        assert t.cancelled()
+
+    assert aql.results() == [None] * len(aql.tasks)
+
+    with pytest.raises(ValueError):
+        aql.start()
+
+
 def test_AQL_individual_tasks():
     aql = AQL()
 
@@ -45,41 +76,10 @@ def prepare_AQL(mode='default'):
 
     be = QiskitBackend('local_simulator')
     be.is_device = True
-    t1 = aql.add_task((TSP.generate_tsp_instance(2), QAOA(), be))
-    t2 = aql.add_task((TSP.generate_tsp_instance(2), QAOA(), be), dependencies=[t1])
+    t1 = aql.add_task((TSP.generate_tsp_instance(5), QAOA(), be))
+    t2 = aql.add_task((TSP.generate_tsp_instance(5), QAOA(), be), dependencies=[t1])
 
     return aql
-
-
-def test_AQL_cancels_tasks():
-    aql = prepare_AQL()
-
-    aql.start()
-    time.sleep(0.1)
-    aql.cancel_running_tasks()
-
-    for t in aql.tasks:
-        assert t.cancelled()
-
-    assert aql.results() == [None] * len(aql.tasks)
-
-    with pytest.raises(ValueError):
-        aql.start()
-
-
-def test_AQL_cancels_tasks_in_opt_mode():
-    aql = prepare_AQL('optimize_session')
-    aql.start()
-    time.sleep(0.1)
-    aql.cancel_running_tasks()
-
-    for t in aql.tasks:
-        assert t.cancelled()
-
-    assert aql.results() == [None] * len(aql.tasks)
-
-    with pytest.raises(ValueError):
-        aql.start()
 
 
 def test_AQL_session_optimization():
@@ -99,11 +99,6 @@ def test_AQL_session_optimization():
     t2 = aql.add_task(t2_temp, dependencies=[t1])
     t4 = aql.add_task(t3_temp, dependencies=[t1])
 
-    t3.__repr__ = lambda: 't3'
-    t1.__repr__ = lambda: 't1'
-    t2.__repr__ = lambda: 't2'
-    t4.__repr__ = lambda: 't4'
-
     for t in aql.tasks:
         t.callbacks.append(order.append)
 
@@ -112,7 +107,7 @@ def test_AQL_session_optimization():
     assert aql.tasks == [t3, t1, t2, t4]
 
     aql.start()
-    aql.wait_for_finish(10)
+    aql.wait_for_finish()
     assert order == [t3, t1, t2, t4]
 
 
@@ -139,3 +134,23 @@ def test_AQL_task_result_passing():
         t.start()
 
     assert t_concat.result(timeout=1) == "Value:42"
+
+
+def test_AQL_task_raises_error():
+    ex = ThreadPoolExecutor()
+
+    def err():
+        raise ValueError
+    t_err = AQLTask(err, executor=ex)
+
+    with pytest.raises(ValueError):
+        t_err.start()
+        t_err.result()
+
+
+def test_task_del():
+    ex = ThreadPoolExecutor()
+    t = AQLTask(lambda: time.sleep(10), executor=ex)
+    t.start()
+
+    del t

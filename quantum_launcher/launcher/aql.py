@@ -1,18 +1,29 @@
 """Wrapper for QuantumLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
-from typing import Tuple, Literal
+from typing import Tuple, Literal, Any
 from collections.abc import Callable
 from concurrent import futures
 from threading import Event
 import time
+import multiprocess
 
-from pathos.multiprocessing import ProcessingPool
+from pathos.multiprocessing import _ProcessPool
 
 from quantum_launcher.base.base import Backend, Algorithm, Problem, Result
 from quantum_launcher.launcher.qlauncher import QuantumLauncher
 from quantum_launcher.problems import Raw
 
 
-def get_timeout(max_timeout, start):
+def get_timeout(max_timeout: int | float | None, start: int | float) -> int | float | None:
+    """
+    Get timeout to wait on an event, useful when awaiting multiple tasks and total timeout must be max_timeout.
+
+    Args:
+        max_timeout (int | float | None): Total allowed timeout, None = infinite wait.
+        start (int | float): Await start timestamp (time.time())
+
+    Returns:
+        int | float | None: Remaining timeout or None if max_timeout was None
+    """
     if max_timeout is None:
         return None
     return max_timeout - (time.time() - start)
@@ -50,32 +61,40 @@ class AQLTask:
 
         self._cancelled = False
         self._future = None
-        self._pool = ProcessingPool(nodes=1)
+        self._pool = _ProcessPool(processes=1)
         self._future_made = Event()
 
     def _set_initial_state(self):
         self._cancelled = False
         self._future = None
-        self._pool = ProcessingPool(nodes=1)
+        self._pool = _ProcessPool(processes=1)
         self._future_made = Event()
 
     def _shutdown_subprocess(self):
-        self._pool.terminate()  # Shutdown launched process
-        self._pool.restart()    # Restart pool so that other mp tasks can be executed later
+        self._pool.close()
+        self._pool.terminate()
+        self._pool.join()
 
-    def _async_task(self):
+    def _async_task(self) -> Any:
         dep_results = [d.result() for d in self.dependencies]
 
         if self._cancelled:
-            return
+            return None
 
-        res = self._pool.apipe(self.task, *(dep_results if self.pipe_dependencies else []))
-        # Turns out you can't just outright kill threads (or futures) is so I have to do this busywait, so that the thread knows to exit.
-        while not self._cancelled and not res.ready():
-            time.sleep(0.1)
+        res = self._pool.apply_async(self.task, args=(dep_results if self.pipe_dependencies else []))
+        # Turns out you can't just outright kill threads (or futures) is so I have to do this, so that the thread knows to exit.
+        while not self._cancelled:
+            try:
+                return res.get(timeout=0.1)
+            except multiprocess.context.TimeoutError:
+                pass  # task not ready, check for cancel
+            # For any other error originating from the task, shutdown and clean up subprocess then raise error again.
+            except Exception as e:
+                self._shutdown_subprocess()
+                raise e
 
         if self._cancelled:
-            self._shutdown_subprocess()
+            self._shutdown_subprocess()  # kill res process
 
         return res.get() if res.ready() else None
 
@@ -130,7 +149,7 @@ class AQLTask:
             return False
         return self._future.running()
 
-    def result(self, timeout: float | int | None = None) -> Result:
+    def result(self, timeout: float | int | None = None) -> Result | None:
         """
         Get result of running the task.
         Blocks the thread until task is finished.
@@ -141,7 +160,7 @@ class AQLTask:
                     If None, wait forever. If not None and time runs out, raises TimeoutError. 
                     Defaults to None.
         Returns:
-            Result
+            Result if future returned result or None when cancelled.
         """
         start = time.time()
         self._future_made.wait(timeout=get_timeout(timeout, start))  # Wait until we submit a task to the executor
@@ -257,6 +276,8 @@ class AQL:
             if cancel_tasks_on_timeout:
                 self.cancel_running_tasks()
             raise e
+        except KeyboardInterrupt:
+            self.cancel_running_tasks()
 
     def add_task(
         self,
