@@ -1,8 +1,7 @@
 """Wrapper for QuantumLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
 from typing import Tuple, Literal, Any
 from collections.abc import Callable
-from concurrent import futures
-from threading import Event
+from threading import Event, Thread
 import time
 import multiprocess
 
@@ -31,14 +30,13 @@ def get_timeout(max_timeout: int | float | None, start: int | float) -> int | fl
 
 class AQLTask:
     """
-        Task object returned to user, so that dependencies can be created. 
-        Basically a Future wrapper, that doesn't start immediately and can have other tasks it depends on.
+        Task object returned to user, so that dependencies can be created.
 
         Attributes:
             task (Callable): function that gets executed asynchronously
-            executor (futures.Executor): Executor to use for submitting jobs.
             dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
-            callbacks (list[Callable]): Callbacks ran when the task finishes executing.
+            callbacks (list[Callable]): Callbacks ran when the task finishes executing. 
+                                        Task result is inserted as an argument to the function.
             pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task. 
             Defaults to False.
     """
@@ -46,7 +44,6 @@ class AQLTask:
     def __init__(
         self,
         task: Callable,
-        executor: futures.Executor,
         dependencies: list['AQLTask'] | None = None,
         callbacks: list[Callable] | None = None,
         pipe_dependencies: bool = False
@@ -57,57 +54,77 @@ class AQLTask:
         self.callbacks = callbacks if callbacks is not None else []
         self.pipe_dependencies = pipe_dependencies
 
-        self._executor = executor
-
         self._cancelled = False
-        self._future = None
+        self._thread = None
         self._pool = _ProcessPool(processes=1)
-        self._future_made = Event()
+        self._thread_made = Event()
+
+        self._result = None
+        self._done = False
 
     def _set_initial_state(self):
         self._cancelled = False
-        self._future = None
+        self._thread = None
         self._pool = _ProcessPool(processes=1)
-        self._future_made = Event()
+        self._thread_made = Event()
+
+        self._result = None
+        self._done = False
 
     def _shutdown_subprocess(self):
         self._pool.close()
         self._pool.terminate()
         self._pool.join()
 
+    def __del__(self):
+        self._shutdown_subprocess()
+
     def _async_task(self) -> Any:
         dep_results = [d.result() for d in self.dependencies]
 
         if self._cancelled:
-            return None
+            self._result = None
+            self._done = True
+            return
 
         res = self._pool.apply_async(self.task, args=(dep_results if self.pipe_dependencies else []))
         # Turns out you can't just outright kill threads (or futures) is so I have to do this, so that the thread knows to exit.
         while not self._cancelled:
             try:
-                return res.get(timeout=0.1)
+                self._result = res.get(timeout=0.05)
+                self._done = True
+                return
             except multiprocess.context.TimeoutError:
                 pass  # task not ready, check for cancel
             # For any other error originating from the task, shutdown and clean up subprocess then raise error again.
             except Exception as e:
                 self._shutdown_subprocess()
-                raise e
+                self._result = e
+                self._done = True
+                return
 
         if self._cancelled:
             self._shutdown_subprocess()  # kill res process
 
-        return res.get() if res.ready() else None
+        self._result = res.get() if res.ready() else None
+        self._done = True
+        return
 
-    def _set_future(self):
-        self._future = self._executor.submit(self._async_task)
-        self._future.add_done_callback(lambda fut: [cb(self) for cb in self.callbacks])  # pass AQLTask instead of future
-        self._future_made.set()
+    def _set_thread(self):
+        def target():
+            self._async_task()
+            for cb in self.callbacks:
+                cb(self._result)
+
+        self._thread = Thread(target=target, daemon=True)  # set daemon so that thread quits as main process quits
+        self._thread.start()
+        self._thread_made.set()
 
     def start(self):
         """Start task execution."""
-        if self._future is not None:
+        if self._thread is not None:
             return
-        self._set_future()
+        self._set_thread()
 
     def cancel(self) -> bool:
         """
@@ -117,37 +134,35 @@ class AQLTask:
             bool: True if cancellation was successful
         """
         self._cancelled = True  # Shutdown threaded future
-        if self._future is None:
+        if self._thread is None:
             return True
-        futures.wait([self._future], 2)  # Wait for future to join
-        return not self._future.running()
+        self._thread.join(0.1)
+        return not self._thread.is_alive()
 
     def cancelled(self) -> bool:
         """
         Returns:
             bool: True if the task was cancelled by the user.
         """
-        if self._future is None:
+        if self._thread is None:
             return False
-        return self._cancelled and not self._future.running()
+        return self._cancelled and not self._thread.is_alive()
 
     def done(self) -> bool:
         """
         Returns:
             bool: True if the task had finished execution.
         """
-        if self._future is None:
-            return False
-        return self._future.done()
+        return self._done
 
     def running(self) -> bool:
         """
         Returns:
             bool: True if the task is currently executing.
         """
-        if self._future is None:
+        if self._thread is None:
             return False
-        return self._future.running()
+        return self._thread.is_alive()
 
     def result(self, timeout: float | int | None = None) -> Result | None:
         """
@@ -163,8 +178,14 @@ class AQLTask:
             Result if future returned result or None when cancelled.
         """
         start = time.time()
-        self._future_made.wait(timeout=get_timeout(timeout, start))  # Wait until we submit a task to the executor
-        return self._future.result(timeout=get_timeout(timeout, start))
+        self._thread_made.wait(timeout=get_timeout(timeout, start))  # Wait until we submit a task to the executor
+        self._thread.join(timeout=get_timeout(timeout, start))
+        if self._thread.is_alive():
+            self.cancel()
+            raise TimeoutError  # thread still running after timeout
+        if isinstance(self._result, BaseException):
+            raise self._result
+        return self._result
 
 
 class AQL:
@@ -227,20 +248,6 @@ class AQL:
         self._classical_tasks = []
         self._quantum_tasks = []
 
-        self._executor = futures.ThreadPoolExecutor()
-
-    def wait_for_finish(self, timeout: float | int | None = None) -> None:
-        """
-        Blocks the thread until all tasks are finished.
-
-        Args:
-            timeout (float | int | None, optional): 
-                    The maximum amount to wait for execution to finish. 
-                    If None, wait forever. If not None and time runs out, raises TimeoutError. 
-                    Defaults to None.
-        """
-        self.results(timeout=timeout)
-
     def running_feature_count(self) -> int:
         """
         Returns:
@@ -276,8 +283,9 @@ class AQL:
             if cancel_tasks_on_timeout:
                 self.cancel_running_tasks()
             raise e
-        except KeyboardInterrupt:
+        except KeyboardInterrupt as e:
             self.cancel_running_tasks()
+            raise e
 
     def add_task(
         self,
@@ -309,8 +317,7 @@ class AQL:
             task = AQLTask(
                 lambda: launcher.run(**kwargs),
                 dependencies=dependencies,
-                callbacks=(callbacks if callbacks is not None else []),
-                executor=self._executor
+                callbacks=(callbacks if callbacks is not None else [])
             )
             self.tasks.append(task)
             self._classical_tasks.append(task)
@@ -323,8 +330,7 @@ class AQL:
         # Split real device task into generation and actual run on a QC
         t_gen = AQLTask(
             gen_task,
-            dependencies=[dep for dep in dependencies_list if not dep in self._quantum_tasks],
-            executor=self._executor
+            dependencies=[dep for dep in dependencies_list if not dep in self._quantum_tasks]
         )
 
         def quantum_task(formatted, *rest):
@@ -339,8 +345,8 @@ class AQL:
             quantum_task,
             dependencies=[t_gen] + [dep for dep in dependencies_list if dep in self._quantum_tasks],
             callbacks=(callbacks if callbacks is not None else []),
-            pipe_dependencies=True,  # Receive output from formatter
-            executor=self._executor)
+            pipe_dependencies=True  # Receive output from formatter
+        )
 
         self._classical_tasks.append(t_gen)
         self._quantum_tasks.append(t_quant)
@@ -369,8 +375,7 @@ class AQL:
         # (all classical tasks that quantum tasks depend on) - (all quantum tasks) - (rest of the classical tasks)
         gateway_task_classical = AQLTask(
             lambda: 42,
-            dependencies=list(quantum_dependencies),
-            executor=self._executor
+            dependencies=list(quantum_dependencies)
         )
 
         for qt in self._quantum_tasks:
@@ -378,8 +383,7 @@ class AQL:
 
         gateway_task_quantum = AQLTask(
             lambda: 42,
-            dependencies=self._quantum_tasks.copy(),
-            executor=self._executor
+            dependencies=self._quantum_tasks.copy()
         )
 
         for ct in [t for t in self._classical_tasks if not t in quantum_dependencies]:

@@ -1,16 +1,55 @@
-from concurrent.futures import ThreadPoolExecutor
 import time
 import pytest
+import psutil
+import functools
+import gc
+from pathos.multiprocessing import _ProcessPool
 
 from quantum_launcher.base.base import Result
 from quantum_launcher.launcher.aql import AQL, AQLTask
 from quantum_launcher.problems import EC, TSP
 from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
 from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
-
 from quantum_launcher.hampy import Equation
 
+from dimod import SampleSet
 
+
+def check_subprocesses_exit(max_timeout=5):
+    def wrapper1(func):
+        """Verify if test kills all its children :)"""
+        @functools.wraps(func)
+        def wrapper2(*args, **kwargs):
+            current_process = psutil.Process()
+            def curr_nc(): return len(current_process.children(recursive=True))
+            num_children = curr_nc()
+
+            func(*args, **kwargs)
+
+            # Hacky, but killing a process from the os side might take some time.
+            i = 0
+            while i < max_timeout:
+                i += 0.1
+                time.sleep(0.1)
+                if curr_nc() == num_children:
+                    return
+            assert curr_nc() == num_children
+        return wrapper2
+    return wrapper1
+
+
+def prepare_AQL(mode='default') -> AQL:
+    aql = AQL(mode)
+
+    be = QiskitBackend('local_simulator')
+    be.is_device = True
+    t1 = aql.add_task((TSP.generate_tsp_instance(5), QAOA(), be))
+    t2 = aql.add_task((TSP.generate_tsp_instance(5), QAOA(), be), dependencies=[t1])
+
+    return aql
+
+
+@check_subprocesses_exit()
 def test_AQL_cancels_tasks():
     aql = prepare_AQL()
 
@@ -27,6 +66,7 @@ def test_AQL_cancels_tasks():
         aql.start()
 
 
+@check_subprocesses_exit()
 def test_AQL_cancels_tasks_in_opt_mode():
     aql = prepare_AQL('optimize_session')
     aql.start()
@@ -42,6 +82,20 @@ def test_AQL_cancels_tasks_in_opt_mode():
         aql.start()
 
 
+@check_subprocesses_exit()
+def test_AQL_cancels_tasks_after_timeout():
+    aql = prepare_AQL()
+
+    aql.start()
+    time.sleep(0.1)
+    with pytest.raises(TimeoutError):
+        aql.results(0.1, cancel_tasks_on_timeout=True)
+
+    for t in aql._classical_tasks + aql._quantum_tasks:
+        assert t.cancelled()
+
+
+@check_subprocesses_exit()
 def test_AQL_individual_tasks():
     aql = AQL()
 
@@ -54,8 +108,11 @@ def test_AQL_individual_tasks():
     assert len(res) == 2
     for r in res:
         assert isinstance(r, Result)
+    assert isinstance(res[0].result, dict)
+    assert isinstance(res[1].result, SampleSet)
 
 
+@check_subprocesses_exit()
 def test_AQL_binds_params():
     aql = AQL('optimize_session')
     be = QiskitBackend('local_simulator')
@@ -63,7 +120,7 @@ def test_AQL_binds_params():
     aql.add_task((TSP.generate_tsp_instance(3), QAOA(), be), onehot='quadratic')
 
     aql.start()
-    aql.wait_for_finish(10)
+    aql.results(10)
     t_gen = aql._classical_tasks[0]
 
     eq = Equation(t_gen.result())
@@ -71,17 +128,7 @@ def test_AQL_binds_params():
     assert eq.is_quadratic()
 
 
-def prepare_AQL(mode='default'):
-    aql = AQL(mode)
-
-    be = QiskitBackend('local_simulator')
-    be.is_device = True
-    t1 = aql.add_task((TSP.generate_tsp_instance(5), QAOA(), be))
-    t2 = aql.add_task((TSP.generate_tsp_instance(5), QAOA(), be), dependencies=[t1])
-
-    return aql
-
-
+@check_subprocesses_exit()
 def test_AQL_session_optimization():
     classical_backend = QiskitBackend('local_simulator')
     totally_real_backend = QiskitBackend('local_simulator')
@@ -94,41 +141,42 @@ def test_AQL_session_optimization():
     t3_temp = (EC.from_preset('micro'), QAOA(), classical_backend)
 
     order = []
-    t3 = aql.add_task(t3_temp)
-    t1 = aql.add_task(t1_temp, dependencies=[t3])
-    t2 = aql.add_task(t2_temp, dependencies=[t1])
-    t4 = aql.add_task(t3_temp, dependencies=[t1])
+    t1 = aql.add_task(t3_temp)
+    t2 = aql.add_task(t1_temp, dependencies=[t1])
+    t4 = aql.add_task(t3_temp, dependencies=[t2])
+    t3 = aql.add_task(t2_temp, dependencies=[t2])
 
     for t in aql.tasks:
         t.callbacks.append(order.append)
 
-    assert aql._quantum_tasks == [t1, t2]
+    assert aql._quantum_tasks == [t2, t3]
     assert len(aql._classical_tasks) == 4
-    assert aql.tasks == [t3, t1, t2, t4]
+    assert aql.tasks == [t1, t2, t4, t3]
 
     aql.start()
-    aql.wait_for_finish()
-    assert order == [t3, t1, t2, t4]
+    aql.results()
+    assert order == [t1.result(), t2.result(), t3.result(), t4.result()]
+    del order
 
 
+@check_subprocesses_exit()
 def test_AQL_task_basic():
-    ex = ThreadPoolExecutor()
-    t1 = AQLTask(lambda: 2, executor=ex)
-    t2 = AQLTask(lambda prev: prev+2, dependencies=[t1], executor=ex, pipe_dependencies=True)
+    t1 = AQLTask(lambda: 2)
+    t2 = AQLTask(lambda prev: prev+2, dependencies=[t1], pipe_dependencies=True)
     t2.start()
     t1.start()
     assert t2.result(timeout=1) == 4
 
 
+@check_subprocesses_exit()
 def test_AQL_task_result_passing():
     """
     Test if values from dependencies are passed in the correct order, 
     i.e if dependencies=[dep1,dep2], [res(dep1),res(dep2)] is passed to the task function.
     """
-    ex = ThreadPoolExecutor()
-    t_string = AQLTask(lambda: "Value:", executor=ex)
-    t_int = AQLTask(lambda: 42, executor=ex)
-    t_concat = AQLTask(lambda s, i: s + str(i), dependencies=[t_string, t_int], executor=ex, pipe_dependencies=True)
+    t_string = AQLTask(lambda: "Value:")
+    t_int = AQLTask(lambda: 42)
+    t_concat = AQLTask(lambda s, i: s + str(i), dependencies=[t_string, t_int], pipe_dependencies=True)
 
     for t in [t_string, t_concat, t_int]:
         t.start()
@@ -136,21 +184,21 @@ def test_AQL_task_result_passing():
     assert t_concat.result(timeout=1) == "Value:42"
 
 
-def test_AQL_task_raises_error():
-    ex = ThreadPoolExecutor()
-
+@check_subprocesses_exit()
+def test_AQL_task_raises_error_from_target_fn():
     def err():
         raise ValueError
-    t_err = AQLTask(err, executor=ex)
+
+    t_err = AQLTask(err)
 
     with pytest.raises(ValueError):
         t_err.start()
         t_err.result()
 
 
-def test_task_del():
-    ex = ThreadPoolExecutor()
-    t = AQLTask(lambda: time.sleep(10), executor=ex)
+@check_subprocesses_exit()
+def test_task_dies_after_timeout_error():
+    t = AQLTask(lambda: time.sleep(20))
     t.start()
-
-    del t
+    with pytest.raises(TimeoutError):
+        t.result(0.1)
