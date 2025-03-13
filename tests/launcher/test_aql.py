@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 import time
+import pytest
 
 from quantum_launcher.base.base import Result
 from quantum_launcher.launcher.aql import AQL, AQLTask
@@ -62,10 +63,8 @@ def test_AQL_cancels_tasks():
 
     assert aql.results() == [None] * len(aql.tasks)
 
-    # Check if we can launch aql again
-    aql.start()
-    for r in aql.results(5):
-        assert isinstance(r, Result)
+    with pytest.raises(ValueError):
+        aql.start()
 
 
 def test_AQL_cancels_tasks_in_opt_mode():
@@ -79,10 +78,8 @@ def test_AQL_cancels_tasks_in_opt_mode():
 
     assert aql.results() == [None] * len(aql.tasks)
 
-    # Check if we can launch aql again
-    aql.start()
-    for r in aql.results(5):
-        assert isinstance(r, Result)
+    with pytest.raises(ValueError):
+        aql.start()
 
 
 def test_AQL_session_optimization():

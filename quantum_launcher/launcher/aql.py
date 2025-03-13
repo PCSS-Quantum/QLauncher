@@ -12,6 +12,12 @@ from quantum_launcher.launcher.qlauncher import QuantumLauncher
 from quantum_launcher.problems import Raw
 
 
+def get_timeout(max_timeout, start):
+    if max_timeout is None:
+        return None
+    return max_timeout - (time.time() - start)
+
+
 class AQLTask:
     """
         Task object returned to user, so that dependencies can be created. 
@@ -53,12 +59,24 @@ class AQLTask:
         self._pool = ProcessingPool(nodes=1)
         self._future_made = Event()
 
+    def _shutdown_subprocess(self):
+        self._pool.terminate()  # Shutdown launched process
+        self._pool.restart()    # Restart pool so that other mp tasks can be executed later
+
     def _async_task(self):
         dep_results = [d.result() for d in self.dependencies]
+
+        if self._cancelled:
+            return
+
         res = self._pool.apipe(self.task, *(dep_results if self.pipe_dependencies else []))
         # Turns out you can't just outright kill threads (or futures) is so I have to do this busywait, so that the thread knows to exit.
         while not self._cancelled and not res.ready():
             time.sleep(0.1)
+
+        if self._cancelled:
+            self._shutdown_subprocess()
+
         return res.get() if res.ready() else None
 
     def _set_future(self):
@@ -68,6 +86,8 @@ class AQLTask:
 
     def start(self):
         """Start task execution."""
+        if self._future is not None:
+            return
         self._set_future()
 
     def cancel(self) -> bool:
@@ -77,9 +97,7 @@ class AQLTask:
         Returns:
             bool: True if cancellation was successful
         """
-        self._pool.terminate()  # Shutdown launched process
         self._cancelled = True  # Shutdown threaded future
-        self._pool.restart()    # Restart pool so that other mp tasks can be executed later
         if self._future is None:
             return True
         futures.wait([self._future], 2)  # Wait for future to join
@@ -125,8 +143,9 @@ class AQLTask:
         Returns:
             Result
         """
-        self._future_made.wait(timeout=timeout)  # Wait until we submit a task to the executor
-        return self._future.result(timeout=timeout)
+        start = time.time()
+        self._future_made.wait(timeout=get_timeout(timeout, start))  # Wait until we submit a task to the executor
+        return self._future.result(timeout=get_timeout(timeout, start))
 
 
 class AQL:
@@ -215,7 +234,7 @@ class AQL:
         for t in self._classical_tasks + self._quantum_tasks:
             t.cancel()
 
-    def results(self, timeout: float | int | None = None) -> list[Result | None]:
+    def results(self, timeout: float | int | None = None, cancel_tasks_on_timeout: bool = True) -> list[Result | None]:
         """
         Get a list of results from tasks.
         Results are ordered in the same way the tasks were added.
@@ -226,14 +245,17 @@ class AQL:
                     The maximum amount to wait for execution to finish. 
                     If None, wait forever. If not None and time runs out, raises TimeoutError. 
                     Defaults to None.
+            cancel_tasks_on_timeout (bool): Whether to cancel all other tasks when one task raises a TimeoutError.
 
         Returns:
             list[Result | None]: Task results.
         """
         try:
-            return [t.result(timeout=timeout) if not t.cancelled() else None for t in self.tasks]
+            start = time.time()
+            return [t.result(timeout=get_timeout(timeout, start)) if not t.cancelled() else None for t in self.tasks]
         except TimeoutError as e:
-            self.cancel_running_tasks()
+            if cancel_tasks_on_timeout:
+                self.cancel_running_tasks()
             raise e
 
     def add_task(
@@ -309,7 +331,7 @@ class AQL:
         """Start tasks execution."""
         for t in self._classical_tasks+self._quantum_tasks:
             if t.cancelled():
-                t._set_initial_state()
+                raise ValueError("Cannot restart cancelled task")
 
         self._run_async()
 
