@@ -2,7 +2,7 @@ from quantum_launcher.launcher.aql import AQLManager
 from quantum_launcher.problems import MaxCut, EC
 from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
 from quantum_launcher.routines.qiskit_routines import QAOA, IBMBackend
-from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
+# from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
 import asyncio
 import pytest
 
@@ -55,6 +55,7 @@ def test_runtime_qiskit():
         assert len(x) == 6 or len(x) == 2
 
 
+@pytest.mark.skip(reason="no way of currently testing this (ptseries library is not public)")
 @pytest.mark.asyncio
 def test_runtime_orca():
     # TODO Fix this test, it is not working as expected, it is not ending
