@@ -1,15 +1,8 @@
-# Import Manager
-try:
-    from .bqm import *
-except ModuleNotFoundError:
-    pass
-
-try:
-    from .qubo import *
-except ModuleNotFoundError:
-    pass
+""" Import managing for problem formulations (attempt to import as much as possible). """
+from .bqm import *
+from .qubo import *
 
 try:
     from .hamiltonian import *
-except ModuleNotFoundError:
+except ImportError:
     pass

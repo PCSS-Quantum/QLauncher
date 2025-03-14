@@ -1,5 +1,9 @@
-from qiskit.quantum_info import SparsePauliOp
 from typing import Union, overload
+from quantum_launcher.import_management import DependencyError
+try:
+    from qiskit.quantum_info import SparsePauliOp
+except ImportError as e:
+    raise DependencyError(e, 'qiskit') from e
 
 
 class Equation:
@@ -95,15 +99,15 @@ class Equation:
     def __mul__(self, other: Union["Equation", float]) -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
-        if isinstance(other, float):
-            return Equation(other * self.hamiltonian)
+        if isinstance(other, float) or isinstance(other, int):
+            return Equation(float(other) * self.hamiltonian)
         return Equation(self.hamiltonian.compose(other.hamiltonian))
 
     def __rmul__(self, other: Union["Equation", float]) -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
-        if isinstance(other, float):
-            return Equation(other * self.hamiltonian)
+        if isinstance(other, float) or isinstance(other, int):
+            return Equation(float(other) * self.hamiltonian)
         return Equation(self.hamiltonian.compose(other.hamiltonian))
 
 

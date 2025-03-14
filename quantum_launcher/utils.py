@@ -1,5 +1,9 @@
-from qiskit.quantum_info import SparsePauliOp
 from typing import Iterable, Dict, Tuple, Set, List
+from quantum_launcher.import_management import DependencyError
+try:
+    from qiskit.quantum_info import SparsePauliOp
+except ImportError as e:
+    raise DependencyError(e, 'qiskit') from e
 
 
 def qubo_to_hamiltonian(qubo: Iterable[Iterable[int]] | Dict[Tuple[str, str], float], offset: float = 0) -> SparsePauliOp:

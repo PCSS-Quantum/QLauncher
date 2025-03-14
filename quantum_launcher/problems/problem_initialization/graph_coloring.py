@@ -15,7 +15,7 @@ class GraphColoring(Problem):
     Attributes:
         instance (nx.Graph): The graph for which the coloring problem is to be solved.
 
-   
+
     """
 
     def __init__(

@@ -1,18 +1,19 @@
 import networkx as nx
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from qiskit_algorithms import SamplingMinimumEigensolverResult
 
 from quantum_launcher.base import Problem
 
 
-
 class TSP(Problem):
     """
     Traveling Salesman Problem (TSP) definition.
     """
-    def __init__(self, instance: nx.Graph, instance_name: str = "unnamed", quadratic: bool = False):
+
+    def __init__(self, instance: nx.Graph, instance_name: str = "unnamed"):
         """
         Args:
             instance (nx.Graph): Graph representing the TSP instance.
@@ -20,7 +21,6 @@ class TSP(Problem):
             quadratic (bool): Whether to use quadratic constraints
         """
         super().__init__(instance=instance, instance_name=instance_name)
-        self.quadratic = quadratic
 
     @property
     def setup(self) -> dict:
@@ -28,8 +28,8 @@ class TSP(Problem):
 
     def _get_path(self) -> str:
         return f"{self.name}@{self.instance_name}"
-    
-    def _solution_to_node_chain(self,solution:SamplingMinimumEigensolverResult | str) -> np.ndarray:
+
+    def _solution_to_node_chain(self, solution: SamplingMinimumEigensolverResult | str) -> np.ndarray:
         """
         Converts the solution of the TSP problem to a chain of nodes (order of visiting)
 
@@ -48,13 +48,13 @@ class TSP(Problem):
         chain = []
 
         for i in range(0, len(bitstring), node_count):
-            step_string = bitstring[i : i + node_count]
+            step_string = bitstring[i: i + node_count]
             chosen_node = np.argmax([int(x) for x in step_string])
             chain.append(chosen_node)
 
         return np.array(chain)
 
-    def _calculate_solution_cost(self, solution:SamplingMinimumEigensolverResult | str | list[int]) -> float:
+    def _calculate_solution_cost(self, solution: SamplingMinimumEigensolverResult | str | list[int]) -> float:
         cost = 0
         if isinstance(solution, list):
             chain = solution
@@ -65,8 +65,8 @@ class TSP(Problem):
             cost += self.instance[chain[i]][chain[i + 1]]["weight"]
         cost += self.instance[chain[-1]][chain[0]]["weight"]
         return cost
-    
-    def _visualize_solution(self,solution:SamplingMinimumEigensolverResult | str | list[int]):
+
+    def _visualize_solution(self, solution: SamplingMinimumEigensolverResult | str | list[int]):
         if isinstance(solution, list):
             chain = solution
         else:
@@ -74,7 +74,7 @@ class TSP(Problem):
 
         import matplotlib.pyplot as plt
 
-        pos = nx.spring_layout(self.instance,weight=None, seed=42)
+        pos = nx.spring_layout(self.instance, weight=None, seed=42)
         problem_edges = list(self.instance.edges)
 
         marked_edges = []
@@ -82,8 +82,8 @@ class TSP(Problem):
             marked_edges.append(set((chain[i], chain[i + 1])))
         marked_edges.append(set((chain[-1], chain[0])))
 
-        draw_colors = [] #Limegreen for marked edges, gray for unmarked
-        draw_widths = [] #Draw marked edges thicker
+        draw_colors = []  # Limegreen for marked edges, gray for unmarked
+        draw_widths = []  # Draw marked edges thicker
 
         path_cost = 0
         for edge in problem_edges:
@@ -96,7 +96,7 @@ class TSP(Problem):
         nx.draw(
             self.instance,
             pos,
-            edge_color = draw_colors,
+            edge_color=draw_colors,
             width=draw_widths,
             with_labels=True,
             node_color="skyblue",
@@ -107,8 +107,8 @@ class TSP(Problem):
 
         labels = nx.get_edge_attributes(self.instance, "weight")
         nx.draw_networkx_edge_labels(
-            self.instance, 
-            pos, 
+            self.instance,
+            pos,
             edge_labels=labels,
             rotate=False,
             font_weight="bold",
@@ -123,7 +123,6 @@ class TSP(Problem):
         """
         Show plot of the TSP instance.
         """
-        import matplotlib.pyplot as plt
 
         pos = nx.spring_layout(self.instance, weight=None, seed=42)
         plt.figure(figsize=(8, 6))
@@ -152,8 +151,8 @@ class TSP(Problem):
 
         plt.title("TSP Instance Visualization")
         plt.show()
-        
-    def visualize(self,solution=None):
+
+    def visualize(self, solution=None):
         if solution is None:
             self._visualize_problem()
         else:
@@ -163,11 +162,11 @@ class TSP(Problem):
     def from_preset(instance_name: str = 'default', **kwargs) -> "TSP":
         """
         Generate TSP instance from a preset name.
-        
+
         Args:
             instance_name (str): Name of the preset instance
             quadratic (bool, optional): Whether to use quadratic constraints. Defaults to False
-            
+
         Returns:
             TSP: TSP instance
         """
@@ -189,21 +188,19 @@ class TSP(Problem):
             for j in range(i + 1, n):  # No connections to self
                 G.add_edge(i, j, weight=edge_costs[i, j])
 
-        quadratic = kwargs.get("quadratic", False)
-
-        return TSP(instance=G, instance_name=instance_name, quadratic=quadratic)
+        return TSP(instance=G, instance_name=instance_name)
 
     @staticmethod
     def generate_tsp_instance(num_vertices: int, min_distance: float = 1.0, max_distance: float = 10.0, **kwargs) -> "TSP":
         """
         Generate a random TSP instance.
-        
+
         Args:
             num_vertices (int): Number of vertices in the graph
             min_distance (float, optional): Minimum distance between vertices. Defaults to 1.0
             max_distance (float, optional): Maximum distance between vertices. Defaults to 10.0
             quadratic (bool, optional): Whether to use quadratic constraints. Defaults to False
-        
+
         Returns:
             TSP: TSP instance
         """
@@ -219,6 +216,4 @@ class TSP(Problem):
                 g.add_edge(i, j, weight=int(
                     np.random.uniform(min_distance, max_distance)))
 
-        quadratic = kwargs.get("quadratic", False)
-
-        return TSP(instance=g, instance_name="generated", quadratic=quadratic)
+        return TSP(instance=g, instance_name="generated")

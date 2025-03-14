@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import pickle
-from typing import Any, Callable, Dict, Optional, Literal, TypeVar, overload
+from typing import Any, Literal, TypeVar
+from collections.abc import Callable
 import logging
 
 
@@ -34,14 +35,17 @@ class Result:
         return self.most_common_bitstring, self.most_common_bitstring_energy
 
     @staticmethod
-    def from_distributions(bitstring_distribution: Dict[str, float], energy_distribution: Dict[str, float], result: Optional[Any] = None) -> "Result":
-        """ Constructs the Result object from Dictionary with bitstring to num of occurrences, dictionary mapping bitstring to energy and optional result (rest) """
+    def from_distributions(bitstring_distribution: dict[str, float], energy_distribution: dict[str, float], result: Any = None) -> "Result":
+        """
+        Constructs the Result object from Dictionary with bitstring to num of occurrences,
+        dictionary mapping bitstring to energy and optional result (rest)
+        """
         best_bitstring = min(energy_distribution, key=energy_distribution.get)
         best_energy = energy_distribution[best_bitstring]
         most_common_bitstring = max(
             bitstring_distribution, key=bitstring_distribution.get)
         most_common_bitstring_energy = energy_distribution[most_common_bitstring]
-        num_of_samples = sum(bitstring_distribution.values())
+        num_of_samples = int(sum(bitstring_distribution.values()))
 
         mean_value = sum(energy_distribution[bitstring] * occ for bitstring,
                          occ in bitstring_distribution.items()) / num_of_samples
@@ -64,11 +68,11 @@ class Backend:
 
     """
 
-    def __init__(self, name: str, parameters: list = None) -> None:
+    def __init__(self, name: str, parameters: list | None = None) -> None:
         self.name: str = name
         self.path: str | None = None
         self.parameters = parameters if parameters is not None else []
-        self.logger: Optional[logging.Logger] = None
+        self.logger: logging.Logger | None = None
 
     def set_logger(self, logger: logging.Logger):
         self.logger = logger
@@ -77,7 +81,7 @@ class Backend:
         return f'{self.name}'
 
 
-P = TypeVar('P', bound='Problem')
+P = TypeVar('P', bound=type['Problem'])
 
 
 class Problem(ABC):
@@ -106,7 +110,7 @@ class Problem(ABC):
         Returns:
             None
         """
-        self.instance: any = instance
+        self.instance: Any = instance
         self.instance_name = instance_name
         self.variant: str = 'Optimization'
         self.path: str | None = None
@@ -187,10 +191,10 @@ class Algorithm(ABC):
             dict: The parsed result as a dictionary.
         """
         print('Algorithm does not have the parse_result_to_json method implemented')
-        return dict(o)
+        return o.__dict__
 
     @abstractmethod
-    def run(self, problem: Problem, backend: Backend, formatter: Callable = None) -> Result:
+    def run(self, problem: Problem, backend: Backend, formatter: Callable | None = None) -> Result:
         """Runs the algorithm on a specific problem using a backend.
 
         Args:

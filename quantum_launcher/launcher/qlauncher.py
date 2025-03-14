@@ -1,9 +1,8 @@
 """ File with templates """
 import json
-import os
 import pickle
-from typing import List, Literal, Optional, Union
-from quantum_launcher.base.adapter_structure import get_formatter
+from typing import List, Literal, Optional, Union, Callable
+from quantum_launcher.base.adapter_structure import get_formatter, ProblemFormatter
 from quantum_launcher.base import Problem, Algorithm, Backend, Result
 from quantum_launcher.problems import Raw
 import logging
@@ -25,7 +24,7 @@ class QuantumLauncher:
         encoding_type (type): The encoding type to be used changing the class of the problem. Defaults to None.
 
     Example of usage::
-    
+
             from templates import QuantumLauncher
             from problems import MaxCut
             from qiskit_routines import QAOA, QiskitBackend
@@ -42,27 +41,35 @@ class QuantumLauncher:
 
     def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend = None,
                  logger: Optional[logging.Logger] = None) -> None:
+
         if not isinstance(problem, Problem):
             problem = Raw(problem)
+
         self.problem: Problem = problem
         self.algorithm: Algorithm = algorithm
         self.backend: Backend = backend
+
         if logger is None:
             logger: logging.Logger = logging.getLogger('QuantumLauncher')
         self.logger = logger
+
+        # logging.info(f'Found proper formatter, with formatter structure: {self.formatter.get_pipeline()}')
+
         self.res: dict = {}
 
-    def run(self) -> Result:
+    def run(self, **kwargs) -> Result:
         """
         Finds proper formatter, and runs the algorithm on the problem with given backends.
 
         Returns:
             dict: The results of the algorithm execution.
         """
-        formatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
-        logging.info(f'Found proper formatter, with formatter structure: {formatter.__class__}')  # TODO: show formatter stacktrace
+
+        formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
+        formatter.set_run_params(kwargs)
+
         self.result = self.algorithm.run(self.problem, self.backend, formatter=formatter)
-        logging.info(f'Algorithm ended successfully!')
+        logging.info('Algorithm ended successfully!')
         return self.result
 
     def save(self, path: str, format: Literal['pickle', 'txt', 'json'] = 'pickle'):
@@ -80,19 +87,18 @@ class QuantumLauncher:
             raise ValueError(
                 f'format: {format} in not supported try: pickle, txt, csv or json')
 
-    def process(self, *, file_path: Optional[str] = None, format: Union[Literal['pickle', 'txt', 'json'], List[Literal['pickle', 'txt', 'json']]] = 'pickle') -> dict:
+    def process(self, *, file_path: Optional[str] = None, format: Union[Literal['pickle', 'txt', 'json'], List[Literal['pickle', 'txt', 'json']]] = 'pickle', **kwargs) -> dict:
         """
         Runs the algorithm, processes the data, and saves the results if specified.
 
         Args:
-            file_path Optional[str]: Flag indicating whether to save the results to a file. Defaults to None.
-            format Union[Literal['pickle', 'txt', 'json'], List[Literal['pickle', 'txt', 'json']]]:
-                format in which file should be saved. Defaults to 'pickle'
+            file_path (Optional[str]): Flag indicating whether to save the results to a file. Defaults to None.
+            format (Union[Literal['pickle', 'txt', 'json'], List[Literal['pickle', 'txt', 'json']]]): Format in which file should be saved. Defaults to 'pickle'
 
         Returns:
             dict: The processed results.
         """
-        results = self.run()
+        results = self.run(**kwargs)
         energy = results.result['energy']
         res = {}
         res['problem_setup'] = self.problem.setup

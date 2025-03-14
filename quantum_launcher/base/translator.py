@@ -1,14 +1,21 @@
 """ Module providing Translation between different universal quantum computers """
 from typing import Any
 from abc import ABC, abstractmethod
+from quantum_launcher.import_management import DependencyError
 
-import cirq
-from cirq.contrib.qasm_import.qasm import circuit_from_qasm
+try:
+    import cirq
+    from cirq.contrib.qasm_import.qasm import circuit_from_qasm
+except ImportError as e:
+    raise DependencyError(e, 'cirq') from e
 
-import qiskit
-from qiskit import qasm2
-from qiskit.compiler import transpile
-from qiskit.transpiler.passes import RemoveBarriers
+try:
+    import qiskit
+    from qiskit import qasm2
+    from qiskit.compiler import transpile
+    from qiskit.transpiler.passes import RemoveBarriers
+except ImportError as e:
+    raise DependencyError(e, 'qiskit') from e
 
 
 class Translation(ABC):

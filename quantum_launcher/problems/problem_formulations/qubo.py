@@ -1,6 +1,6 @@
 """ Basic problems for Orca """
-import numpy as np
 from typing import Tuple
+import numpy as np
 from pyqubo import Array
 from quantum_launcher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
 import quantum_launcher.problems.problem_initialization as problem
@@ -169,7 +169,7 @@ def get_raw_qubo(problem: problem.Raw):
     return problem.instance
 
 
-@formatter(problem.GraphColoring, format='qubo')
+@formatter(problem.GraphColoring, 'qubo')
 def get_graph_coloring_qubo(problem: problem.GraphColoring):
     """ Returns Qubo function """
     num_qubits = problem.instance.number_of_nodes() * problem.num_colors

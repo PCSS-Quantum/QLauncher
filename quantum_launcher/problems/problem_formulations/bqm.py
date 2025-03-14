@@ -1,10 +1,8 @@
-import numpy as np
-from qiskit_optimization.converters import QuadraticProgramToQubo
-from qiskit_optimization.translators import from_ising
-from quantum_launcher.base import adapter, formatter
 from typing import Tuple
 import ast
+import numpy as np
 from pyqubo import Spin
+from quantum_launcher.base import adapter, formatter
 from quantum_launcher.problems.problem_initialization import Raw
 
 
@@ -15,26 +13,13 @@ def qubo_to_bqm(qubo_with_offset) -> dict:
     return bqm
 
 
-@adapter('hamiltonian', 'qubo')
-def hamiltonian_to_qubo(hamiltonian) -> Tuple[np.ndarray, float]:
-    qp = from_ising(hamiltonian)
-    conv = QuadraticProgramToQubo()
-    qubo = conv.convert(qp).objective
-    return qubo.quadratic.to_array(), qubo.constant
-
-
 class QUBOMatrix:
     def __init__(self, qubo_matrix, offset):
         self.qubo_matrix = qubo_matrix
         self.offset = offset
 
         if type(self.qubo_matrix) == str:
-            try:
-                self.qubo_matrix = np.array(ast.literal_eval(self.qubo_matrix))
-            except:
-                raise SystemExit(
-                    """Wrong matrix format, please use list of lists\nIf you are using <nazwa_matrixa> please use -z flag"""
-                )
+            self.qubo_matrix = np.array(ast.literal_eval(self.qubo_matrix))
 
         self.symetric = True
         self._check_if_symetric()

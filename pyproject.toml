@@ -8,7 +8,9 @@ dependencies = [
     "networkx",
     "notebook>=7.3.2",
     "numpy",
+    "overrides>=7.7.0",
     "pandas",
+    "matplotlib",
     "pyqubo>=1.5.0",
     "scipy",
 ]
@@ -19,7 +21,7 @@ include = ["quantum_launcher*"]
 
 [project.optional-dependencies]
 qiskit = ["qiskit", "qiskit_algorithms", "qiskit_aqt_provider", "qiskit_ibm_runtime", "qiskit_optimization"]
-orca = ["numba==0.60.0", "torch", "matplotlib"]
+orca = ["numba==0.60.0", "torch"]
 dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
 cirq = ["cirq>=1.4.1", "ply"]
 pilotjob = ["qcg-pilotjob", "dill>=0.3.0"]
