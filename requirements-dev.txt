@@ -5,6 +5,7 @@ better-apidoc
 sphinx-book-theme
 myst_nb
 pandoc
+pylatexenc
 
 #Testing
 pytest
