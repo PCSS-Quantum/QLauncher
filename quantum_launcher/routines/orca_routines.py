@@ -1,7 +1,9 @@
 """ file with orca algorithms subclasses """
 from typing import List, Literal
 from collections.abc import Callable
+import inspect
 import numpy as np
+
 
 from quantum_launcher.base import Problem, Algorithm, Result, Backend
 from quantum_launcher.import_management import DependencyError
@@ -56,13 +58,16 @@ class BBS(Algorithm):
             objective, offset = objective
             if self.input_state is None:
                 self.input_state = [not i % 2 for i in range(len(objective))]
+        init_args = inspect.signature(BinaryBosonicSolver).parameters
+
         self.bbs = BinaryBosonicSolver(
             len(self.input_state),
             objective,
             self.input_state,
-            **self.kwargs
+            **{k: v for k, v in self.kwargs.items() if k in init_args}
         )
-        self.bbs.train(**self.kwargs)
+        train_args = inspect.signature(self.bbs.train).parameters
+        self.bbs.train(**{k: v for k, v in self.kwargs.items() if k in train_args})
 
         return self.construct_results(self.bbs)
 
