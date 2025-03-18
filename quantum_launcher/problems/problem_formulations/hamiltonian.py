@@ -27,6 +27,24 @@ def hamiltonian_to_qubo(hamiltonian):
     return qubo.quadratic.to_array(), 0
 
 
+@adapter("qubo", "hamiltonian")
+def qubo_to_hamiltonian(qubo: np.ndarray) -> SparsePauliOp:
+    q_matrix, offset = qubo
+    num_vars = q_matrix.shape[0]
+    pauli = 0
+    for i, col in enumerate(q_matrix):
+        for j, entry in enumerate(col):
+            if entry == 0:
+                continue
+            if i == j:
+                pauli += SparsePauliOp.from_sparse_list([('I', [0], .5), ('Z', [i], -.5)], num_vars)*entry
+            else:
+                pauli += SparsePauliOp.from_sparse_list([('I', [0], .25), ('Z', [i], -.25),
+                                                        ('Z', [j], -.25), ('ZZ', [i, j], .25)], num_vars)*entry
+    pauli += SparsePauliOp.from_sparse_list([('I', [], offset)], num_vars)
+    return pauli
+
+
 def ring_ham(ring: set, n):
     total = None
     ring = list(ring)
