@@ -2,7 +2,10 @@ from qiskit_aer.primitives import Sampler, SamplerV2
 from qiskit_aer import AerSimulator
 from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 from qiskit import QuantumCircuit
+from qiskit.primitives import SamplerResult
+
 from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
+from quantum_launcher.routines.qiskit_routines import QiskitBackend
 
 
 def test_v2_sampler_adapter():
@@ -22,3 +25,20 @@ def test_v2_sampler_adapter():
 
     for d1, d2 in zip(v1_result.quasi_dists, adapted_result.quasi_dists):
         assert len(d1) == len(d2)
+
+
+def test_v2_sampler_adapter_unnamed_measurements():
+    """
+    Test whether SamplerV2Adapter correctly outputs results for circuits with unnamed cl_registers.
+    """
+
+    backend = QiskitBackend('local_simulator')
+    circ = QuantumCircuit(2, 1)
+
+    circ.h(0)
+    circ.cx(0, 1)
+    circ.measure(1, 0)
+
+    res = backend.samplerV1.run(circ).result()
+
+    assert isinstance(res, SamplerResult)
