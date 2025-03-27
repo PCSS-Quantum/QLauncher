@@ -30,9 +30,6 @@ class QiskitBackend(Backend):
         estimator (BaseEstimatorV2): The estimator used for estimation.
         optimizer (Optimizer): The optimizer used for optimization.
     """
-    sampler: BaseSamplerV2
-    estimator: BaseEstimatorV2
-    optimizer: Optimizer
 
     def __init__(
         self,
