@@ -19,7 +19,7 @@ test:
   script:
     - pytest -v tests
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "QL-2.0"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
 
 pages:
   stage: deploy
@@ -31,4 +31,4 @@ pages:
     paths:
       - public
   rules:
-    - if: '$CI_COMMIT_BRANCH == "QL-2.0"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
