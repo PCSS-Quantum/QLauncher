@@ -19,6 +19,7 @@ try:
 
     from qiskit_algorithms.optimizers import COBYLA
     from qiskit_ibm_runtime import Options
+    from qiskit_ibm_runtime import SamplerV2, EstimatorV2
 except ImportError as e:
     raise DependencyError(e, install_hint='qiskit') from e
 
@@ -60,8 +61,8 @@ class QiskitBackend(Backend):
             self.sampler = StatevectorSampler()
             self.optimizer = COBYLA()
         elif self.name == 'backendv1v2_simulator':
-            self.estimator = BackendEstimatorV2(backend=self.backendv1v2)
-            self.sampler = BackendSamplerV2(backend=self.backendv1v2)
+            self.estimator = EstimatorV2(self.backendv1v2)
+            self.sampler = SamplerV2(self.backendv1v2)
             self.optimizer = COBYLA()
         else:
             raise ValueError(f"Unsupported mode for this backend:'{self.name}'")

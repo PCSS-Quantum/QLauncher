@@ -6,6 +6,7 @@ matplotlib
 networkx
 scipy
 overrides
+docplex<2.29
 
 # Qiskit
 qiskit

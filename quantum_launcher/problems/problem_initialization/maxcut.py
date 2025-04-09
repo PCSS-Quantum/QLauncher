@@ -56,6 +56,6 @@ class MaxCut(Problem):
         plt.show()
 
     @staticmethod
-    def generate_maxcut_instance(num_vertices, edge_probability) -> "1":
+    def generate_maxcut_instance(num_vertices: int, edge_probability: float) -> "MaxCut":
         graph = nx.gnp_random_graph(num_vertices, edge_probability)
-        return graph
+        return MaxCut(graph, instance_name='Generated')
