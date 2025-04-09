@@ -9,10 +9,15 @@ from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapte
 from quantum_launcher.import_management import DependencyError
 try:
     from qiskit.providers import BackendV1, BackendV2
-    from qiskit.primitives import (BackendSamplerV2, BackendEstimatorV2, StatevectorEstimator,
-                                   StatevectorSampler, Sampler, BaseSamplerV2, BaseEstimatorV2)
+    from qiskit.primitives import (
+        BackendSamplerV2,
+        BackendEstimatorV2,
+        StatevectorEstimator,
+        StatevectorSampler,
+        Sampler
+    )
 
-    from qiskit_algorithms.optimizers import COBYLA, Optimizer
+    from qiskit_algorithms.optimizers import COBYLA
     from qiskit_ibm_runtime import Options
 except ImportError as e:
     raise DependencyError(e, install_hint='qiskit') from e

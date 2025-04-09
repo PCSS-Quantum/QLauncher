@@ -20,7 +20,7 @@ where = ["."]
 include = ["quantum_launcher*"]
 
 [project.optional-dependencies]
-qiskit = ["qiskit", "qiskit_algorithms", "qiskit_aqt_provider", "qiskit_ibm_runtime", "qiskit_optimization"]
+qiskit = ["qiskit", "qiskit_algorithms", "qiskit_aqt_provider", "qiskit_ibm_runtime", "qiskit_optimization","qiskit_aer"]
 orca = ["numba==0.60.0", "torch"]
 dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
 cirq = ["cirq>=1.4.1", "ply"]
