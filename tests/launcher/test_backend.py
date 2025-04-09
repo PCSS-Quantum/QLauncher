@@ -7,8 +7,9 @@ from qiskit_ibm_runtime import Session
 
 from qiskit_aqt_provider import AQTProvider
 
+from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 
-from quantum_launcher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend
+from quantum_launcher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend
 
 import pytest
 
@@ -97,5 +98,19 @@ def test_Qiskit_backendv1v2_session():
     assert backend.sampler is not None
     assert backend.estimator is not None
     assert backend.optimizer is not None
+
+    assert isinstance(backend.backendv1v2, FakeAlmadenV2)
+
+
+def test_Aer_backend_local():
+    backend = AerBackend('local_simulator')
+    assert isinstance(backend.sampler, BaseSamplerV2)
+    assert isinstance(backend.estimator, BaseEstimatorV2)
+
+
+def test_Aer_backend_backendv1v2():
+    backend = AerBackend('backendv1v2_simulator', backendv1v2=FakeAlmadenV2())
+    assert isinstance(backend.sampler, BaseSamplerV2)
+    assert isinstance(backend.estimator, BaseEstimatorV2)
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)

@@ -1,6 +1,6 @@
 [project]
 name = "quantum-launcher"
-version = "2.0"
+version = "2.0.1"
 description = "Quantum Launcher is modular tool, for solving many problems on many algorithms using many quantum computing backends"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,6 +18,7 @@ dependencies = [
     "qiskit_aqt_provider",
     "qiskit_ibm_runtime",
     "qiskit_optimization",
+    "qiskit_aer",
     "qcg-pilotjob",
     "dill>=0.3.0"
 ]
