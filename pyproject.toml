@@ -18,6 +18,7 @@ dependencies = [
     "qiskit_aqt_provider",
     "qiskit_ibm_runtime",
     "qiskit_optimization",
+    "qiskit_aer",
     "qcg-pilotjob",
     "dill>=0.3.0"
 ]
