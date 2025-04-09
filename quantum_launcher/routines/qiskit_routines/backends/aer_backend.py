@@ -61,7 +61,7 @@ class AerBackend(QiskitBackend):
         options: Options | None = None,
         simulation_method: str = 'automatic',
         simulation_device: Literal['CPU', 'GPU'] = 'CPU',
-        transpile: bool = True,
+        transpile: bool = False,
         backendv1v2: BackendV1 | BackendV2 | None = None
     ) -> None:
         self.method = simulation_method
@@ -89,3 +89,7 @@ class AerBackend(QiskitBackend):
             self.optimizer = COBYLA()
         else:
             raise ValueError(f"Unsupported mode for this backend:'{self.name}'")
+
+    def set_options(self, **fields):
+        """Set additional options for the instance AerSimulator"""
+        self.simulator.set_options(**fields)
