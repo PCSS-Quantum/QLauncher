@@ -1,17 +1,16 @@
-''' Example of how Quantum Launcher works'''
-from quantum_launcher import *
-from quantum_launcher import problems
+""" Example of how Quantum Launcher works """
+from quantum_launcher import QuantumLauncher, problems
 from quantum_launcher.routines.qiskit_routines import IBMBackend, QAOA
 
 
 def main():
     """ main """
-    pr = problems.JSSP(3, 'exact', instance_name='toy',
-                          optimization_problem=True)
+    pr = problems.JSSP.from_preset('toy')
     alg = QAOA()
     backend = IBMBackend('local_simulator')
+
     launcher = QuantumLauncher(pr, alg, backend)
-    print(launcher.process(save_json=True))
+    print(launcher.run())
 
 
 if __name__ == '__main__':

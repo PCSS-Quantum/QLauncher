@@ -60,11 +60,14 @@ class JSSP(Problem):
     def from_preset(instance_name: str, **kwargs) -> "JSSP":
         match instance_name:
             case 'toy':
+                max_time = 3
                 instance = {"cupcakes": [("mixer", 2), ("oven", 1)],
                             "smoothie": [("mixer", 1)],
                             "lasagna": [("oven", 2)]}
+            case _:
+                raise ValueError(f"Instance {instance_name} does not exist choose instance_name from the following: ('toy')")
 
-        return JSSP(instance=instance, instance_name=instance_name, **kwargs)
+        return JSSP(max_time=max_time, instance=instance, instance_name=instance_name, **kwargs)
 
     @classmethod
     def from_file(cls, path: str, **kwargs) -> "JSSP":

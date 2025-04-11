@@ -1,5 +1,5 @@
 [project]
-name = "quantum_launcher"
+name = "quantum-launcher"
 version = "2.0.1"
 description = "Quantum Launcher is modular tool, for solving many problems on many algorithms using many quantum computing backends"
 readme = "README.md"
