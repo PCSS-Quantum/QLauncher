@@ -15,7 +15,17 @@ button.sidebar-toggle {
     max-width: 100% !important;
 }
 
+.bd-sidebar-primary {
+    overflow-y: hidden !important;
+}
+
 .navbar-brand img {
-    max-height: 200px !important;
-    max-width: 200px !important;
+    max-height: 300px !important;
+    max-width: 300px !important;
+
+    height: 100%;
+    width: 100%;
+
+    min-height: 100px !important;
+    min-width: 100px !important;
 }
