@@ -28,6 +28,8 @@ pages:
   stage: deploy
   script:
     - cd docs
+    - mkdir -p tutorials
+    - cp ./../examples/*.ipynb ./tutorials
     - sphinx-build -b html . ../public
     - cd ..
   artifacts:
