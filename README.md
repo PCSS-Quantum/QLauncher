@@ -1,4 +1,4 @@
-# Quantum Launcher
+# <div style='display:flex; align-items:center;gap:0.5rem;'><div><img src='docs/_static/logo.svg'></div>Quantum Launcher</div>
 
 ## About Project
 
@@ -35,12 +35,11 @@ pip install git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0
 Quantum Launcher aims to work for many different architectures. Therefore in order to remain compatible with all of them Quantum Launcher by default installs only necessary requirements allowing user to decide what frameworks does one want to use. To make installation easier, there is a bunch of downloads that can be done with optional dependencies, for example:
 
 ```sh
-pip install "git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0[qiskit]"
+pip install "git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0[orca]"
 ```
 
 to install all requirements necessary to run qiskit algorithms.
 
-- **qiskit**: support for IBM's qiskit algorithms and backends.
 - **orca**: support for Orca Computing algorithms and backends **NOTE** library ptseries is not public therefore one needs to install it on it's own.
 - **dwave**: support for D-Wave Systems algorithms and backends.
 - **cirq**: support for Google's cirq backends.
