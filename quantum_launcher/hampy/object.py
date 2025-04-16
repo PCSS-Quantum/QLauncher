@@ -1,5 +1,5 @@
 from typing import Union, overload
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.utils import DependencyError
 try:
     from qiskit.quantum_info import SparsePauliOp
 except ImportError as e:

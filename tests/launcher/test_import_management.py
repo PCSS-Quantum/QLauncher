@@ -1,5 +1,5 @@
 import pytest
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.utils import DependencyError
 
 
 def test_import_error():

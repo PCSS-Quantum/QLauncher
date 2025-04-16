@@ -6,7 +6,7 @@ from quantum_launcher.base import Backend
 from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
 
 
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.utils import DependencyError
 try:
     from qiskit.providers import BackendV1, BackendV2
     from qiskit.primitives import (

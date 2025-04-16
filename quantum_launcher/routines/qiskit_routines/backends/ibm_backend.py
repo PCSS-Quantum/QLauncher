@@ -2,7 +2,7 @@
 from typing import Literal
 
 from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.utils import DependencyError
 try:
     from qiskit.providers import BackendV1, BackendV2
     from qiskit_algorithms.optimizers import SPSA

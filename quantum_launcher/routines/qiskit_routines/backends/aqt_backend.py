@@ -3,7 +3,7 @@ from typing import Literal
 from overrides import override
 
 from quantum_launcher.routines.qiskit_routines import QiskitBackend
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.utils import DependencyError
 
 try:
     from qiskit.providers import BackendV1, BackendV2

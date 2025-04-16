@@ -7,7 +7,7 @@ import numpy as np
 
 from quantum_launcher.base import Problem, Algorithm, Result
 from quantum_launcher.routines.qiskit_routines.backends.ibm_backend import IBMBackend
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.utils import DependencyError
 
 try:
     from qiskit import qpy, QuantumCircuit

@@ -1,7 +1,7 @@
 """ Module providing Translation between different universal quantum computers """
 from typing import Any
 from abc import ABC, abstractmethod
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.utils import DependencyError
 
 try:
     import cirq
