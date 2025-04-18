@@ -86,4 +86,4 @@ class AQTBackend(QiskitBackend):
         self.sampler = AQTSampler(self.backendv1v2)
         self.optimizer = COBYLA()
 
-        self._configure_auto_transpile()
+        self._configure_auto_behavior()

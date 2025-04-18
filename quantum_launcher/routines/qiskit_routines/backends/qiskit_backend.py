@@ -78,11 +78,11 @@ class QiskitBackend(Backend):
         else:
             raise ValueError(f"Unsupported mode for this backend:'{self.name}'")
 
-        self._configure_auto_transpile()
+        self._configure_auto_behavior()
 
-    def _configure_auto_transpile(self):
+    def _configure_auto_behavior(self):
         """
-        Set auto transpilation if turned on, on estimator and sampler if compatible.
+        Set auto transpilation and/or auto assignment if turned on, on estimator and sampler if compatible.
         """
         if isinstance(self.estimator, AUTO_TRANSPILE_ESTIMATOR_TYPE):
             self.estimator = set_estimator_auto_run_behavior(

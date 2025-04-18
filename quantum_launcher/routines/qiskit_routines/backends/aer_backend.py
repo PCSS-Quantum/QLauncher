@@ -51,7 +51,7 @@ class AerBackend(QiskitBackend):
         self.estimator = BackendEstimatorV2(backend=self.simulator)
         self.optimizer = COBYLA()
 
-        self._configure_auto_transpile()
+        self._configure_auto_behavior()
 
     def set_options(self, **fields):
         """Set additional options for the instance AerSimulator"""

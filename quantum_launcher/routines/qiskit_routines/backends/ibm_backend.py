@@ -25,8 +25,8 @@ class IBMBackend(QiskitBackend):
         name: Literal['local_simulator', 'backendv1v2', 'session'],
         options: Options | None = None,
         backendv1v2: BackendV1 | BackendV2 | None = None,
-        session: Session | None = None,
         auto_transpile: bool = False,
+        session: Session | None = None,
     ) -> None:
         self.session = session
         super().__init__(name, options, backendv1v2, auto_transpile)
@@ -44,6 +44,9 @@ class IBMBackend(QiskitBackend):
             return
         self._auto_assign = True
         if self.name == 'backendv1v2':
+            if self.backendv1v2 is None:
+                raise AttributeError(
+                    'Please indicate a backend when in backendv1v2 mode.')
             self.estimator = EstimatorV2(self.backendv1v2)
             self.sampler = SamplerV2(self.backendv1v2)
             self.optimizer = COBYLA()
@@ -51,7 +54,7 @@ class IBMBackend(QiskitBackend):
         elif self.name == 'session':
             if self.session is None:
                 raise AttributeError(
-                    'Please instantiate a session if using other backend than local')
+                    'Please indicate a session when in session mode.')
             else:
                 self.estimator = EstimatorV2(mode=self.session, options=self.options)
                 self.sampler = SamplerV2(mode=self.session, options=self.options)
@@ -60,4 +63,4 @@ class IBMBackend(QiskitBackend):
         else:
             raise ValueError(f"Unsupported mode for this backend:'{self.name}'")
 
-        self._configure_auto_transpile()
+        self._configure_auto_behavior()
