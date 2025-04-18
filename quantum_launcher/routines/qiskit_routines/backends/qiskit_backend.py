@@ -45,6 +45,13 @@ class QiskitBackend(Backend):
         backendv1v2: BackendV1 | BackendV2 | None = None,
         auto_transpile: bool = False
     ) -> None:
+        """
+        Args:
+            name (Literal[&#39;local_simulator&#39;, &#39;backendv1v2&#39;] | str): Name or mode of operation, 'backendv1v2' allows for using a specific backend simulator.
+            options (Options | None, optional): Defaults to None.
+            backendv1v2 (BackendV1 | BackendV2 | None, optional): Used with name 'backendv1v2', sampler and estimator will use it. Defaults to None.
+            auto_transpile (bool, optional): Whether to automatically transpile cirquits to the sampler and estimator backends. Defaults to False.
+        """
         super().__init__(name)
         self.options = options
         self.backendv1v2 = backendv1v2
