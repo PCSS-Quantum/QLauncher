@@ -5,9 +5,9 @@ from quantum_launcher.import_management import DependencyError
 try:
     from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
     from dimod import Sampler, SampleSet
-    from tabu import TabuSampler
+    # from tabu import TabuSampler
     from dwave.system import DWaveSampler, EmbeddingComposite
-    from dwave.samplers import SimulatedAnnealingSampler
+    from dwave.samplers import SimulatedAnnealingSampler, TabuSampler
 except ImportError as e:
     raise DependencyError(e, install_hint='dwave') from e
 
@@ -34,7 +34,7 @@ class DwaveSolver(Algorithm):
     def construct_result(self, result: SampleSet) -> Result:
         distribution = {}
         energies = {}
-        for (value, energy, occ) in result.record:
+        for (value, energy, occ) in zip(result.record.sample, result.record.energy, result.record.num_occurrences, strict=True):
             bitstring = ''.join(map(str, value))
             if bitstring in distribution:
                 distribution[bitstring] += occ
