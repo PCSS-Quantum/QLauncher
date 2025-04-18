@@ -30,11 +30,11 @@ class DummyAQTProvider(AQTProvider):
 
 def test_AQT_backend_backendv1v2_simulator():
     with pytest.raises(ValueError):
-        backend = AQTBackend(token="test_token", name='backendv1v2_simulator')
+        backend = AQTBackend(token="test_token", name='backendv1v2')
 
-    backend = AQTBackend('backendv1v2_simulator', backendv1v2=FakeAlmadenV2())
+    backend = AQTBackend('backendv1v2', backendv1v2=FakeAlmadenV2())
 
-    assert backend.name == 'backendv1v2_simulator'
+    assert backend.name == 'backendv1v2'
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
     assert isinstance(backend.estimator, AQTEstimator)
@@ -78,7 +78,7 @@ def test_IBM_session():
     backend = FakeAlmadenV2()
 
     with Session(backend=backend) as session:
-        ql_backend = IBMBackend('device', session=session)
+        ql_backend = IBMBackend('session', session=session)
 
         assert ql_backend.sampler.mode == session
         assert ql_backend.estimator.mode == session
@@ -93,7 +93,7 @@ def test_Qiskit_local_session():
 
 
 def test_Qiskit_backendv1v2_session():
-    backend = QiskitBackend('backendv1v2_simulator', backendv1v2=FakeAlmadenV2())
+    backend = QiskitBackend('backendv1v2', backendv1v2=FakeAlmadenV2())
 
     assert backend.sampler is not None
     assert backend.estimator is not None
@@ -109,7 +109,7 @@ def test_Aer_backend_local():
 
 
 def test_Aer_backend_backendv1v2():
-    backend = AerBackend('backendv1v2_simulator', backendv1v2=FakeAlmadenV2())
+    backend = AerBackend('backendv1v2', backendv1v2=FakeAlmadenV2())
     assert isinstance(backend.sampler, BaseSamplerV2)
     assert isinstance(backend.estimator, BaseEstimatorV2)
 

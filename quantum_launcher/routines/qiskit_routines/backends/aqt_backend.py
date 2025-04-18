@@ -51,9 +51,10 @@ class AQTBackend(QiskitBackend):
 
     def __init__(
         self,
-        name: Literal['local_simulator', 'backendv1v2_simulator', 'device'],
+        name: Literal['local_simulator', 'backendv1v2', 'device'],
         options: Options | None = None,
         backendv1v2: BackendV1 | BackendV2 | None = None,
+        auto_transpile: bool = False,
         token: str | None = None,
         dotenv_path: str | None = None,
     ) -> None:
@@ -63,13 +64,13 @@ class AQTBackend(QiskitBackend):
             self.provider = AQTProvider(token if token is not None else "DEFAULT_TOKEN", load_dotenv=False)
         else:
             self.provider = AQTProvider(load_dotenv=True, dotenv_path=dotenv_path)
-        super().__init__(name, options=options, backendv1v2=backendv1v2)
+        super().__init__(name, options=options, backendv1v2=backendv1v2, auto_transpile=auto_transpile)
 
     @override
     def _set_primitives_on_backend_name(self) -> None:
         if self.name == 'local_simulator':
             self.name = self.provider.backends(backend_type='offline_simulator', name=r".*no_noise")[0].name
-        elif self.name == 'backendv1v2_simulator':
+        elif self.name == 'backendv1v2':
             if self.backendv1v2 is None:
                 raise ValueError("backendv1v2 should not be None when you plan on using it.")
         elif self.name == 'device':
@@ -81,6 +82,8 @@ class AQTBackend(QiskitBackend):
         if self.backendv1v2 is None:
             self.backendv1v2 = self.provider.get_backend(name=self.name)
 
-        self.estimator = AQTEstimator(self.backendv1v2, options=self.options)
-        self.sampler = AQTSampler(self.backendv1v2, options=self.options)
+        self.estimator = AQTEstimator(self.backendv1v2)
+        self.sampler = AQTSampler(self.backendv1v2)
         self.optimizer = COBYLA()
+
+        self._configure_auto_transpile()
