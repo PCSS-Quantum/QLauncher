@@ -18,11 +18,11 @@ Quantum Launcher splits solving problems on Quantum Machine into 3 main componen
 ----------------
 Getting started
 ----------------
-To install the quantum launcher use the following script:
+To install the quantum launcher use the following command:
 
 ::
 
-   pip install git+https://github.com/psnc-qcg/QCG-QuantumLauncher@QL-2.0
+   pip install quantum-launcher
 
 
 Then you can get to know the library by checking out the following sections:
