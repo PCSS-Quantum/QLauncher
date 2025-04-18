@@ -19,7 +19,7 @@ def test_ec():
 
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP.from_preset(max_time=3, instance_name='toy', optimization_problem=True)
+    pr = JSSP.from_preset(instance_name='toy', optimization_problem=True)
     solver = DwaveSolver(1)
     backend = SimulatedAnnealingBackend()
     launcher = QuantumLauncher(pr, solver, backend)

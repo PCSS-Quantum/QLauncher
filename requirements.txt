@@ -6,11 +6,13 @@ matplotlib
 networkx
 scipy
 overrides
+docplex<2.29
 
 # Qiskit
 qiskit
 qiskit_optimization
 qiskit_ibm_runtime
+qiskit_aer
 
 # Cirq
 cirq
