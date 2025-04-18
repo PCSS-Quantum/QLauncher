@@ -71,16 +71,16 @@ class QATM(Problem):
         df = pd.DataFrame(vectorized_result.transpose())
         df['aircraft'] = self.instance['aircrafts']['aircraft']
         onehot_violations = (df.groupby(by='aircraft').sum()
-                             != 1).sum(axis=0).ravel()
+                             != 1).sum(axis=0).to_numpy()
 
         df['manouver'] = self.instance['aircrafts']['manouver']
         no_changes = df[df['aircraft'] == df['manouver']]
         changes = (len(no_changes) - no_changes.drop(
-            ['manouver', 'aircraft'], axis=1).sum()).ravel().astype(int)
+            ['manouver', 'aircraft'], axis=1).sum()).to_numpy().astype(int)
         changes[onehot_violations != 0] = -1
 
         at_least_one = (df.loc[:, df.columns != 'manouver'].groupby(
-            'aircraft').sum() > 0).all().ravel().astype(int)
+            'aircraft').sum() > 0).all().to_numpy().astype(int)
 
         return {'collisions': collisions,
                 'onehot_violations': onehot_violations,

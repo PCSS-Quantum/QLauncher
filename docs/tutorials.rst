@@ -19,13 +19,13 @@ This section contains several tutorials, that will help you to get started with 
    :maxdepth: 1
    :caption: Learn how to define and solve your own problem on quantum computer:
 
-   tutorials/Define your own problem
+   tutorials/define_your_own_problem
 
 .. toctree::
    :maxdepth: 1
    :caption: Learn how quantum launcher maintains compatibility with many quantum circuit framework, or add your own:
 
-   tutorials/Circuit Translations
+   tutorials/circuit_translations
 
 .. toctree::
    :maxdepth: 1
