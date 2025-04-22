@@ -64,11 +64,18 @@ class GraphColoring(Problem):
         plt.figure(figsize=(8, 6))
         if solution is not None:
             nx.draw_networkx_nodes(self.instance, self.pos, node_size=500, node_color=solution, cmap="Accent")
+            colors = []
+            for n1,n2 in self.instance.edges:
+                if solution[n1] == solution[n2]:
+                    colors.append("r")
+                else:
+                    colors.append("gray")
+            nx.draw_networkx_edges(self.instance, self.pos, edge_color=colors,width=4)
         else:
             nx.draw_networkx_nodes(self.instance, self.pos, node_size=500, node_color="skyblue")
         nx.draw_networkx_edges(self.instance, self.pos, edge_color="gray")
         nx.draw_networkx_labels(self.instance, self.pos, font_size=10, font_weight="bold")
-        plt.title("Graph Coloring Problem Instance Visualization")
+        plt.title(f"Graph {self.num_colors}-Coloring Problem Instance Visualization")
         plt.show()
 
     @staticmethod
