@@ -51,6 +51,7 @@ Supported problems, algorithms and backends
 Quantum Launcher was made to simplify using of multiple different problems, algorithms and backends, therefore adding new things is relatively easy.
 
 Supported problems:
+
 * MaxCut
 * Exact Cover
 * Job Shop Shedueling
@@ -66,7 +67,7 @@ For now supported backends are:
 * AQT
 * Cirq
 
-Then you can get to know the library by checking out the following sections:
+You can get to know the library by checking out the following sections:
 
 .. toctree::
    :maxdepth: 1
