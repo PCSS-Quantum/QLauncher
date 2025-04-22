@@ -1,7 +1,7 @@
 from typing import Callable
 
 from quantum_launcher.base import Algorithm, Problem, Backend, Result
-from quantum_launcher.utils import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
     from dimod import Sampler, SampleSet

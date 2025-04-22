@@ -2,7 +2,7 @@
 Utility functions for Hampy objects.
 """
 from quantum_launcher.hampy.object import Equation
-from quantum_launcher.utils import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     from qiskit.quantum_info import SparsePauliOp, Pauli
 except ImportError as e:

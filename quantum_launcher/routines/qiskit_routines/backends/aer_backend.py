@@ -3,7 +3,7 @@ from typing import Literal
 from qiskit.providers import BackendV1, BackendV2
 from qiskit_ibm_runtime import Options
 from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
-from quantum_launcher.utils import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     from qiskit import QuantumCircuit, transpile
     from qiskit_algorithms.optimizers import COBYLA

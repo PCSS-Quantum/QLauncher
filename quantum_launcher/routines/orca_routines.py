@@ -4,7 +4,7 @@ from collections.abc import Callable
 import numpy as np
 
 from quantum_launcher.base import Problem, Algorithm, Result, Backend
-from quantum_launcher.utils import DependencyError
+from quantum_launcher.exceptions import DependencyError
 
 try:
     from ptseries.algorithms.binary_solvers import BinaryBosonicSolver

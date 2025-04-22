@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from quantum_launcher.utils import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     from qiskit import transpile
     from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2
