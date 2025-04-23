@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     from qiskit import transpile
     from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2
@@ -46,7 +46,7 @@ class SamplerV2JobAdapter(RuntimeJobV2Adapter):
         super().__init__(job, **kwargs)
 
     def _get_quasi_meta(self, res):
-        data = res.data["meas"]
+        data = next(iter(res.data.values()))
         counts = data.get_int_counts()
         probs = {k: v/data.num_shots for k, v in counts.items()}
         quasi_dists = QuasiDistribution(probs, shots=data.num_shots)

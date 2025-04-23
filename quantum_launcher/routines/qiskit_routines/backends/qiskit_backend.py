@@ -6,14 +6,20 @@ from quantum_launcher.base import Backend
 from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
 
 
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     from qiskit.providers import BackendV1, BackendV2
-    from qiskit.primitives import (BackendSamplerV2, BackendEstimatorV2, StatevectorEstimator,
-                                   StatevectorSampler, Sampler, BaseSamplerV2, BaseEstimatorV2)
+    from qiskit.primitives import (
+        BackendSamplerV2,
+        BackendEstimatorV2,
+        StatevectorEstimator,
+        StatevectorSampler,
+        Sampler
+    )
 
-    from qiskit_algorithms.optimizers import COBYLA, Optimizer
+    from qiskit_algorithms.optimizers import COBYLA
     from qiskit_ibm_runtime import Options
+    from qiskit_ibm_runtime import SamplerV2, EstimatorV2
 except ImportError as e:
     raise DependencyError(e, install_hint='qiskit') from e
 
@@ -30,9 +36,6 @@ class QiskitBackend(Backend):
         estimator (BaseEstimatorV2): The estimator used for estimation.
         optimizer (Optimizer): The optimizer used for optimization.
     """
-    sampler: BaseSamplerV2
-    estimator: BaseEstimatorV2
-    optimizer: Optimizer
 
     def __init__(
         self,
@@ -58,8 +61,8 @@ class QiskitBackend(Backend):
             self.sampler = StatevectorSampler()
             self.optimizer = COBYLA()
         elif self.name == 'backendv1v2_simulator':
-            self.estimator = BackendEstimatorV2(backend=self.backendv1v2)
-            self.sampler = BackendSamplerV2(backend=self.backendv1v2)
+            self.estimator = EstimatorV2(self.backendv1v2)
+            self.sampler = SamplerV2(self.backendv1v2)
             self.optimizer = COBYLA()
         else:
             raise ValueError(f"Unsupported mode for this backend:'{self.name}'")

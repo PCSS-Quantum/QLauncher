@@ -1,0 +1,46 @@
+image: python:3.12-slim
+
+stages:
+  - test
+  - deploy
+  - publish
+
+default:
+  before_script:
+    - python --version; pip --version
+    - pip install uv
+    - uv venv .venv
+    - source .venv/bin/activate
+    - uv pip install -r requirements.txt
+    - uv pip install -r requirements-dev.txt
+    - uv pip install --editable .
+
+test:
+  stage: test
+  script:
+    - pytest -v tests
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev" && $CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+
+pages:
+  stage: deploy
+  script:
+    - cd docs
+    - sphinx-build -b html . ../public
+    - cd ..
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+publish:
+  stage: publish
+  script:
+    - uv pip install build twine
+    - python -m build
+    - twine upload dist/* -u "$PyPI_USERNAME" -p "$PyPI_PASSWORD"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

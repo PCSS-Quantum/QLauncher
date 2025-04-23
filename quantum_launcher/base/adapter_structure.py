@@ -155,6 +155,9 @@ def _find_shortest_adapter_path(problem: type[Problem], alg_format: str) -> list
         for in_form in __QL_ADAPTERS[out_form]:
             G.add_edge(in_form, out_form)
 
+    if not G.has_node(alg_format):
+        return None
+
     path = nx.shortest_path(G, "__problem__", alg_format)
     assert isinstance(path, list) or path is None, "Something went wrong in `nx.shortest_path`"
     return path
@@ -182,12 +185,12 @@ def get_formatter(problem: type[Problem], alg_format: str) -> ProblemFormatter:
         path = _find_shortest_adapter_path(problem, alg_format)
 
         if path is None:
-            raise ValueError(f"No suitable ProblemFormatter can be found for combination of problem: {problem} and format: {alg_format}")
-
-        formatter = __QL_FORMATTERS[problem][path[1]]
-        adapters = []
-        for i in range(1, len(path)-1):
-            adapters.append(__QL_ADAPTERS[path[i+1]][path[i]])
+            formatter = default_formatter
+        else:
+            formatter = __QL_FORMATTERS[problem][path[1]]
+            adapters = []
+            for i in range(1, len(path)-1):
+                adapters.append(__QL_ADAPTERS[path[i+1]][path[i]])
 
     return ProblemFormatter(formatter, adapters)
 
