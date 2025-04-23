@@ -29,7 +29,7 @@ def get_timeout(max_timeout: int | float | None, start: int | float) -> int | fl
     return max_timeout - (time.time() - start)
 
 
-class AQLTask:
+class _InnerAQLTask:
     """
         Task object returned to user, so that dependencies can be created.
 
@@ -174,6 +174,87 @@ class AQLTask:
         if isinstance(self._result, BaseException):
             raise self._result
         return self._result
+
+
+# Why like this? The inner task was not getting properly garbage collected when it was running,
+# but this does and just cancels the inner task so it also gets garbage collected
+# this is cursed :/
+class AQLTask:
+    """
+        Task object returned to user, so that dependencies can be created.
+
+        Attributes:
+            task (Callable): function that gets executed asynchronously
+            dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
+            callbacks (list[Callable]): Callbacks ran when the task finishes executing. 
+                                        Task result is inserted as an argument to the function.
+            pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task. 
+                                      Defaults to False.
+    """
+
+    def __init__(
+        self,
+        task: Callable,
+        dependencies: list['AQLTask'] | None = None,
+        callbacks: list[Callable] | None = None,
+        pipe_dependencies: bool = False
+    ) -> None:
+        self._inner_task = _InnerAQLTask(task, dependencies, callbacks, pipe_dependencies)
+        weakref.finalize(self, self._inner_task.cancel)
+
+    @property
+    def dependencies(self):
+        """Other tasks this task depends on"""
+        return self._inner_task.dependencies
+
+    def start(self):
+        """Start task execution."""
+        return self._inner_task.start()
+
+    def cancel(self):
+        """
+        Attempt to cancel the task.
+
+        Returns:
+            bool: True if cancellation was successful
+        """
+        return self._inner_task.cancel()
+
+    def cancelled(self):
+        """
+        Returns:
+            bool: True if the task was cancelled by the user.
+        """
+        return self._inner_task.cancelled()
+
+    def done(self):
+        """
+        Returns:
+            bool: True if the task had finished execution.
+        """
+        return self._inner_task.done()
+
+    def running(self):
+        """
+        Returns:
+            bool: True if the task is currently executing.
+        """
+        return self._inner_task.running()
+
+    def result(self, timeout: float | int | None = None):
+        """
+        Get result of running the task.
+        Blocks the thread until task is finished.
+
+        Args:
+            timeout (float | int | None, optional): 
+                    The maximum amount to wait for execution to finish.
+                    If None, wait forever. If not None and time runs out, raises TimeoutError. 
+                    Defaults to None.
+        Returns:
+            Result if future returned result or None when cancelled.
+        """
+        return self._inner_task.result(timeout)
 
 
 class AQL:
@@ -386,3 +467,11 @@ class AQL:
 
         for qt in self._quantum_tasks:
             qt.start()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        for t in self.tasks:
+            if t.running():
+                t.cancel()

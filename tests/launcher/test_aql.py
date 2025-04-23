@@ -1,9 +1,8 @@
 import time
-import pytest
-import psutil
 import functools
-import gc
-from pathos.multiprocessing import _ProcessPool
+import pytest
+
+import psutil
 
 from quantum_launcher.base.base import Result
 from quantum_launcher.launcher.aql import AQL, AQLTask
@@ -113,6 +112,20 @@ def test_AQL_individual_tasks():
 
 
 @check_subprocesses_exit()
+def test_AQL_context_manager():
+    tasks: list[AQLTask] = []
+    with AQL() as aql:
+        t1 = aql.add_task((EC.from_preset('toy'), QAOA(), QiskitBackend('local_simulator')))
+        t2 = aql.add_task((EC.from_preset('toy'), DwaveSolver(), SimulatedAnnealingBackend('local_simulator')))
+        tasks: list[AQLTask] = [t1, t2]
+        aql.start()
+
+    for t in tasks:
+        assert not t.running()
+        assert t.result() is None
+
+
+@check_subprocesses_exit()
 def test_AQL_binds_params():
     aql = AQL('optimize_session')
     be = QiskitBackend('local_simulator')
@@ -147,7 +160,7 @@ def test_AQL_session_optimization():
     t3 = aql.add_task(t2_temp, dependencies=[t2])
 
     for t in aql.tasks:
-        t.callbacks.append(order.append)
+        t._inner_task.callbacks.append(order.append)
 
     assert aql._quantum_tasks == [t2, t3]
     assert len(aql._classical_tasks) == 4
@@ -203,3 +216,9 @@ def test_task_dies_after_timeout_error():
 
     with pytest.raises(TimeoutError):
         t.result(0.1)
+
+
+@check_subprocesses_exit()
+def test_task_dies_after_going_out_of_scope():
+    t = AQLTask(lambda: time.sleep(20))
+    t.start()
