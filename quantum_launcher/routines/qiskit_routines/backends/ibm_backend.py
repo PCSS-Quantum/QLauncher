@@ -5,7 +5,7 @@ from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import Qi
 from quantum_launcher.import_management import DependencyError
 try:
     from qiskit.providers import BackendV1, BackendV2
-    from qiskit_algorithms.optimizers import COBYLA
+    from qiskit_algorithms.optimizers import COBYLA, SPSA
     from qiskit_ibm_runtime import EstimatorV2, SamplerV2
     from qiskit_ibm_runtime import Session, Options
 except ImportError as e:
@@ -25,11 +25,11 @@ class IBMBackend(QiskitBackend):
         name: Literal['local_simulator', 'backendv1v2', 'session'],
         options: Options | None = None,
         backendv1v2: BackendV1 | BackendV2 | None = None,
-        auto_transpile: bool = False,
+        auto_transpile_level: int = -1,
         session: Session | None = None,
     ) -> None:
         self.session = session
-        super().__init__(name, options, backendv1v2, auto_transpile)
+        super().__init__(name, options, backendv1v2, auto_transpile_level)
 
     @property
     def setup(self) -> dict:
@@ -49,7 +49,7 @@ class IBMBackend(QiskitBackend):
                     'Please indicate a backend when in backendv1v2 mode.')
             self.estimator = EstimatorV2(self.backendv1v2)
             self.sampler = SamplerV2(self.backendv1v2)
-            self.optimizer = COBYLA()
+            self.optimizer = SPSA() if self.backendv1v2.name.startswith('ibm') else COBYLA()  # set spsa for real backends
 
         elif self.name == 'session':
             if self.session is None:
@@ -58,9 +58,13 @@ class IBMBackend(QiskitBackend):
             else:
                 self.estimator = EstimatorV2(mode=self.session, options=self.options)
                 self.sampler = SamplerV2(mode=self.session, options=self.options)
-                self.optimizer = COBYLA()
-
+                self.optimizer = SPSA()
         else:
-            raise ValueError(f"Unsupported mode for this backend:'{self.name}'")
+            raise ValueError(
+                " ".join([
+                    f"Unsupported mode for this backend:'{self.name}'."
+                    "Please use one of the following: ['local_simulator', 'backendv1v2', 'session']"
+                ])
+            )
 
         self._configure_auto_behavior()

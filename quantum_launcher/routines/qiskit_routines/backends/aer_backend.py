@@ -1,7 +1,7 @@
 """qiskit_aer implementation of QiskitBackend"""
 from typing import Literal
 from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
-from quantum_launcher.routines.qiskit_routines.backends.backend_utils import (
+from quantum_launcher.routines.qiskit_routines.backends.utils import (
     set_estimator_auto_run_behavior,
     set_sampler_auto_run_behavior
 )
@@ -30,22 +30,26 @@ class AerBackend(QiskitBackend):
         name: Literal['local_simulator', 'backendv1v2'],
         options: Options | None = None,
         backendv1v2: BackendV1 | BackendV2 | None = None,
-        auto_transpile: bool = False,
+        auto_transpile_level: int = -1,
         simulation_method: str = 'automatic',
         simulation_device: Literal['CPU', 'GPU'] = 'CPU',
     ) -> None:
         self.method = simulation_method
         self.device = simulation_device
-        super().__init__(name, options, backendv1v2, auto_transpile)
+        super().__init__(name, options, backendv1v2, auto_transpile_level)
 
     def _set_primitives_on_backend_name(self):
         if self.name == 'local_simulator':
             self.simulator = AerSimulator(method=self.method, device=self.device)
         elif self.name == 'backendv1v2':
+            if self.backendv1v2 is None:
+                raise AttributeError(
+                    'Please indicate a backend when in backendv1v2 mode.')
             noise_model = NoiseModel.from_backend(self.backendv1v2)
             self.simulator = AerSimulator(method=self.method, device=self.device, noise_model=noise_model)
         else:
-            raise ValueError(f"Unsupported mode for this backend:'{self.name}'")
+            raise ValueError(
+                f"Unsupported mode for this backend:'{self.name}'. Please use one of the following: ['local_simulator', 'backendv1v2']")
 
         self.sampler = BackendSamplerV2(backend=self.simulator)
         self.estimator = BackendEstimatorV2(backend=self.simulator)

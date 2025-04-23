@@ -9,7 +9,9 @@ from qiskit_aqt_provider import AQTProvider
 
 from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 
-from quantum_launcher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend
+from quantum_launcher import QuantumLauncher
+from quantum_launcher.problems import EC
+from quantum_launcher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA
 
 import pytest
 
@@ -28,6 +30,14 @@ class DummyAQTProvider(AQTProvider):
         return offline_no_noise
 
 
+def run_backend(backend):
+    problem = EC.from_preset('micro')
+    launcher = QuantumLauncher(problem, QAOA(p=1), backend)
+
+    res = launcher.run()
+    assert res is not None
+
+
 def test_AQT_backend_backendv1v2_simulator():
     with pytest.raises(ValueError):
         backend = AQTBackend(token="test_token", name='backendv1v2')
@@ -40,6 +50,8 @@ def test_AQT_backend_backendv1v2_simulator():
     assert isinstance(backend.estimator, AQTEstimator)
     assert isinstance(backend.sampler, AQTSampler)
 
+    run_backend(backend)
+
 
 def test_AQT_backend_local_simulator():
     backend = AQTBackend(token="test_token", name='local_simulator')
@@ -48,6 +60,8 @@ def test_AQT_backend_local_simulator():
     assert isinstance(backend.backendv1v2, OfflineSimulatorResource)
     assert isinstance(backend.estimator, AQTEstimator)
     assert isinstance(backend.sampler, AQTSampler)
+
+    run_backend(backend)
 
 
 def test_AQT_backend_online_device():
@@ -62,6 +76,8 @@ def test_AQT_backend_online_device():
     backend._set_primitives_on_backend_name()
 
     assert backend.name == 'ibex_dummy'
+
+    run_backend(backend)
 
 
 def test_AQT_backend_loads_env(tmp_path):
@@ -78,10 +94,11 @@ def test_IBM_session():
     backend = FakeAlmadenV2()
 
     with Session(backend=backend) as session:
-        ql_backend = IBMBackend('session', session=session)
+        ql_backend = IBMBackend('session', session=session, auto_transpile_level=3)
 
         assert ql_backend.sampler.mode == session
         assert ql_backend.estimator.mode == session
+        # run_backend(ql_backend)
 
 
 def test_Qiskit_local_session():
@@ -90,27 +107,31 @@ def test_Qiskit_local_session():
     assert backend.sampler is not None
     assert backend.estimator is not None
     assert backend.optimizer is not None
+    run_backend(backend)
 
 
 def test_Qiskit_backendv1v2_session():
-    backend = QiskitBackend('backendv1v2', backendv1v2=FakeAlmadenV2())
+    backend = QiskitBackend('backendv1v2', backendv1v2=FakeAlmadenV2(), auto_transpile_level=0)
 
     assert backend.sampler is not None
     assert backend.estimator is not None
     assert backend.optimizer is not None
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
+    run_backend(backend)
 
 
 def test_Aer_backend_local():
-    backend = AerBackend('local_simulator')
+    backend = AerBackend('local_simulator', auto_transpile_level=0)
     assert isinstance(backend.sampler, BaseSamplerV2)
     assert isinstance(backend.estimator, BaseEstimatorV2)
+    run_backend(backend)
 
 
 def test_Aer_backend_backendv1v2():
-    backend = AerBackend('backendv1v2', backendv1v2=FakeAlmadenV2())
+    backend = AerBackend('backendv1v2', backendv1v2=FakeAlmadenV2(), auto_transpile_level=0)
     assert isinstance(backend.sampler, BaseSamplerV2)
     assert isinstance(backend.estimator, BaseEstimatorV2)
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
+    run_backend(backend)

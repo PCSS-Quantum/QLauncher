@@ -4,7 +4,7 @@ from typing import Literal
 
 from quantum_launcher.base import Backend
 from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
-from quantum_launcher.routines.qiskit_routines.backends.backend_utils import (
+from quantum_launcher.routines.qiskit_routines.backends.utils import (
     set_estimator_auto_run_behavior, set_sampler_auto_run_behavior,
     AUTO_TRANSPILE_ESTIMATOR_TYPE, AUTO_TRANSPILE_SAMPLER_TYPE
 )
@@ -19,7 +19,7 @@ try:
         Sampler
     )
 
-    from qiskit_algorithms.optimizers import COBYLA
+    from qiskit_algorithms.optimizers import COBYLA, SPSA
     from qiskit_ibm_runtime import Options
 except ImportError as e:
     raise DependencyError(e, install_hint='qiskit') from e
@@ -43,19 +43,28 @@ class QiskitBackend(Backend):
         name: Literal['local_simulator', 'backendv1v2'] | str,
         options: Options | None = None,
         backendv1v2: BackendV1 | BackendV2 | None = None,
-        auto_transpile: bool = False
+        auto_transpile_level: int = -1
     ) -> None:
         """
         Args:
-            name (Literal[&#39;local_simulator&#39;, &#39;backendv1v2&#39;] | str): Name or mode of operation, 'backendv1v2' allows for using a specific backend simulator.
-            options (Options | None, optional): Defaults to None.
-            backendv1v2 (BackendV1 | BackendV2 | None, optional): Used with name 'backendv1v2', sampler and estimator will use it. Defaults to None.
-            auto_transpile (bool, optional): Whether to automatically transpile cirquits to the sampler and estimator backends. Defaults to False.
+            **name (Literal[&#39;local_simulator&#39;, &#39;backendv1v2&#39;] | str)**: Name or mode of operation,
+            'backendv1v2' allows for using a specific backend simulator.
+            **options (Options | None, optional)**: Defaults to None.
+            **backendv1v2 (BackendV1 | BackendV2 | None, optional)**: 
+                Used with name 'backendv1v2', sampler and estimator will use it. Defaults to None.
+            **auto_transpile_level (int, optional)**: 
+                Optimization level for automatic transpilation of circuits.  
+            - < 0: Don't transpile.
+            - 0: No optimization (only transpile to compatible gates).
+            - 1: Light optimization.
+            - 2: Heavy optimization.
+            - 3: Heaviest optimization.
+            Defaults to -1.
         """
         super().__init__(name)
         self.options = options
         self.backendv1v2 = backendv1v2
-        self._auto_transpile = auto_transpile
+        self._auto_transpile_level = auto_transpile_level
         self._auto_assign = False
         self._samplerV1: Sampler | None = None
         self._set_primitives_on_backend_name()
@@ -72,9 +81,14 @@ class QiskitBackend(Backend):
             self.sampler = StatevectorSampler()
             self.optimizer = COBYLA()
         elif self.name == 'backendv1v2':
+            if self.backendv1v2 is None:
+                raise AttributeError(
+                    'Please indicate a backend when in backendv1v2 mode.')
             self.estimator = BackendEstimatorV2(backend=self.backendv1v2)
             self.sampler = BackendSamplerV2(backend=self.backendv1v2)
             self.optimizer = COBYLA()
+            self.optimizer = SPSA() if self.backendv1v2.name.startswith('ibm') else COBYLA()  # set spsa for real backends
+
         else:
             raise ValueError(f"Unsupported mode for this backend:'{self.name}'")
 
@@ -84,9 +98,17 @@ class QiskitBackend(Backend):
         """
         Set auto transpilation and/or auto assignment if turned on, on estimator and sampler if compatible.
         """
-        if isinstance(self.estimator, AUTO_TRANSPILE_ESTIMATOR_TYPE):
+        if isinstance(self.estimator, AUTO_TRANSPILE_ESTIMATOR_TYPE.__constraints__):
             self.estimator = set_estimator_auto_run_behavior(
-                self.estimator, auto_transpile=self._auto_transpile, auto_assign=self._auto_assign)
-        if isinstance(self.sampler, AUTO_TRANSPILE_SAMPLER_TYPE):
+                self.estimator,
+                auto_transpile=self._auto_transpile_level > -1,
+                auto_transpile_level=min(3, self._auto_transpile_level),
+                auto_assign=self._auto_assign
+            )
+        if isinstance(self.sampler, AUTO_TRANSPILE_SAMPLER_TYPE.__constraints__):
             self.sampler = set_sampler_auto_run_behavior(
-                self.sampler, auto_transpile=self._auto_transpile, auto_assign=self._auto_assign)
+                self.sampler,
+                auto_transpile=self._auto_transpile_level > -1,
+                auto_transpile_level=min(3, self._auto_transpile_level),
+                auto_assign=self._auto_assign
+            )
