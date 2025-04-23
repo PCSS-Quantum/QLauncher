@@ -202,59 +202,8 @@ class AQLTask:
         self._inner_task = _InnerAQLTask(task, dependencies, callbacks, pipe_dependencies)
         weakref.finalize(self, self._inner_task.cancel)
 
-    @property
-    def dependencies(self):
-        """Other tasks this task depends on"""
-        return self._inner_task.dependencies
-
-    def start(self):
-        """Start task execution."""
-        return self._inner_task.start()
-
-    def cancel(self):
-        """
-        Attempt to cancel the task.
-
-        Returns:
-            bool: True if cancellation was successful
-        """
-        return self._inner_task.cancel()
-
-    def cancelled(self):
-        """
-        Returns:
-            bool: True if the task was cancelled by the user.
-        """
-        return self._inner_task.cancelled()
-
-    def done(self):
-        """
-        Returns:
-            bool: True if the task had finished execution.
-        """
-        return self._inner_task.done()
-
-    def running(self):
-        """
-        Returns:
-            bool: True if the task is currently executing.
-        """
-        return self._inner_task.running()
-
-    def result(self, timeout: float | int | None = None):
-        """
-        Get result of running the task.
-        Blocks the thread until task is finished.
-
-        Args:
-            timeout (float | int | None, optional): 
-                    The maximum amount to wait for execution to finish.
-                    If None, wait forever. If not None and time runs out, raises TimeoutError. 
-                    Defaults to None.
-        Returns:
-            Result if future returned result or None when cancelled.
-        """
-        return self._inner_task.result(timeout)
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._inner_task, name)
 
 
 class AQL:
