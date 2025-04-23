@@ -1,5 +1,5 @@
 from quantum_launcher import QuantumLauncher
-from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend, TabuBackend
+from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend, TabuBackend, SteepestDescentBackend
 from quantum_launcher.problems import EC, JSSP, MaxCut, Raw, TSP
 from pyqubo import Spin
 TESTING_DIR = 'testing'
@@ -10,6 +10,7 @@ def _test_dwave_backends(problem):
     solver = DwaveSolver(1)
     for backend in [
         SimulatedAnnealingBackend(),
+        SteepestDescentBackend(),
         # TabuBackend() #Comment out because this thing is extremely slow...
     ]:
         launcher = QuantumLauncher(problem, solver, backend)

@@ -5,9 +5,8 @@ from quantum_launcher.import_management import DependencyError
 try:
     from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
     from dimod import Sampler, SampleSet
-    # from tabu import TabuSampler
     from dwave.system import DWaveSampler, EmbeddingComposite
-    from dwave.samplers import SimulatedAnnealingSampler, TabuSampler
+    from dwave.samplers import SimulatedAnnealingSampler, TabuSampler, SteepestDescentSampler
 except ImportError as e:
     raise DependencyError(e, install_hint='dwave') from e
 
@@ -52,17 +51,23 @@ class TabuBackend(Backend):
         self.sampler = TabuSampler()
 
 
-class DwaveBackend(Backend):
-    def __init__(self, name: str = "DWaveSampler", parameters: list = None) -> None:
-        super().__init__(name, parameters)
-        self.sampler = EmbeddingComposite(DWaveSampler())
-
-
 class SimulatedAnnealingBackend(Backend):
     def __init__(self, name: str = "SimulatedAnnealingSampler", parameters: list = None) -> None:
         super().__init__(name, parameters)
         self.sampler = SimulatedAnnealingSampler()
 
 
+class SteepestDescentBackend(Backend):
+    def __init__(self, name: str = 'SteepestDescentBackend', parameters: list | None = None) -> None:
+        super().__init__(name, parameters)
+        self.sampler = SteepestDescentSampler()
+
+
+class DwaveBackend(Backend):
+    def __init__(self, name: str = "DWaveSampler", parameters: list = None) -> None:
+        super().__init__(name, parameters)
+        self.sampler = EmbeddingComposite(DWaveSampler())
+
+
 __all__ = ['DwaveSolver', 'TabuBackend',
-           'DwaveBackend', 'SimulatedAnnealingBackend']
+           'DwaveBackend', 'SimulatedAnnealingBackend', 'SteepestDescentBackend']
