@@ -8,7 +8,7 @@ from quantum_launcher.routines.qiskit_routines.backends.utils import (
     set_estimator_auto_run_behavior, set_sampler_auto_run_behavior,
     AUTO_TRANSPILE_ESTIMATOR_TYPE, AUTO_TRANSPILE_SAMPLER_TYPE
 )
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     from qiskit.providers import BackendV1, BackendV2
     from qiskit.primitives import (

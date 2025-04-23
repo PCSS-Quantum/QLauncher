@@ -16,7 +16,7 @@ qiskit_aer
 
 # Cirq
 cirq
-numpy<=1.26.0
+numpy<=1.26.4
 ply
 
 # AQT

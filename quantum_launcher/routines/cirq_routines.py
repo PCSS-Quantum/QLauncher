@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 from quantum_launcher.base import Backend
 from quantum_launcher.base.translator import Translation
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     import cirq
     from cirq.sim.sparse_simulator import Simulator

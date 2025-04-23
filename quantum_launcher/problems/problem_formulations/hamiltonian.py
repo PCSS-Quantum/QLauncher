@@ -9,7 +9,7 @@ import quantum_launcher.hampy as hampy
 from quantum_launcher.hampy import Equation, Variable
 from quantum_launcher.problems.problem_formulations.hamiltonians.tsp import problem_to_hamiltonian as tsp_to_hamiltonian
 
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     from qiskit.quantum_info import SparsePauliOp
     from qiskit import QuantumCircuit

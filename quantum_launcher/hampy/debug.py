@@ -4,7 +4,7 @@ from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
 from quantum_launcher.hampy.object import Equation
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     from qiskit.quantum_info import SparsePauliOp
 except ImportError as e:

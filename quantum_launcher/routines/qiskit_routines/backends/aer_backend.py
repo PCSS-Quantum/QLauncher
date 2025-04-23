@@ -1,11 +1,8 @@
 """qiskit_aer implementation of QiskitBackend"""
 from typing import Literal
 from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
-from quantum_launcher.routines.qiskit_routines.backends.utils import (
-    set_estimator_auto_run_behavior,
-    set_sampler_auto_run_behavior
-)
-from quantum_launcher.import_management import DependencyError
+
+from quantum_launcher.exceptions import DependencyError
 try:
     from qiskit.primitives import BackendSamplerV2, BackendEstimatorV2
     from qiskit.providers import BackendV1, BackendV2
