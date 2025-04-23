@@ -1,4 +1,4 @@
-from .raw import Raw
+from .raw import Raw, Hamiltonian, Qubo, BQM
 from .qatm import QATM
 from .jssp import JSSP
 from .ec import EC

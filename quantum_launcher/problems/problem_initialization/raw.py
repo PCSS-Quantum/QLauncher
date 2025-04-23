@@ -1,5 +1,5 @@
-""" This module contains the Raw class."""
-from quantum_launcher.base import Problem, formatter
+""" This module contains raw problem classes"""
+from quantum_launcher.base import Problem
 
 
 class Raw(Problem):
@@ -21,3 +21,24 @@ class Raw(Problem):
 
     def _get_path(self) -> str:
         return f'{self.name}/{self.instance_name}'
+
+
+class Hamiltonian(Raw, Problem):
+    """Raw problem in hamiltonian form"""
+
+    def __init__(self, hamiltonian, instance_name: str | None = None) -> None:
+        super().__init__(hamiltonian, instance_name)
+
+
+class Qubo(Raw, Problem):
+    """Raw problem in qubo form"""
+
+    def __init__(self, instance, instance_name: str | None = None) -> None:
+        super().__init__(instance, instance_name)
+
+
+class BQM(Raw, Problem):
+    """Raw problem in bqm form"""
+
+    def __init__(self, instance, instance_name: str | None = None) -> None:
+        super().__init__(instance, instance_name)

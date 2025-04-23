@@ -246,8 +246,8 @@ class QATMQiskit:
         return qc
 
 
-@formatter(problems.Raw, 'hamiltonian')
-def get_qiskit_hamiltonian(problem: problems.Raw) -> SparsePauliOp:
+@formatter(problems.Hamiltonian, 'hamiltonian')
+def get_qiskit_hamiltonian(problem: problems.Hamiltonian) -> SparsePauliOp:
     return problem.instance
 
 

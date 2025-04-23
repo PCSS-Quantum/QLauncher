@@ -3,7 +3,7 @@ from qiskit.quantum_info import SparsePauliOp
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
 from quantum_launcher.routines.qiskit_routines import QAOA, IBMBackend
-from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
+from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Hamiltonian, TSP, GraphColoring
 
 TESTING_DIR = 'testing'
 
@@ -60,7 +60,7 @@ def test_raw():
     """ Testing function for Raw """
     hamiltonian = SparsePauliOp.from_list(
         [("ZZ", -1), ("ZI", 2), ("IZ", 2), ("II", -1)])
-    pr = Raw(hamiltonian)
+    pr = Hamiltonian(hamiltonian)
     qaoa = QAOA()
     backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)

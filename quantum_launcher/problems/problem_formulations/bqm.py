@@ -3,7 +3,7 @@ import ast
 import numpy as np
 from pyqubo import Spin
 from quantum_launcher.base import adapter, formatter
-from quantum_launcher.problems.problem_initialization import Raw
+from quantum_launcher.problems.problem_initialization import BQM
 
 
 @adapter('qubo', 'bqm')
@@ -75,6 +75,6 @@ class QUBOMatrix:
         return bqm, model
 
 
-@formatter(Raw, 'bqm')
-def Rawbqm(problem: Raw):
+@formatter(BQM, 'bqm')
+def Rawbqm(problem: BQM):
     return problem.instance

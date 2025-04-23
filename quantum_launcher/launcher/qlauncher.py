@@ -4,7 +4,7 @@ import pickle
 from typing import List, Literal, Optional, Union, Callable
 from quantum_launcher.base.adapter_structure import get_formatter, ProblemFormatter
 from quantum_launcher.base import Problem, Algorithm, Backend, Result
-from quantum_launcher.problems import Raw
+from quantum_launcher.problems import Hamiltonian, Qubo, BQM, Raw
 import logging
 
 

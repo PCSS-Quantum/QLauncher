@@ -147,6 +147,7 @@ def _find_shortest_adapter_path(problem: type[Problem], alg_format: str) -> list
         List of formats or None if no path was found.
     """
     G = nx.DiGraph()
+    G.add_node("__problem__")
     for problem_node in __QL_FORMATTERS[problem]:
         G.add_edge("__problem__", problem_node)
 
@@ -157,9 +158,11 @@ def _find_shortest_adapter_path(problem: type[Problem], alg_format: str) -> list
     if not G.has_node(alg_format):
         return None
 
-    path = nx.shortest_path(G, "__problem__", alg_format)
-    assert isinstance(path, list) or path is None, "Something went wrong in `nx.shortest_path`"
-    return path
+    try:
+        path = nx.shortest_path(G, "__problem__", alg_format)
+        return list(path)
+    except nx.exception.NetworkXNoPath:
+        return None
 
 
 def get_formatter(problem: type[Problem], alg_format: str) -> ProblemFormatter:

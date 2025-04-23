@@ -1,6 +1,6 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend, TabuBackend
-from quantum_launcher.problems import EC, JSSP, MaxCut, Raw, TSP
+from quantum_launcher.problems import EC, JSSP, MaxCut, BQM, TSP
 from pyqubo import Spin
 TESTING_DIR = 'testing'
 
@@ -46,7 +46,7 @@ def test_raw():
     H += 1 * qubits[1]
     H += -5 * qubits[0] * qubits[1]
     bqm = H.compile().to_bqm()
-    pr = Raw(bqm)
+    pr = BQM(bqm)
     results = _test_dwave_backends(pr)
     for res in results:
         bitstring = res.best_bitstring
@@ -64,7 +64,7 @@ def test_tabu_backend():
     H = 0
     H += -3 * qubits[0]
     bqm = H.compile().to_bqm()
-    problem = Raw(bqm)
+    problem = BQM(bqm)
     solver = DwaveSolver(1)
 
     launcher = QuantumLauncher(problem, solver, TabuBackend())

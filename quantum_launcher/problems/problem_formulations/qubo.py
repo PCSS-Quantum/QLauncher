@@ -164,8 +164,8 @@ class JSSPOrca:
         return Q / max(np.max(Q), -np.min(Q)), 0
 
 
-@formatter(problem.Raw, 'qubo')
-def get_raw_qubo(problem: problem.Raw):
+@formatter(problem.Qubo, 'qubo')
+def get_raw_qubo(problem: problem.Qubo):
     return problem.instance
 
 
