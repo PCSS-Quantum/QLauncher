@@ -27,7 +27,7 @@ def test_ec():
 
 
 def test_jssp():
-    """ Testing function for Job Shop Shedueling Problem """
+    """ Testing function for Job Shop Scheduling Problem """
     pr = JSSP.from_preset(instance_name='toy', optimization_problem=True)
     _test_dwave_backends(pr)
 
@@ -57,3 +57,17 @@ def test_tsp():
     """ Testing function for TSP """
     pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
     _test_dwave_backends(pr)
+
+
+def test_tabu_backend():
+    qubits = [Spin(f"x{i}") for i in range(1)]
+    H = 0
+    H += -3 * qubits[0]
+    bqm = H.compile().to_bqm()
+    problem = Raw(bqm)
+    solver = DwaveSolver(1)
+
+    launcher = QuantumLauncher(problem, solver, TabuBackend())
+
+    inform = launcher.run()
+    assert inform is not None

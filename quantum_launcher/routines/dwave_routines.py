@@ -20,14 +20,15 @@ class DwaveSolver(Algorithm):
         super().__init__(**alg_kwargs)
 
     def run(self, problem: Problem, backend: Backend, formatter: Callable, **kwargs):
-        self._sampler: Sampler = backend.sampler
         self.label: str = f'{problem.name}_{problem.instance_name}'
+
         bqm: BinaryQuadraticModel = formatter(problem)
-        res = self._solve_bqm(bqm, **kwargs)
+
+        res = self._solve_bqm(bqm, backend.sampler, ** kwargs)
         return self.construct_result(res)
 
-    def _solve_bqm(self, bqm, **kwargs):
-        res = self._sampler.sample(
+    def _solve_bqm(self, bqm, sampler, **kwargs):
+        res = sampler.sample(
             bqm, num_reads=1000, label=self.label, chain_strength=self.chain_strength, **kwargs)
         return res
 
