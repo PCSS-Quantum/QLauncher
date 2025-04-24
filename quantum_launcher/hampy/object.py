@@ -1,9 +1,5 @@
 from typing import Union, overload
-from quantum_launcher.exceptions import DependencyError
-try:
-    from qiskit.quantum_info import SparsePauliOp
-except ImportError as e:
-    raise DependencyError(e, 'qiskit') from e
+from qiskit.quantum_info import SparsePauliOp
 
 
 class Equation:
