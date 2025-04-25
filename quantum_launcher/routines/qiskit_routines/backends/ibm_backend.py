@@ -25,7 +25,7 @@ class IBMBackend(QiskitBackend):
         name: Literal['local_simulator', 'backendv1v2', 'session'],
         options: Options | None = None,
         backendv1v2: BackendV1 | BackendV2 | None = None,
-        auto_transpile_level: int = -1,
+        auto_transpile_level: Literal[0, 1, 2, 3] | None = None,
         session: Session | None = None,
     ) -> None:
         self.session = session

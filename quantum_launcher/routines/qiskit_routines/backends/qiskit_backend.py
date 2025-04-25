@@ -43,7 +43,7 @@ class QiskitBackend(Backend):
         name: Literal['local_simulator', 'backendv1v2'] | str,
         options: Options | None = None,
         backendv1v2: BackendV1 | BackendV2 | None = None,
-        auto_transpile_level: int = -1
+        auto_transpile_level: Literal[0, 1, 2, 3] | None = None
     ) -> None:
         """
         Args:
@@ -52,14 +52,14 @@ class QiskitBackend(Backend):
             **options (Options | None, optional)**: Defaults to None.
             **backendv1v2 (BackendV1 | BackendV2 | None, optional)**: 
                 Used with name 'backendv1v2', sampler and estimator will use it. Defaults to None.
-            **auto_transpile_level (int, optional)**: 
+            **auto_transpile_level (Literal[0, 1, 2, 3] | None, optional)**: 
                 Optimization level for automatic transpilation of circuits.  
-            - < 0: Don't transpile.
+            - None: Don't transpile.
             - 0: No optimization (only transpile to compatible gates).
             - 1: Light optimization.
             - 2: Heavy optimization.
             - 3: Heaviest optimization.
-            Defaults to -1.
+            Defaults to None.
         """
         super().__init__(name)
         self.options = options
@@ -97,17 +97,19 @@ class QiskitBackend(Backend):
         """
         Set auto transpilation and/or auto assignment if turned on, on estimator and sampler if compatible.
         """
+        do_transpile, level = self._auto_transpile_level != None, int(
+            self._auto_transpile_level if self._auto_transpile_level != None else 0)
         if isinstance(self.estimator, AUTO_TRANSPILE_ESTIMATOR_TYPE.__constraints__):
             self.estimator = set_estimator_auto_run_behavior(
                 self.estimator,
-                auto_transpile=self._auto_transpile_level > -1,
-                auto_transpile_level=min(3, self._auto_transpile_level),
+                auto_transpile=do_transpile,
+                auto_transpile_level=level,
                 auto_assign=self._auto_assign
             )
         if isinstance(self.sampler, AUTO_TRANSPILE_SAMPLER_TYPE.__constraints__):
             self.sampler = set_sampler_auto_run_behavior(
                 self.sampler,
-                auto_transpile=self._auto_transpile_level > -1,
-                auto_transpile_level=min(3, self._auto_transpile_level),
+                auto_transpile=do_transpile,
+                auto_transpile_level=level,
                 auto_assign=self._auto_assign
             )

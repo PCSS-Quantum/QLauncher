@@ -55,7 +55,7 @@ class AQTBackend(QiskitBackend):
         name: Literal['local_simulator', 'backendv1v2', 'device'],
         options: Options | None = None,
         backendv1v2: BackendV1 | BackendV2 | None = None,
-        auto_transpile_level: int = -1,
+        auto_transpile_level: Literal[0, 1, 2, 3] | None = None,
         token: str | None = None,
         dotenv_path: str | None = None,
     ) -> None:
