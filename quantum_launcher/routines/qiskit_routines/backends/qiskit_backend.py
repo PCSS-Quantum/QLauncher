@@ -1,27 +1,21 @@
 """ Base backend class for Qiskit routines. """
 from typing import Literal
 
+from qiskit.providers import BackendV1, BackendV2
+from qiskit.primitives import (
+    BackendSamplerV2,
+    BackendEstimatorV2,
+    StatevectorEstimator,
+    StatevectorSampler,
+    Sampler
+)
+
+from qiskit_algorithms.optimizers import COBYLA
+from qiskit_ibm_runtime import Options
+from qiskit_ibm_runtime import SamplerV2, EstimatorV2
 
 from quantum_launcher.base import Backend
 from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
-
-
-from quantum_launcher.exceptions import DependencyError
-try:
-    from qiskit.providers import BackendV1, BackendV2
-    from qiskit.primitives import (
-        BackendSamplerV2,
-        BackendEstimatorV2,
-        StatevectorEstimator,
-        StatevectorSampler,
-        Sampler
-    )
-
-    from qiskit_algorithms.optimizers import COBYLA
-    from qiskit_ibm_runtime import Options
-    from qiskit_ibm_runtime import SamplerV2, EstimatorV2
-except ImportError as e:
-    raise DependencyError(e, install_hint='qiskit') from e
 
 
 class QiskitBackend(Backend):
