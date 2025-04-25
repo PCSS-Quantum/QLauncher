@@ -86,7 +86,6 @@ class QiskitBackend(Backend):
                     'Please indicate a backend when in backendv1v2 mode.')
             self.estimator = BackendEstimatorV2(backend=self.backendv1v2)
             self.sampler = BackendSamplerV2(backend=self.backendv1v2)
-            self.optimizer = COBYLA()
             self.optimizer = SPSA() if self.backendv1v2.name.startswith('ibm') else COBYLA()  # set spsa for real backends
 
         else:
