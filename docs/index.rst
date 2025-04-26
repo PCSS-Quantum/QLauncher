@@ -23,7 +23,7 @@ Additionally to ability of quickly changing tested problem, algorithm or backend
 ----------------
 Installation
 ----------------
-To install the following library use the following script:
+To install the quantum launcher use the following command:
 
 ::
 

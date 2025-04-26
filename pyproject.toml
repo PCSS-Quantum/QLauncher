@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "networkx",
     "notebook",
-    "numpy",
+    "numpy<=1.26.4",
     "overrides",
     "pandas",
     "matplotlib",
