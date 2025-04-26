@@ -6,6 +6,6 @@ Quantum Launcher provides convenient wrappers for the most popular quantum compu
 .. toctree::
    :maxdepth: 1
    
-   tutorials/Backends/Qiskit
-   tutorials/Backends/Dwave
-   tutorials/Backends/Orca
+   tutorials/Qiskit
+   tutorials/Dwave
+   tutorials/Orca
