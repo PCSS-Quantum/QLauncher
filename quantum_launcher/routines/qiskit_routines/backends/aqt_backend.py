@@ -3,7 +3,8 @@ from typing import Literal
 from overrides import override
 
 from qiskit.providers import BackendV1, BackendV2
-from qiskit_algorithms.optimizers import COBYLA
+from qiskit.primitives import Sampler
+from qiskit_algorithms.optimizers import COBYLA, SPSA
 from qiskit_ibm_runtime import Options
 
 from quantum_launcher.routines.qiskit_routines import QiskitBackend
@@ -48,9 +49,10 @@ class AQTBackend(QiskitBackend):
 
     def __init__(
         self,
-        name: Literal['local_simulator', 'backendv1v2_simulator', 'device'],
+        name: Literal['local_simulator', 'backendv1v2', 'device'],
         options: Options | None = None,
         backendv1v2: BackendV1 | BackendV2 | None = None,
+        auto_transpile_level: Literal[0, 1, 2, 3] | None = None,
         token: str | None = None,
         dotenv_path: str | None = None,
     ) -> None:
@@ -60,24 +62,37 @@ class AQTBackend(QiskitBackend):
             self.provider = AQTProvider(token if token is not None else "DEFAULT_TOKEN", load_dotenv=False)
         else:
             self.provider = AQTProvider(load_dotenv=True, dotenv_path=dotenv_path)
-        super().__init__(name, options=options, backendv1v2=backendv1v2)
+        super().__init__(name, options=options, backendv1v2=backendv1v2, auto_transpile_level=auto_transpile_level)
 
     @override
     def _set_primitives_on_backend_name(self) -> None:
         if self.name == 'local_simulator':
             self.name = self.provider.backends(backend_type='offline_simulator', name=r".*no_noise")[0].name
-        elif self.name == 'backendv1v2_simulator':
+        elif self.name == 'backendv1v2':
             if self.backendv1v2 is None:
-                raise ValueError("backendv1v2 should not be None when you plan on using it.")
+                raise ValueError("Please indicate a backend when in backendv1v2 mode.")
         elif self.name == 'device':
             available_online_backends = self.provider.backends(backend_type='device')
             if len(available_online_backends) == 0:
                 raise ValueError(f"No online backends available for token {self.provider.access_token[:5]}...")
             self.name = available_online_backends[0].name
+        else:
+            raise ValueError(
+                " ".join([
+                    f"Unsupported mode for this backend:'{self.name}'."
+                    "Please use one of the following: ['local_simulator', 'backendv1v2', 'device']"
+                ])
+            )
 
         if self.backendv1v2 is None:
             self.backendv1v2 = self.provider.get_backend(name=self.name)
 
-        self.estimator = AQTEstimator(self.backendv1v2, options=self.options)
-        self.sampler = AQTSampler(self.backendv1v2, options=self.options)
-        self.optimizer = COBYLA()
+        self.estimator = AQTEstimator(self.backendv1v2)
+        self.sampler = AQTSampler(self.backendv1v2)
+        self.optimizer = SPSA() if self.name == 'device' else COBYLA()
+
+        self._configure_auto_behavior()
+
+    @property
+    def samplerV1(self) -> Sampler:
+        return self.sampler

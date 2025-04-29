@@ -11,7 +11,7 @@ TESTING_DIR = 'testing'
 def test_ec():
     """ Testing function for Exact Cover """
     pr = EC.from_preset(instance_name='micro')
-    qaoa = QAOA(p=3)
+    qaoa = QAOA(p=1)
     backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -23,7 +23,7 @@ def test_ec():
 def test_qatm():
     """ Testing function for QATM """
     pr = QATM.from_file(instance_name='RCP_3.txt', instance_path='data/qatm/')
-    qaoa = QAOA(p=3)
+    qaoa = QAOA(p=1)
     backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -35,7 +35,7 @@ def test_qatm():
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
     pr = JSSP.from_preset('toy', optimization_problem=True)
-    qaoa = QAOA(p=3)
+    qaoa = QAOA(p=1)
     backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -47,7 +47,7 @@ def test_jssp():
 def test_maxcut():
     """ Testing function for Max Cut """
     pr = MaxCut.from_preset(instance_name='default')
-    qaoa = QAOA()
+    qaoa = QAOA(p=1)
     backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -61,7 +61,7 @@ def test_raw():
     hamiltonian = SparsePauliOp.from_list(
         [("ZZ", -1), ("ZI", 2), ("IZ", 2), ("II", -1)])
     pr = Raw(hamiltonian)
-    qaoa = QAOA()
+    qaoa = QAOA(p=1)
     backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -74,7 +74,7 @@ def test_raw():
 def test_tsp():
     """ Testing function for TSP """
     pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
-    qaoa = QAOA()
+    qaoa = QAOA(p=1)
     backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -90,7 +90,7 @@ def test_graph_coloring():
     gc = GraphColoring.from_preset("small")
     num_colors = gc.num_colors
     color_bit_length = int(np.ceil(np.log2(num_colors)))
-    qaoa = QAOA()
+    qaoa = QAOA(p=1)
     backend = IBMBackend("local_simulator")
     launcher = QuantumLauncher(gc, qaoa, backend)
     inform = launcher.run()
