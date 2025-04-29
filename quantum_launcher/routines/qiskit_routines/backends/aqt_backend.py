@@ -2,16 +2,13 @@
 from typing import Literal
 from overrides import override
 
+from qiskit.providers import BackendV1, BackendV2
+from qiskit.primitives import Sampler
+from qiskit_algorithms.optimizers import COBYLA, SPSA
+from qiskit_ibm_runtime import Options
+
 from quantum_launcher.routines.qiskit_routines import QiskitBackend
 from quantum_launcher.exceptions import DependencyError
-
-try:
-    from qiskit.primitives import Sampler
-    from qiskit.providers import BackendV1, BackendV2
-    from qiskit_algorithms.optimizers import COBYLA, SPSA
-    from qiskit_ibm_runtime import Options
-except ImportError as e:
-    raise DependencyError(e, install_hint='qiskit') from e
 
 try:
     from qiskit_aqt_provider import AQTProvider

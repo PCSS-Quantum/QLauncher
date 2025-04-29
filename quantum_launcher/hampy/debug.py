@@ -3,12 +3,9 @@ from typing import Union
 from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
+from qiskit.quantum_info import SparsePauliOp
+
 from quantum_launcher.hampy.object import Equation
-from quantum_launcher.exceptions import DependencyError
-try:
-    from qiskit.quantum_info import SparsePauliOp
-except ImportError as e:
-    raise DependencyError(e, 'qiskit') from e
 
 
 class TruthTable:
