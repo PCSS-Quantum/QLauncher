@@ -16,12 +16,10 @@ class Raw(Problem):
         if problem_type in Raw.__cached_classes__:
             return Raw.__cached_classes__[problem_type]
 
-        class _Raw(Raw):
-            pass
-
-        formatter(_Raw, problem_type)(_raw_formatter)
-        Raw.__cached_classes__[problem_type] = _Raw
-        return _Raw
+        cls = type(problem_type, (Raw, ), {})
+        formatter(cls, problem_type)(_raw_formatter)
+        Raw.__cached_classes__[problem_type] = cls
+        return cls
 
     @staticmethod
     def _auto_map_problem(obj: Any) -> str:
