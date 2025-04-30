@@ -63,6 +63,14 @@ extensions = [
     'myst_nb',
 ]
 
+myst_enable_extensions = [
+    "amsmath",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "html_image",
+]
+
 viewcode_line_numbers = True
 
 autodoc_typehints = "both"

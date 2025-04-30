@@ -2,21 +2,17 @@
 from itertools import product
 import numpy as np
 
+from qiskit.quantum_info import SparsePauliOp
+from qiskit import QuantumCircuit
+from qiskit_optimization.converters import QuadraticProgramToQubo
+from qiskit_optimization.translators import from_ising
+
 from quantum_launcher.base import formatter
 from quantum_launcher.base.adapter_structure import adapter
 import quantum_launcher.problems.problem_initialization as problems
 import quantum_launcher.hampy as hampy
 from quantum_launcher.hampy import Equation, Variable
 from quantum_launcher.problems.problem_formulations.hamiltonians.tsp import problem_to_hamiltonian as tsp_to_hamiltonian
-
-from quantum_launcher.import_management import DependencyError
-try:
-    from qiskit.quantum_info import SparsePauliOp
-    from qiskit import QuantumCircuit
-    from qiskit_optimization.converters import QuadraticProgramToQubo
-    from qiskit_optimization.translators import from_ising
-except ImportError as e:
-    raise DependencyError(e, 'qiskit') from e
 
 
 @adapter('hamiltonian', 'qubo', onehot='quadratic')

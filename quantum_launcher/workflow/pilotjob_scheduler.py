@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from quantum_launcher.base.base import Algorithm, Backend, Problem, Result
 from quantum_launcher.launcher.qlauncher import QuantumLauncher
-from quantum_launcher.import_management import DependencyError
+from quantum_launcher.exceptions import DependencyError
 try:
     import dill
     from qcg.pilotjob.api.job import Jobs

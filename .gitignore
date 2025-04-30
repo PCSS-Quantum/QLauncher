@@ -9,6 +9,7 @@ ptseries
 ignore*
 docs/_build
 docs/API
+docs/tutorials
 build
 *.egg-info
 .data
