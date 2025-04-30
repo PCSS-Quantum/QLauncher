@@ -38,7 +38,13 @@ class Raw(Problem):
         if isinstance(obj, tuple) and len(obj) == 2 and \
                 isinstance(obj[0], np.ndarray) and isinstance(obj[1], (int, float)):
             return 'qubo'
-        raise ValueError
+        try:
+            from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
+            if isinstance(obj, BinaryQuadraticModel):
+                return 'bqm'
+        except ImportError:
+            pass
+        return 'none'
 
     def __new__(cls, obj: Any, instance_name: str = 'Raw'):
         if cls is not Raw:
