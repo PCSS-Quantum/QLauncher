@@ -44,12 +44,12 @@ class Raw(Problem):
             pass
         return 'none'
 
-    def __new__(cls, obj: Any, instance_name: str = 'Raw'):
+    def __new__(cls, instance: Any, instance_name: str = 'Raw'):
         if cls is not Raw:
             return super().__new__(cls)
-        problem_type = cls._auto_map_problem(obj)
+        problem_type = cls._auto_map_problem(instance)
         true_cls = cls._cache_class(problem_type)
-        return true_cls(obj, instance_name)
+        return true_cls(instance, instance_name)
 
 
 def _raw_formatter(raw: Raw) -> Any:
