@@ -1,9 +1,9 @@
 from typing import Sequence
 
 from qiskit import transpile
-from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2
-from qiskit.primitives import SamplerResult, BasePrimitiveJob
 from qiskit.result import QuasiDistribution
+from qiskit.primitives import SamplerResult, BasePrimitiveJob, BitArray
+from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2
 
 
 class RuntimeJobV2Adapter(BasePrimitiveJob):
@@ -42,7 +42,7 @@ class SamplerV2JobAdapter(RuntimeJobV2Adapter):
         super().__init__(job, **kwargs)
 
     def _get_quasi_meta(self, res):
-        data = next(iter(res.data.values()))
+        data = BitArray.concatenate_bits(list(res.data.values()))
         counts = data.get_int_counts()
         probs = {k: v/data.num_shots for k, v in counts.items()}
         quasi_dists = QuasiDistribution(probs, shots=data.num_shots)
