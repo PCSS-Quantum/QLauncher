@@ -29,3 +29,17 @@ button.sidebar-toggle {
     min-height: 100px !important;
     min-width: 100px !important;
 }
+
+.toctree-wrapper li[class^="toctree-l"] {
+    list-style: inside !important;
+    margin-left: 1rem !important;
+}
+
+.bd-article {
+    flex-grow: 1 !important;
+}
+
+a.right-next {
+    display: flex !important;
+    justify-content: flex-end !important;
+}
