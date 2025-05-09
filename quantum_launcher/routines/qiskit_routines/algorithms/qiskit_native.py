@@ -16,6 +16,7 @@ from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
 
 from quantum_launcher.base import Problem, Algorithm, Result
 from quantum_launcher.base.base import Backend
+from quantum_launcher.routines.cirq_routines import CirqBackend
 from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
 
 
@@ -120,8 +121,8 @@ class QAOA(QiskitOptimizationAlgorithm):
 
     def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
         """ Runs the QAOA algorithm """
-        if not isinstance(backend, QiskitBackend):
-            raise ValueError('Backend should be QiskitBackend or subclass.')
+        if not (isinstance(backend, QiskitBackend) or isinstance(backend, CirqBackend)):
+            raise ValueError('Backend should be CirqBackend, QiskitBackend or subclass.')
         hamiltonian: SparsePauliOp = formatter(problem)
         energies = []
 
