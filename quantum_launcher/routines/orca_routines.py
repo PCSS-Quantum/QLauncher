@@ -46,7 +46,7 @@ class BBS(Algorithm):
         self.kwargs = kwargs
         self.input_state = kwargs.get('input_state', None)
 
-    def run(self, problem: Problem, backend: OrcaBackend, formatter: Callable[[Problem], np.ndarray]):
+    def run(self, problem: Problem, backend: OrcaBackend, formatter: Callable[[Problem], np.ndarray]) -> Result:
         # params = {"tbi_type": self.kwarga['tbi_type']}
         # if backend is not None:
         #     params.update(backend.get_args())

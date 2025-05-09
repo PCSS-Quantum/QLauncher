@@ -1,10 +1,10 @@
-from typing import Callable
+from collections.abc import Callable
 
 from quantum_launcher.base import Algorithm, Problem, Backend, Result
 from quantum_launcher.exceptions import DependencyError
 try:
     from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
-    from dimod import Sampler, SampleSet
+    from dimod import SampleSet
     from dwave.system import DWaveSampler, EmbeddingComposite
     from dwave.samplers import SimulatedAnnealingSampler, TabuSampler, SteepestDescentSampler
 except ImportError as e:
@@ -14,24 +14,26 @@ except ImportError as e:
 class DwaveSolver(Algorithm):
     _algorithm_format = 'bqm'
 
-    def __init__(self, chain_strength=1, **alg_kwargs) -> None:
+    def __init__(self, chain_strength=1, num_reads=1000, **alg_kwargs) -> None:
         self.chain_strength = chain_strength
+        self.num_reads = num_reads
+        self.label: str = 'TBD_TBD'
         super().__init__(**alg_kwargs)
 
-    def run(self, problem: Problem, backend: Backend, formatter: Callable, **kwargs):
-        self.label: str = f'{problem.name}_{problem.instance_name}'
+    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
+        self.label = f'{problem.name}_{problem.instance_name}'
 
         bqm: BinaryQuadraticModel = formatter(problem)
 
-        res = self._solve_bqm(bqm, backend.sampler, ** kwargs)
-        return self.construct_result(res)
+        res = self._solve_bqm(bqm, backend.sampler, **self.alg_kwargs)
+        return self._construct_result(res)
 
     def _solve_bqm(self, bqm, sampler, **kwargs):
         res = sampler.sample(
-            bqm, num_reads=1000, label=self.label, chain_strength=self.chain_strength, **kwargs)
+            bqm, num_reads=self.num_reads, label=self.label, chain_strength=self.chain_strength, **kwargs)
         return res
 
-    def construct_result(self, result: SampleSet) -> Result:
+    def _construct_result(self, result: SampleSet) -> Result:
         distribution = {}
         energies = {}
         for (value, energy, occ) in zip(result.record.sample, result.record.energy, result.record.num_occurrences, strict=True):

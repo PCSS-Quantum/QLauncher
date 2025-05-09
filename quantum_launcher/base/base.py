@@ -6,7 +6,7 @@ from collections.abc import Callable
 import logging
 
 
-AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'none', 'fn']
+AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'bqm', 'none', 'fn']
 
 
 @dataclass
@@ -194,7 +194,7 @@ class Algorithm(ABC):
         return o.__dict__
 
     @abstractmethod
-    def run(self, problem: Problem, backend: Backend, formatter: Callable | None = None) -> Result:
+    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
         """Runs the algorithm on a specific problem using a backend.
 
         Args:
