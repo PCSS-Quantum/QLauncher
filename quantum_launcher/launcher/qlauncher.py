@@ -1,11 +1,11 @@
 """ File with templates """
+from typing import Any, Literal, Optional, Union
 import json
 import pickle
-from typing import List, Literal, Optional, Union, Callable
+import logging
 from quantum_launcher.base.adapter_structure import get_formatter, ProblemFormatter
 from quantum_launcher.base import Problem, Algorithm, Backend, Result
 from quantum_launcher.problems import Raw
-import logging
 
 
 class QuantumLauncher:
@@ -39,7 +39,7 @@ class QuantumLauncher:
 
     """
 
-    def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend = None,
+    def __init__(self, problem: Problem | Any, algorithm: Algorithm, backend: Backend = None,
                  logger: Optional[logging.Logger] = None) -> None:
 
         if not isinstance(problem, Problem):
@@ -87,13 +87,13 @@ class QuantumLauncher:
             raise ValueError(
                 f'format: {format} in not supported try: pickle, txt, csv or json')
 
-    def process(self, *, file_path: Optional[str] = None, format: Union[Literal['pickle', 'txt', 'json'], List[Literal['pickle', 'txt', 'json']]] = 'pickle', **kwargs) -> dict:
+    def process(self, *, file_path: Optional[str] = None, format: Union[Literal['pickle', 'txt', 'json'], list[Literal['pickle', 'txt', 'json']]] = 'pickle', **kwargs) -> dict:
         """
         Runs the algorithm, processes the data, and saves the results if specified.
 
         Args:
             file_path (Optional[str]): Flag indicating whether to save the results to a file. Defaults to None.
-            format (Union[Literal['pickle', 'txt', 'json'], List[Literal['pickle', 'txt', 'json']]]): Format in which file should be saved. Defaults to 'pickle'
+            format (Union[Literal['pickle', 'txt', 'json'], list[Literal['pickle', 'txt', 'json']]]): Format in which file should be saved. Defaults to 'pickle'
 
         Returns:
             dict: The processed results.
