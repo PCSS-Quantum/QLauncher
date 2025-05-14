@@ -71,6 +71,8 @@ myst_enable_extensions = [
     "html_image",
 ]
 
+nb_execution_mode = "off"
+
 viewcode_line_numbers = True
 
 autodoc_typehints = "both"
