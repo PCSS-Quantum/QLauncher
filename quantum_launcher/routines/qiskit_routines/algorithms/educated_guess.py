@@ -1,12 +1,13 @@
 """ Algorithms for Qiskit routines """
 import math
 import os
+from collections.abc import Callable
 
 import numpy as np
 import scipy
 
 from quantum_launcher.base import Problem, Algorithm, Result
-from quantum_launcher.routines.qiskit_routines.backends.ibm_backend import IBMBackend
+from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
 from quantum_launcher.workflow.pilotjob_scheduler import JobManager
 from quantum_launcher.routines.qiskit_routines.algorithms.qiskit_native import QAOA
 
@@ -34,7 +35,7 @@ class EducatedGuess(Algorithm):
         self.manager = JobManager()
         self.best_job_id = ''
 
-    def run(self, problem: Problem, backend: IBMBackend, formatter) -> Result:
+    def run(self, problem: Problem, backend: QiskitBackend, formatter: Callable) -> Result:
         self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial)
         print(f'{len(self.manager.jobs)} jobs submitted to qcg')
 

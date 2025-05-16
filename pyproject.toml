@@ -13,7 +13,7 @@ dependencies = [
     "matplotlib",
     "pyqubo",
     "scipy",
-    "qiskit",
+    "qiskit < 2.0",
     "qiskit_algorithms",
     "qiskit_aqt_provider",
     "qiskit_ibm_runtime",

@@ -74,7 +74,7 @@ class TSP(Problem):
 
         import matplotlib.pyplot as plt
 
-        pos = nx.spring_layout(self.instance, weight=None, seed=42)
+        pos = nx.spring_layout(self.instance, weight=None, seed=42)  # set seed for same node graphs in plt
         problem_edges = list(self.instance.edges)
 
         marked_edges = []

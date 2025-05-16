@@ -59,7 +59,7 @@ class JSSP(Problem):
     @staticmethod
     def from_preset(instance_name: str, **kwargs) -> "JSSP":
         match instance_name:
-            case 'toy':
+            case 'default':
                 max_time = 3
                 instance = {"cupcakes": [("mixer", 2), ("oven", 1)],
                             "smoothie": [("mixer", 1)],
