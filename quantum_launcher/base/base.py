@@ -194,7 +194,7 @@ class Algorithm(ABC):
         return o.__dict__
 
     @abstractmethod
-    def run(self, problem: Problem, backend: Backend, formatter: Callable | None = None) -> Result:
+    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
         """Runs the algorithm on a specific problem using a backend.
 
         Args:
