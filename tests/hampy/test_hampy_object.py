@@ -9,7 +9,8 @@ from pprint import pprint
 from warnings import filterwarnings
 filterwarnings('ignore')
 
-def test_object():
+
+def get_hamiltonian():
     eq = Equation(3)
     var0 = eq[0]
     var1 = eq[1]
@@ -25,7 +26,7 @@ def test_object():
 
 def test_run_qaoa():
 
-    hamiltonian = test_object()
+    hamiltonian = get_hamiltonian()
     sampler, optimizer = Sampler(), COBYLA()
     qaoa = QAOA(sampler, optimizer)
     result = qaoa.compute_minimum_eigenvalue(-hamiltonian)
@@ -48,6 +49,7 @@ def test_one_in_n():
     result = qaoa.compute_minimum_eigenvalue(equation.hamiltonian)
     bitstring: str = result.best_measurement['bitstring']
     assert bitstring.count('1') == 1
+
 
 def test_new_equation():
     equation = Equation(5)
