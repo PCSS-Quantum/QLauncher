@@ -5,19 +5,21 @@ from typing import Callable
 
 import numpy as np
 
-from qiskit import qpy, QuantumCircuit
-from qiskit.circuit import ParameterVector
+from qiskit import qpy, QuantumCircuit, transpile
 from qiskit.circuit.library import PauliEvolutionGate
+
 from qiskit.primitives import PrimitiveResult, SamplerPubResult, DataBin
 from qiskit.primitives.containers import BitArray
-# from qiskit.opflow import H
 from qiskit.primitives.base.base_primitive import BasePrimitive
+
+from qiskit.providers.backend import BackendV1, BackendV2
+
 from qiskit.quantum_info import SparsePauliOp
+
 from qiskit_algorithms.minimum_eigensolvers import QAOA as QiskitQAOA
 from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
 
 from quantum_launcher.base import Problem, Algorithm, Result
-from quantum_launcher.base.adapter_structure import ProblemFormatter
 from quantum_launcher.routines.qiskit_routines.backends.ibm_backend import IBMBackend
 from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
 
@@ -205,16 +207,16 @@ class FALQON(QiskitOptimizationAlgorithm):
     def __init__(
         self,
         driver_h: SparsePauliOp | None = None,
-        delta_t: float = 0.0,
+        delta_t: float = 0.03,
         beta_0: float = 0.0,
-        reps: int = 1
+        max_reps: int = 20
     ) -> None:
         super().__init__()
         self.driver_h = driver_h
         self.cost_h = None
         self.delta_t = delta_t
         self.beta_0 = beta_0
-        self.reps = reps
+        self.max_reps = max_reps
         self.n_qubits: int = 0
         self.parameters = ['n', 'delta_t', 'beta_0']
 
@@ -224,7 +226,7 @@ class FALQON(QiskitOptimizationAlgorithm):
             'driver_h': self.driver_h,
             'delta_t': self.delta_t,
             'beta_0': self.beta_0,
-            'n': self.reps,
+            'n': self.max_reps,
             'cost_h': self.cost_h,
             'n_qubits': self.n_qubits,
             'parameters': self.parameters,
@@ -232,55 +234,36 @@ class FALQON(QiskitOptimizationAlgorithm):
         }
 
     def _get_path(self) -> str:
-        return f'{self.name}@{self.reps}@{self.delta_t}@{self.beta_0}'
+        return f'{self.name}@{self.max_reps}@{self.delta_t}@{self.beta_0}'
 
     def run(self, problem: Problem, backend: QiskitBackend, formatter: Callable) -> Result:
         """ Runs the FALQON algorithm """
 
-        self.cost_h = formatter(problem)
-        print(self.cost_h)
-        if self.cost_h is None:
+        cost_h = formatter(problem)
+
+        if cost_h is None:
             raise ValueError("Formatter returned None")
 
-        self.n_qubits = self.cost_h.num_qubits
-        print(self.n_qubits)
+        self.n_qubits = cost_h.num_qubits
+
         if self.driver_h is None:
             self.driver_h = SparsePauliOp.from_sparse_list([("X", [i], 1) for i in range(self.n_qubits)], num_qubits=self.n_qubits)
-        betas = [self.beta_0]
-        energies = []
-        circuit_depths = []
-        cxs = []
 
-        tag = self.make_tag(problem, backend)
-        estimator = backend.estimator
-        sampler = backend.sampler
-
-        best_sample = self._falqon_subroutine(
-            estimator,
-            sampler,
-            energies,
-            betas,
-            circuit_depths,
-            cxs)
+        best_sample, betas, energies, depths, cnot_counts = self._falqon_subroutine(cost_h, backend)
 
         best_data: BitArray = best_sample[0].data.meas
         counts: dict = best_data.get_counts()
         shots = best_data.num_shots
 
-        timestamps, usages, qpu_time = self.get_processing_times(tag, sampler)
         result = {'betas': betas,
                   'energies': energies,
-                  'depths': circuit_depths,
-                  'cxs': cxs,
-                  'n': self.reps,
+                  'depths': depths,
+                  'cxs': cnot_counts,
+                  'n': self.max_reps,
                   'delta_t': self.delta_t,
                   'beta_0': self.beta_0,
                   'energy': min(energies),
-                  'qpu_time': qpu_time,
-                  'best_sample': best_sample,
-                  # 'last_sample': last_sample,
-                  'usages': usages,
-                  'timestamps': timestamps}
+                  }
 
         return Result(
             best_bitstring=max(counts, key=counts.get),
@@ -295,58 +278,84 @@ class FALQON(QiskitOptimizationAlgorithm):
             result=result
         )
 
-    def _build_ansatz(self, betas):
-        """ building ansatz circuit """
+    def _add_ansatz_part(
+        self,
+        cost_hamiltonian: SparsePauliOp,
+        driver_hamiltonian: SparsePauliOp,
+        beta: float,
+        circuit: QuantumCircuit
+    ) -> None:
+        """Adds a single FALQON ansatz 'building block' with the specified beta to the circuit"""
+        circ_part = QuantumCircuit(circuit.num_qubits)
+
+        circ_part.append(PauliEvolutionGate(cost_hamiltonian, time=self.delta_t), circ_part.qubits)
+        circ_part.append(PauliEvolutionGate(driver_hamiltonian, time=self.delta_t * beta), circ_part.qubits)
+
+        circuit.compose(circ_part, circ_part.qubits, inplace=True)
+
+    def _build_ansatz(self, cost_hamiltonian, driver_hamiltonian, betas):
+        """Build the FALQON circuit for the given betas"""
 
         circ = QuantumCircuit(self.n_qubits)
         circ.h(range(self.n_qubits))
 
         for beta in betas:
-            circ.append(PauliEvolutionGate(self.cost_h, time=self.delta_t), circ.qubits)
-            circ.append(PauliEvolutionGate(self.driver_h, time=self.delta_t * beta), circ.qubits)
+            circ.append(PauliEvolutionGate(cost_hamiltonian, time=self.delta_t), circ.qubits)
+            circ.append(PauliEvolutionGate(driver_hamiltonian, time=self.delta_t * beta), circ.qubits)
         return circ
 
     def _falqon_subroutine(
             self,
-            estimator,
-            sampler,
-            energies,
-            betas,
-            circuit_depths,
-            cxs) -> PrimitiveResult[SamplerPubResult]:
-        """ subroutine for falqon """
-        for i in range(self.reps):
-            betas, energy, depth, cx_count = self._run_falqon(betas, estimator)
-            print(i, energy)
-            energies.append(energy)
-            circuit_depths.append(depth)
-            cxs.append(cx_count)
-        argmin = np.argmin(np.asarray(energies))
-        best_sample = self._sample_at(betas[:argmin], sampler)
-        # last_sample = self._sample_at(betas, sampler)
-        return best_sample
+            cost_hamiltonian: SparsePauliOp,
+            backend: QiskitBackend
+    ) -> tuple[PrimitiveResult[SamplerPubResult], list[float], list[float], list[int], list[int]]:
+        """
+        Run the 'meat' of the algorithm.
 
-    def _run_falqon(self, betas, estimator):
-        """ Method to run FALQON algorithm """
-        ansatz = self._build_ansatz(betas)
-        comm_h = complex(0, 1) * commutator(self.driver_h, self.cost_h)
-        beta = -1 * estimator.run([(ansatz, comm_h)]).result()[0].data.evs
-        betas.append(beta)
+        Args:
+            cost_hamiltonian (SparsePauliOp): Cost hamiltonian from the formatter.
+            backend (QiskitBackend): Backend
 
-        ansatz = self._build_ansatz(betas)
-        energy = estimator.run([(ansatz, self.cost_h)]).result()[0].data.evs
+        Returns:
+            tuple[PrimitiveResult[SamplerPubResult], list[float], list[float], list[int], list[int]]: 
+            Sampler result from best betas, list of betas, list of energies, list of depths, list of cnot counts
+        """
 
-        depth = ansatz.decompose(reps=10).depth()
-        if 'cx' in ansatz.decompose(reps=10).count_ops():
-            cx_count = ansatz.decompose(reps=10).count_ops()['cx']
+        if self.driver_h is None:
+            driver_hamiltonian = SparsePauliOp.from_sparse_list([("X", [i], 1) for i in range(self.n_qubits)], num_qubits=self.n_qubits)
         else:
-            cx_count = 0
+            driver_hamiltonian = self.driver_h
 
-        return betas, energy, depth, cx_count
+        hamiltonian_commutator = complex(0, 1) * commutator(driver_hamiltonian, cost_hamiltonian)
 
-    def _sample_at(self, betas, sampler):
-        """ Sample the circuit at preset betas """
-        ansatz = self._build_ansatz(betas)
-        ansatz.measure_all()
-        res = sampler.run([(ansatz)]).result()
-        return res
+        betas = [self.beta_0]
+        energies = []
+        cnot_counts = []
+        circuit_depths = []
+
+        circuit = QuantumCircuit(self.n_qubits)
+        circuit.h(circuit.qubits)
+
+        self._add_ansatz_part(cost_hamiltonian, driver_hamiltonian, self.beta_0, circuit)
+
+        for i in range(self.max_reps):
+
+            beta = -1 * backend.estimator.run([(circuit, hamiltonian_commutator)]).result()[0].data.evs
+            betas.append(beta)
+
+            self._add_ansatz_part(cost_hamiltonian, driver_hamiltonian, beta, circuit)
+
+            energy = backend.estimator.run([(circuit, cost_hamiltonian)]).result()[0].data.evs
+            # print(i, energy)
+            energies.append(energy)
+            circuit_depths.append(circuit.depth())
+            cnot_counts.append(circuit.count_ops().get('cx', 0))
+
+        argmin = np.argmin(np.asarray(energies))
+
+        sampling_circuit = self._build_ansatz(cost_hamiltonian, driver_hamiltonian, betas[:argmin])
+        sampling_circuit.measure_all()
+
+        best_sample = backend.sampler.run([(sampling_circuit)]).result()
+
+        return best_sample, betas, energies, circuit_depths, cnot_counts
