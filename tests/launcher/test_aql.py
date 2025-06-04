@@ -115,8 +115,8 @@ def test_AQL_individual_tasks():
 def test_AQL_context_manager():
     tasks: list[AQLTask] = []
     with AQL() as aql:
-        t1 = aql.add_task((EC.from_preset('toy'), QAOA(), QiskitBackend('local_simulator')))
-        t2 = aql.add_task((EC.from_preset('toy'), DwaveSolver(), SimulatedAnnealingBackend('local_simulator')))
+        t1 = aql.add_task((EC.from_preset('default'), QAOA(), QiskitBackend('local_simulator')))
+        t2 = aql.add_task((EC.from_preset('default'), DwaveSolver(), SimulatedAnnealingBackend('local_simulator')))
         tasks: list[AQLTask] = [t1, t2]
         aql.start()
 

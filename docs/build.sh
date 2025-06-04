@@ -8,5 +8,6 @@ cd $SCRIPT_DIR
 mkdir -p tutorials
 cp ../examples/*.ipynb tutorials
 
+rm -r API/
 make clean
 make html

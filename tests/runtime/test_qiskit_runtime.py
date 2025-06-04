@@ -34,7 +34,7 @@ def test_qatm():
 
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP.from_preset('toy', optimization_problem=True)
+    pr = JSSP.from_preset('default', optimization_problem=True)
     qaoa = QAOA(p=1)
     backend = IBMBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)

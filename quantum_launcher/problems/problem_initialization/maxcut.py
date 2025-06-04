@@ -44,7 +44,7 @@ class MaxCut(Problem):
         return f'{self.name}@{self.instance_name}'
 
     def visualize(self, bitstring: Optional[str] = None):
-        pos = nx.spring_layout(self.instance)
+        pos = nx.spring_layout(self.instance, seed=42)  # set seed for same node graphs in plt
         plt.figure(figsize=(8, 6))
         if bitstring is None:
             cmap = 'skyblue'
