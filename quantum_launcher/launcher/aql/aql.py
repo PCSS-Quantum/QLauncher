@@ -74,7 +74,7 @@ class AQL:
         Returns:
             int: Amount of tasks that are currently executing.
         """
-        return len([t for t in self.tasks if t.running()])
+        return sum(1 for t in self.tasks if t.running())
 
     def cancel_running_tasks(self):
         """Cancel all running tasks assigned to this AQL instance."""
@@ -154,7 +154,7 @@ class AQL:
             dependencies=[dep for dep in dependencies_list if not dep in self._quantum_tasks]
         )
 
-        def quantum_task(formatted, *rest):
+        def quantum_task(formatted, *_):
             ql = QuantumLauncher(
                 Raw(formatted, launcher.problem.instance_name),
                 launcher.algorithm,
@@ -195,7 +195,7 @@ class AQL:
         # The gateway tasks will ensure execution order of
         # (all classical tasks that quantum tasks depend on) - (all quantum tasks) - (rest of the classical tasks)
         gateway_task_classical = AQLTask(
-            lambda: 42,
+            lambda: True,
             dependencies=list(quantum_dependencies)
         )
 
