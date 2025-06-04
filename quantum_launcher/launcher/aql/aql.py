@@ -64,10 +64,10 @@ class AQL:
         """
 
         self.tasks: list[AQLTask] = []
-        self.mode = mode
+        self.mode: Literal['default', 'optimize_session'] = mode
 
-        self._classical_tasks = []
-        self._quantum_tasks = []
+        self._classical_tasks: list[AQLTask] = []
+        self._quantum_tasks: list[AQLTask] = []
 
     def running_task_count(self) -> int:
         """

@@ -11,7 +11,7 @@ from pathos.multiprocessing import _ProcessPool
 from quantum_launcher.base.base import Result
 
 
-def get_timeout(max_timeout: int | float | None, start: int | float) -> int | float | None:
+def get_timeout(max_timeout: int | float | None, start: int | float) -> float | None:
     """
     Get timeout to wait on an event, useful when awaiting multiple tasks and total timeout must be max_timeout.
 
