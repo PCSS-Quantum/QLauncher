@@ -10,6 +10,7 @@ dependencies = [
     "numpy<=1.26.4",
     "overrides",
     "pandas",
+    "pathos>=0.3.3",
     "matplotlib",
     "pyqubo",
     "scipy",

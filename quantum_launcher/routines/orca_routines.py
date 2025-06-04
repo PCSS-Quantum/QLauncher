@@ -81,6 +81,8 @@ class BBS(Algorithm):
         num_of_samples = results.n_samples
         average_energy = None
         energy_std = None
+        #! Todo: instead of None attach relevant info from 'results'
+        # results fail to pickle correctly btw
         return Result(best_bitstring, best_energy, most_common_bitstring,
                       most_common_bitstring_energy, distribution, energy,
-                      num_of_samples, average_energy, energy_std, results)
+                      num_of_samples, average_energy, energy_std, None)
