@@ -60,7 +60,7 @@ class GraphColoring(Problem):
 
     def visualize(self, solution: list[int] | None = None):
         if self.pos is None:
-            self.pos = nx.spring_layout(self.instance)
+            self.pos = nx.spring_layout(self.instance, seed=42)  # set seed for same node graphs in plt
         plt.figure(figsize=(8, 6))
         if solution is not None:
             nx.draw_networkx_nodes(self.instance, self.pos, node_size=500, node_color=solution, cmap="Accent")

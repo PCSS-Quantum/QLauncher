@@ -70,6 +70,7 @@ class Backend:
 
     def __init__(self, name: str, parameters: list | None = None) -> None:
         self.name: str = name
+        self.is_device = name == 'device'
         self.path: str | None = None
         self.parameters = parameters if parameters is not None else []
         self.logger: logging.Logger | None = None
@@ -194,7 +195,7 @@ class Algorithm(ABC):
         return o.__dict__
 
     @abstractmethod
-    def run(self, problem: Problem, backend: Backend, formatter: Callable | None = None) -> Result:
+    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
         """Runs the algorithm on a specific problem using a backend.
 
         Args:

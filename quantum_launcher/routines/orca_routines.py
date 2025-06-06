@@ -44,9 +44,9 @@ class BBS(Algorithm):
         super().__init__()
         self._algorithm_format = format
         self.kwargs = kwargs
-        self.input_state = kwargs.get('input_state', None)
+        self.input_state = self.kwargs.pop('input_state', None)
 
-    def run(self, problem: Problem, backend: OrcaBackend, formatter: Callable[[Problem], np.ndarray]):
+    def run(self, problem: Problem, backend: OrcaBackend, formatter:  Callable):
         # params = {"tbi_type": self.kwarga['tbi_type']}
         # if backend is not None:
         #     params.update(backend.get_args())
@@ -56,6 +56,7 @@ class BBS(Algorithm):
             objective, offset = objective
             if self.input_state is None:
                 self.input_state = [not i % 2 for i in range(len(objective))]
+
         self.bbs = BinaryBosonicSolver(
             len(self.input_state),
             objective,
@@ -81,6 +82,8 @@ class BBS(Algorithm):
         num_of_samples = results.n_samples
         average_energy = None
         energy_std = None
+        #! Todo: instead of None attach relevant info from 'results'
+        # results fail to pickle correctly btw
         return Result(best_bitstring, best_energy, most_common_bitstring,
                       most_common_bitstring_energy, distribution, energy,
-                      num_of_samples, average_energy, energy_std, results)
+                      num_of_samples, average_energy, energy_std, None)
