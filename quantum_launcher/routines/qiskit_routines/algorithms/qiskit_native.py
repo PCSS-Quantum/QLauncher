@@ -5,14 +5,12 @@ from typing import Callable
 
 import numpy as np
 
-from qiskit import qpy, QuantumCircuit, transpile
+from qiskit import qpy, QuantumCircuit
 from qiskit.circuit.library import PauliEvolutionGate
 
-from qiskit.primitives import PrimitiveResult, SamplerPubResult, DataBin
+from qiskit.primitives import PrimitiveResult, SamplerPubResult
 from qiskit.primitives.containers import BitArray
 from qiskit.primitives.base.base_primitive import BasePrimitive
-
-from qiskit.providers.backend import BackendV1, BackendV2
 
 from qiskit.quantum_info import SparsePauliOp
 
