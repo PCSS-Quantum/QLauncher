@@ -37,7 +37,7 @@ def test_ec():
 
 def test_jssp():
     """ Testing function for Job Shop Scheduling Problem """
-    problem = JSSP.from_preset(instance_name='toy', optimization_problem=True)
+    problem = JSSP.from_preset(instance_name='default', optimization_problem=True)
     solver = DwaveSolver(1, num_reads=10)
     _test_with_simulated_annealing(problem, solver)
     _test_with_steepest_descent(problem, solver)

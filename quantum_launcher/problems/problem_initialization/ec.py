@@ -42,7 +42,7 @@ class EC(Problem):
             case 'micro':
                 instance = [{1, 2},
                             {1}]
-            case 'toy':
+            case 'default':
                 instance = [{1, 4, 7},
                             {1, 4},
                             {4, 5, 7},

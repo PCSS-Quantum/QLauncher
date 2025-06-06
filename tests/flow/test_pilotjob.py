@@ -1,7 +1,7 @@
 from quantum_launcher.workflow.pilotjob_scheduler import JobManager
 from quantum_launcher import QuantumLauncher, Result
-from quantum_launcher.problems import MaxCut
-from quantum_launcher.routines.qiskit_routines import QAOA, IBMBackend
+from quantum_launcher.problems import EC
+from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
 from quantum_launcher.routines.qiskit_routines.algorithms import EducatedGuess
 import shutil
 import glob
@@ -22,9 +22,9 @@ def test_job_manager(tmp_path):
     manager = JobManager()
     assert isinstance(manager, JobManager)
 
-    problem = MaxCut.from_preset('default')
+    problem = EC.from_preset('micro')
     algorithm = QAOA(p=1)
-    backend = IBMBackend('local_simulator')
+    backend = QiskitBackend('local_simulator')
 
     manager.submit(problem, algorithm, backend, f'{tmp_path}/')
     for _ in range(len(manager.jobs)):
@@ -43,12 +43,12 @@ def test_job_manager(tmp_path):
 def test_educated_guess(tmp_path):
     """ Testing function for QATM """
     # TODO Optimize this test, it takes way too long, as the algorithm is long
-    pr = MaxCut.from_preset('default')
+    pr = EC.from_preset('micro')
     educated_guess = EducatedGuess(2, 3)
     educated_guess.output_initial = f'{tmp_path}/'
     educated_guess.output_interpolated = f'{tmp_path}/'
     educated_guess.output = f'{tmp_path}/'
-    backend = IBMBackend('local_simulator')
+    backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, educated_guess, backend)
 
     # inform = launcher.process(save_pickle=True)
