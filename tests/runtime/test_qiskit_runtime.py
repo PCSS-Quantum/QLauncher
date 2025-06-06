@@ -2,7 +2,7 @@ import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
-from quantum_launcher.routines.qiskit_routines import QAOA, IBMBackend
+from quantum_launcher.routines.qiskit_routines import QAOA, FALQON, IBMBackend
 from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
 
 TESTING_DIR = 'testing'
@@ -16,6 +16,16 @@ def test_ec():
     launcher = QuantumLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True, save_txt=True)
+    results = launcher.run()
+    assert isinstance(results, Result)
+
+
+def test_falqon():
+    pr = EC.from_preset(instance_name='micro')
+    qaoa = FALQON(max_reps=5)
+    backend = IBMBackend('local_simulator')
+    launcher = QuantumLauncher(pr, qaoa, backend)
+
     results = launcher.run()
     assert isinstance(results, Result)
 
