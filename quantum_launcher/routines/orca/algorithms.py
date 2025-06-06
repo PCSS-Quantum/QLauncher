@@ -1,25 +1,15 @@
-""" file with orca algorithms subclasses """
 from typing import List, Literal
 from collections.abc import Callable
 import numpy as np
 
-from quantum_launcher.base import Problem, Algorithm, Result, Backend
+from quantum_launcher.base import Problem, Algorithm, Result
 from quantum_launcher.exceptions import DependencyError
+from quantum_launcher.routines.orca.backends import OrcaBackend
 
 try:
     from ptseries.algorithms.binary_solvers import BinaryBosonicSolver
 except ImportError as e:
     raise DependencyError(e, install_hint='orca', private=True) from e
-
-
-class OrcaBackend(Backend):
-    """ local backend """
-
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-
-    def get_args(self):
-        return {}
 
 
 class BBS(Algorithm):
@@ -47,39 +37,38 @@ class BBS(Algorithm):
         self.input_state = self.kwargs.pop('input_state', None)
 
     def run(self, problem: Problem, backend: OrcaBackend, formatter: Callable[[Problem], np.ndarray]) -> Result:
-        # params = {"tbi_type": self.kwarga['tbi_type']}
-        # if backend is not None:
-        #     params.update(backend.get_args())
+
         objective = formatter(problem)
+
         # TODO: use offset somehow
         if not callable(objective):
             objective, offset = objective
             if self.input_state is None:
                 self.input_state = [not i % 2 for i in range(len(objective))]
 
-        self.bbs = BinaryBosonicSolver(
+        bbs = backend.get_bbs(
             len(self.input_state),
             objective,
             self.input_state,
             **self.kwargs
         )
-        self.bbs.train(**self.kwargs)
+        bbs.train(**self.kwargs)
 
-        return self.construct_results(self.bbs)
+        return self.construct_results(bbs)
 
     def get_bitstring(self, result: List[float]) -> str:
         return ''.join(map(str, map(int, result)))
 
-    def construct_results(self, results: BinaryBosonicSolver) -> Result:
+    def construct_results(self, solver: BinaryBosonicSolver) -> Result:
         # TODO: add support for distribution (probably with different logger)
         best_bitstring = ''.join(
-            map(str, map(int, results.config_min_encountered)))
-        best_energy = results.E_min_encountered
+            map(str, map(int, solver.config_min_encountered)))
+        best_energy = solver.E_min_encountered
         most_common_bitstring = None
         most_common_bitstring_energy = None
         distribution = None
         energy = None
-        num_of_samples = results.n_samples
+        num_of_samples = solver.n_samples
         average_energy = None
         energy_std = None
         #! Todo: instead of None attach relevant info from 'results'

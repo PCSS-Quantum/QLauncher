@@ -1,6 +1,6 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
-from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend, TabuBackend, SteepestDescentBackend
+from quantum_launcher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend, TabuBackend, SteepestDescentBackend
 from quantum_launcher.problems import EC, JSSP, MaxCut, Raw, TSP
 from pyqubo import Spin
 TESTING_DIR = 'testing'

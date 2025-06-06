@@ -8,7 +8,7 @@ from qiskit_algorithms.optimizers import COBYLA
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel
 
-from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
+from quantum_launcher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
 class AerBackend(QiskitBackend):

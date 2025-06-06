@@ -4,8 +4,8 @@ from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 from qiskit import QuantumCircuit, ClassicalRegister
 from qiskit.primitives import SamplerResult
 
-from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
-from quantum_launcher.routines.qiskit_routines import QiskitBackend
+from quantum_launcher.routines.qiskit.v2_wrapper import SamplerV2Adapter
+from quantum_launcher.routines.qiskit import QiskitBackend
 
 
 def test_v2_sampler_adapter():

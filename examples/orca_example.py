@@ -1,7 +1,7 @@
 """ Quantum Launcher for Orca """
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.problems import MaxCut
-from quantum_launcher.routines.orca_routines import OrcaBackend, BBS
+from quantum_launcher.routines.orca import OrcaBackend, BBS
 
 
 def main():

@@ -3,7 +3,7 @@ import os
 import sys
 from typing import Dict, Tuple, Type
 from quantum_launcher import QuantumLauncher
-from quantum_launcher.routines.qiskit_routines import QAOA, IBMBackend
+from quantum_launcher.routines.qiskit import QAOA, QiskitBackend
 from quantum_launcher.problems import MaxCut, EC, JSSP, QATM, Problem
 import dill
 
@@ -19,7 +19,7 @@ ALGORITHM_DICT = {
 }
 
 BACKEND_DICT = {
-    'QiskitBackend': IBMBackend
+    'QiskitBackend': QiskitBackend
 }
 
 

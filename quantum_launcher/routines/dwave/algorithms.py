@@ -1,12 +1,13 @@
+"""DWave algorithms"""
+
 from collections.abc import Callable
 
-from quantum_launcher.base import Algorithm, Problem, Backend, Result
+from quantum_launcher.base import Algorithm, Problem, Result
 from quantum_launcher.exceptions import DependencyError
+from quantum_launcher.routines.dwave.backends import DwaveBackend
 try:
     from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
     from dimod import SampleSet
-    from dwave.system import DWaveSampler, EmbeddingComposite
-    from dwave.samplers import SimulatedAnnealingSampler, TabuSampler, SteepestDescentSampler
 except ImportError as e:
     raise DependencyError(e, install_hint='dwave') from e
 
@@ -20,7 +21,7 @@ class DwaveSolver(Algorithm):
         self.label: str = 'TBD_TBD'
         super().__init__(**alg_kwargs)
 
-    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
+    def run(self, problem: Problem, backend: DwaveBackend, formatter: Callable) -> Result:
         self.label = f'{problem.name}_{problem.instance_name}'
 
         bqm: BinaryQuadraticModel = formatter(problem)
@@ -45,31 +46,3 @@ class DwaveSolver(Algorithm):
             energies[bitstring] = energy
 
         return Result.from_distributions(distribution, energies, result)
-
-
-class TabuBackend(Backend):
-    def __init__(self, name: str = "TabuSampler", parameters: list = None) -> None:
-        super().__init__(name, parameters)
-        self.sampler = TabuSampler()
-
-
-class SimulatedAnnealingBackend(Backend):
-    def __init__(self, name: str = "SimulatedAnnealingSampler", parameters: list = None) -> None:
-        super().__init__(name, parameters)
-        self.sampler = SimulatedAnnealingSampler()
-
-
-class SteepestDescentBackend(Backend):
-    def __init__(self, name: str = 'SteepestDescentBackend', parameters: list | None = None) -> None:
-        super().__init__(name, parameters)
-        self.sampler = SteepestDescentSampler()
-
-
-class DwaveBackend(Backend):
-    def __init__(self, name: str = "DWaveSampler", parameters: list = None) -> None:
-        super().__init__(name, parameters)
-        self.sampler = EmbeddingComposite(DWaveSampler())
-
-
-__all__ = ['DwaveSolver', 'TabuBackend',
-           'DwaveBackend', 'SimulatedAnnealingBackend', 'SteepestDescentBackend']

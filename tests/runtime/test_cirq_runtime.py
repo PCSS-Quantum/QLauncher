@@ -3,8 +3,8 @@ from qiskit.quantum_info import SparsePauliOp
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
 from quantum_launcher.problems import MaxCut, Raw
-from quantum_launcher.routines.qiskit_routines import QAOA
-from quantum_launcher.routines.cirq_routines import CirqBackend
+from quantum_launcher.routines.qiskit import QAOA
+from quantum_launcher.routines.cirq import CirqBackend
 
 
 def test_cirq():

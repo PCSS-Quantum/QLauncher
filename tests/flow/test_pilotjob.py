@@ -1,8 +1,8 @@
 from quantum_launcher.workflow.pilotjob_scheduler import JobManager
 from quantum_launcher import QuantumLauncher, Result
 from quantum_launcher.problems import EC
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
-from quantum_launcher.routines.qiskit_routines.algorithms import EducatedGuess
+from quantum_launcher.routines.qiskit import QAOA, QiskitBackend
+from quantum_launcher.routines.qiskit.algorithms import EducatedGuess
 import shutil
 import glob
 import pytest

@@ -11,7 +11,7 @@ from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.problems import EC
-from quantum_launcher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA
+from quantum_launcher.routines.qiskit import QiskitBackend, AQTBackend, QiskitBackend, AerBackend, QAOA
 
 import pytest
 
@@ -94,7 +94,7 @@ def test_IBM_session():
     backend = FakeAlmadenV2()
 
     with Session(backend=backend) as session:
-        ql_backend = IBMBackend('session', session=session, auto_transpile_level=3)
+        ql_backend = QiskitBackend('session', session=session, auto_transpile_level=3)
 
         assert ql_backend.sampler.mode == session
         assert ql_backend.estimator.mode == session

@@ -6,10 +6,10 @@ from qiskit_algorithms.optimizers import SPSA, COBYLA
 from qiskit_ibm_runtime import EstimatorV2, SamplerV2
 from qiskit_ibm_runtime import Session, Options
 
-from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
+from quantum_launcher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
-class IBMBackend(QiskitBackend):
+class QiskitBackend(QiskitBackend):
     """ 
     An extension of QiskitBackend providing support for IBM sessions.
 

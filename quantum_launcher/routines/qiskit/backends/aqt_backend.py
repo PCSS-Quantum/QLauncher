@@ -7,7 +7,7 @@ from qiskit.primitives import Sampler
 from qiskit_algorithms.optimizers import COBYLA, SPSA
 from qiskit_ibm_runtime import Options
 
-from quantum_launcher.routines.qiskit_routines import QiskitBackend
+from quantum_launcher.routines.qiskit import QiskitBackend
 from quantum_launcher.exceptions import DependencyError
 
 try:

@@ -14,9 +14,9 @@ from qiskit_algorithms.optimizers import COBYLA
 from qiskit_ibm_runtime import Options
 
 from quantum_launcher.base import Backend
-from quantum_launcher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
+from quantum_launcher.routines.qiskit.v2_wrapper import SamplerV2Adapter
 
-from quantum_launcher.routines.qiskit_routines.backends.utils import (
+from quantum_launcher.routines.qiskit.backends.utils import (
     set_estimator_auto_run_behavior, set_sampler_auto_run_behavior,
     AUTO_TRANSPILE_ESTIMATOR_TYPE, AUTO_TRANSPILE_SAMPLER_TYPE
 )

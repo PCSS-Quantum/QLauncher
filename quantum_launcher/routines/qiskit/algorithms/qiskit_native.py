@@ -16,8 +16,8 @@ from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
 
 from quantum_launcher.base import Problem, Algorithm, Result
 from quantum_launcher.base.base import Backend
-from quantum_launcher.routines.cirq_routines import CirqBackend
-from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
+from quantum_launcher.routines.cirq import CirqBackend
+from quantum_launcher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
 class QiskitOptimizationAlgorithm(Algorithm):

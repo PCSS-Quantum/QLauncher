@@ -7,9 +7,9 @@ import numpy as np
 import scipy
 
 from quantum_launcher.base import Problem, Algorithm, Result
-from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
+from quantum_launcher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from quantum_launcher.workflow.pilotjob_scheduler import JobManager
-from quantum_launcher.routines.qiskit_routines.algorithms.qiskit_native import QAOA
+from quantum_launcher.routines.qiskit.algorithms.qiskit_native import QAOA
 
 
 class EducatedGuess(Algorithm):
