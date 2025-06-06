@@ -8,7 +8,7 @@ import numpy as np
 from qiskit import qpy, QuantumCircuit
 from qiskit.circuit.library import PauliEvolutionGate
 
-from qiskit.primitives import PrimitiveResult, SamplerPubResult
+from qiskit.primitives import PrimitiveResult, SamplerPubResult, BaseEstimatorV1, BaseSamplerV1
 from qiskit.primitives.containers import BitArray
 from qiskit.primitives.base.base_primitive import BasePrimitive
 
@@ -236,6 +236,9 @@ class FALQON(QiskitOptimizationAlgorithm):
 
     def run(self, problem: Problem, backend: QiskitBackend, formatter: Callable) -> Result:
         """ Runs the FALQON algorithm """
+
+        if isinstance(backend.sampler, BaseSamplerV1) or isinstance(backend.estimator, BaseEstimatorV1):
+            raise ValueError("FALQON works only on V2 samplers and estimators, consider using a different backend.")
 
         cost_h = formatter(problem)
 
