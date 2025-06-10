@@ -1,7 +1,8 @@
 """ Algorithms for Qiskit routines """
 import json
 from datetime import datetime
-from typing import Callable
+from typing import Literal
+from collections.abc import Callable
 
 import numpy as np
 
@@ -68,7 +69,7 @@ class QAOA(QiskitOptimizationAlgorithm):
     """
     _algorithm_format = 'hamiltonian'
 
-    def __init__(self, p: int = 1, alternating_ansatz: bool = False, aux=None, **alg_kwargs):
+    def __init__(self, p: int = 1, optimizer: Optimizer | None = None, alternating_ansatz: bool = False, aux=None, **alg_kwargs):
         super().__init__(**alg_kwargs)
         self.name: str = 'qaoa'
         self.aux = aux
@@ -77,7 +78,7 @@ class QAOA(QiskitOptimizationAlgorithm):
         self.parameters = ['p']
         self.mixer_h: SparsePauliOp | None = None
         self.initial_state: QuantumCircuit | None = None
-        self.optimizer: Optimizer = COBYLA()
+        self.optimizer: Optimizer = optimizer if optimizer is not None else SPSA()
 
     @property
     def setup(self) -> dict:
