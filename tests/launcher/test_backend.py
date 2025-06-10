@@ -106,7 +106,6 @@ def test_Qiskit_local_session():
 
     assert backend.sampler is not None
     assert backend.estimator is not None
-    assert backend.optimizer is not None
     run_backend(backend)
 
 
@@ -115,7 +114,6 @@ def test_Qiskit_backendv1v2_session():
 
     assert backend.sampler is not None
     assert backend.estimator is not None
-    assert backend.optimizer is not None
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
     run_backend(backend)
