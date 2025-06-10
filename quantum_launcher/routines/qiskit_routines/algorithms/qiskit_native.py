@@ -53,6 +53,7 @@ class QAOA(QiskitOptimizationAlgorithm):
 
     Args:
         p (int): The number of QAOA steps. Defaults to 1.
+        optimizer (Optimizer): Optimizer used for optimization of algorithm parameters. If set to `None` turns into COBYLA. Defaults to None,
         alternating_ansatz (bool): Whether to use an alternating ansatz. Defaults to False. If True, it's recommended to provide a mixer_h to alg_kwargs.
         aux: Auxiliary input for the QAOA algorithm.
         **alg_kwargs: Additional keyword arguments for the base class.
@@ -61,6 +62,7 @@ class QAOA(QiskitOptimizationAlgorithm):
         name (str): The name of the algorithm.
         aux: Auxiliary input for the QAOA algorithm.
         p (int): The number of QAOA steps.
+        optimizer (Optimizer): Optimizer used for optimization of algorithm parameters.
         alternating_ansatz (bool): Whether to use an alternating ansatz.
         parameters (list): List of parameters for the algorithm.
         mixer_h (SparsePauliOp | None): The mixer Hamiltonian.
@@ -73,11 +75,11 @@ class QAOA(QiskitOptimizationAlgorithm):
         self.name: str = 'qaoa'
         self.aux = aux
         self.p: int = p
+        self.optimizer: Optimizer = optimizer if optimizer is not None else COBYLA()
         self.alternating_ansatz: bool = alternating_ansatz
         self.parameters = ['p']
         self.mixer_h: SparsePauliOp | None = None
         self.initial_state: QuantumCircuit | None = None
-        self.optimizer: Optimizer = optimizer if optimizer is not None else COBYLA()
 
     @property
     def setup(self) -> dict:
