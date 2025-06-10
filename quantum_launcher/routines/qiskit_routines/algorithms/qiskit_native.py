@@ -13,6 +13,7 @@ from qiskit.primitives.base.base_primitive import BasePrimitive
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_algorithms.minimum_eigensolvers import QAOA as QiskitQAOA
 from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
+from qiskit_algorithms.optimizers import Optimizer, COBYLA, SPSA
 
 from quantum_launcher.base import Problem, Algorithm, Result
 from quantum_launcher.routines.qiskit_routines.backends.ibm_backend import IBMBackend
@@ -76,6 +77,7 @@ class QAOA(QiskitOptimizationAlgorithm):
         self.parameters = ['p']
         self.mixer_h: SparsePauliOp | None = None
         self.initial_state: QuantumCircuit | None = None
+        self.optimizer: Optimizer = COBYLA()
 
     @property
     def setup(self) -> dict:
@@ -128,7 +130,6 @@ class QAOA(QiskitOptimizationAlgorithm):
         tag = self.make_tag(problem, backend)
         sampler = backend.samplerV1
         # sampler.set_options(job_tags=[tag])
-        optimizer = backend.optimizer
 
         if self.alternating_ansatz:
             if self.mixer_h is None:
@@ -137,7 +138,7 @@ class QAOA(QiskitOptimizationAlgorithm):
                 self.initial_state = formatter.get_QAOAAnsatz_initial_state(
                     problem)
 
-        qaoa = QiskitQAOA(sampler, optimizer, reps=self.p, callback=qaoa_callback,
+        qaoa = QiskitQAOA(sampler, self.optimizer, reps=self.p, callback=qaoa_callback,
                           mixer=self.mixer_h, initial_state=self.initial_state, **self.alg_kwargs)
         qaoa_result = qaoa.compute_minimum_eigenvalue(hamiltonian, self.aux)
         depth = qaoa.ansatz.decompose(reps=10).depth()
