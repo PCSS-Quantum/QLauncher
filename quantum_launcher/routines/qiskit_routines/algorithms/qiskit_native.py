@@ -1,7 +1,6 @@
 """ Algorithms for Qiskit routines """
 import json
 from datetime import datetime
-from typing import Literal
 from collections.abc import Callable
 
 import numpy as np
@@ -14,7 +13,7 @@ from qiskit.primitives.base.base_primitive import BasePrimitive
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_algorithms.minimum_eigensolvers import QAOA as QiskitQAOA
 from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
-from qiskit_algorithms.optimizers import Optimizer, COBYLA, SPSA
+from qiskit_algorithms.optimizers import Optimizer, COBYLA
 
 from quantum_launcher.base import Problem, Algorithm, Result
 from quantum_launcher.routines.qiskit_routines.backends.ibm_backend import IBMBackend
@@ -78,7 +77,7 @@ class QAOA(QiskitOptimizationAlgorithm):
         self.parameters = ['p']
         self.mixer_h: SparsePauliOp | None = None
         self.initial_state: QuantumCircuit | None = None
-        self.optimizer: Optimizer = optimizer if optimizer is not None else SPSA()
+        self.optimizer: Optimizer = optimizer if optimizer is not None else COBYLA()
 
     @property
     def setup(self) -> dict:
