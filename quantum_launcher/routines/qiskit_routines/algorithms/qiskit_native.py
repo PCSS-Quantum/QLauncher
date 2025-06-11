@@ -53,7 +53,7 @@ class QAOA(QiskitOptimizationAlgorithm):
 
     Args:
         p (int): The number of QAOA steps. Defaults to 1.
-        optimizer (Optimizer): Optimizer used for optimization of algorithm parameters. If set to `None` turns into COBYLA. Defaults to None,
+        optimizer (Optimizer | None): Optimizer used during algorithm runtime. If set to `None` turns into COBYLA. Defaults to None,
         alternating_ansatz (bool): Whether to use an alternating ansatz. Defaults to False. If True, it's recommended to provide a mixer_h to alg_kwargs.
         aux: Auxiliary input for the QAOA algorithm.
         **alg_kwargs: Additional keyword arguments for the base class.
@@ -62,7 +62,7 @@ class QAOA(QiskitOptimizationAlgorithm):
         name (str): The name of the algorithm.
         aux: Auxiliary input for the QAOA algorithm.
         p (int): The number of QAOA steps.
-        optimizer (Optimizer): Optimizer used for optimization of algorithm parameters.
+        optimizer (Optimizer): Optimizer used during algorithm runtime.
         alternating_ansatz (bool): Whether to use an alternating ansatz.
         parameters (list): List of parameters for the algorithm.
         mixer_h (SparsePauliOp | None): The mixer Hamiltonian.
