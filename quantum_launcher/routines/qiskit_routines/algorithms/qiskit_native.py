@@ -16,13 +16,15 @@ from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
 from qiskit_algorithms.optimizers import Optimizer, COBYLA
 
 from quantum_launcher.base import Problem, Algorithm, Result
-from quantum_launcher.routines.qiskit_routines.backends.ibm_backend import IBMBackend
+from quantum_launcher.base.base import Backend
+from quantum_launcher.routines.cirq_routines import CirqBackend
+from quantum_launcher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
 
 
 class QiskitOptimizationAlgorithm(Algorithm):
     """ Abstract class for Qiskit optimization algorithms """
 
-    def make_tag(self, problem: Problem, backend: IBMBackend) -> str:
+    def make_tag(self, problem: Problem, backend: QiskitBackend) -> str:
         tag = problem.__class__.__name__ + '-' + \
             backend.__class__.__name__ + '-' + \
             self.__class__.__name__ + '-' + \
@@ -121,8 +123,10 @@ class QAOA(QiskitOptimizationAlgorithm):
                     res_dict = {**res_dict, **{key: path}}
         return res_dict
 
-    def run(self, problem: Problem, backend: IBMBackend, formatter=Callable) -> Result:
+    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
         """ Runs the QAOA algorithm """
+        if not (isinstance(backend, QiskitBackend) or isinstance(backend, CirqBackend)):
+            raise ValueError('Backend should be CirqBackend, QiskitBackend or subclass.')
         hamiltonian: SparsePauliOp = formatter(problem)
         energies = []
 
@@ -227,7 +231,7 @@ class FALQON(QiskitOptimizationAlgorithm):
     def _get_path(self) -> str:
         return f'{self.name}@{self.n}@{self.delta_t}@{self.beta_0}'
 
-    def run(self, problem: Problem, backend: IBMBackend):
+    def run(self, problem: Problem, backend: QiskitBackend):
         """ Runs the FALQON algorithm """
         # TODO implement aux operator
         hamiltonian = problem.get_qiskit_hamiltonian()

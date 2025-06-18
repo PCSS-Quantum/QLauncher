@@ -1,13 +1,12 @@
-from typing import Callable
+from collections.abc import Callable
 
 from quantum_launcher.base import Algorithm, Problem, Backend, Result
 from quantum_launcher.exceptions import DependencyError
 try:
     from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
-    from dimod import Sampler, SampleSet
-    from tabu import TabuSampler
+    from dimod import SampleSet
     from dwave.system import DWaveSampler, EmbeddingComposite
-    from dwave.samplers import SimulatedAnnealingSampler
+    from dwave.samplers import SimulatedAnnealingSampler, TabuSampler, SteepestDescentSampler
 except ImportError as e:
     raise DependencyError(e, install_hint='dwave') from e
 
@@ -15,26 +14,29 @@ except ImportError as e:
 class DwaveSolver(Algorithm):
     _algorithm_format = 'bqm'
 
-    def __init__(self, chain_strength=1, **alg_kwargs) -> None:
+    def __init__(self, chain_strength=1, num_reads=1000, **alg_kwargs) -> None:
         self.chain_strength = chain_strength
+        self.num_reads = num_reads
+        self.label: str = 'TBD_TBD'
         super().__init__(**alg_kwargs)
 
-    def run(self, problem: Problem, backend: Backend, formatter:  Callable, **kwargs):
-        self._sampler: Sampler = backend.sampler
-        self.label: str = f'{problem.name}_{problem.instance_name}'
+    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
+        self.label = f'{problem.name}_{problem.instance_name}'
+
         bqm: BinaryQuadraticModel = formatter(problem)
-        res = self._solve_bqm(bqm, **kwargs)
+
+        res = self._solve_bqm(bqm, backend.sampler, **self.alg_kwargs)
         return self._construct_result(res)
 
-    def _solve_bqm(self, bqm, **kwargs):
-        res = self._sampler.sample(
-            bqm, num_reads=1000, label=self.label, chain_strength=self.chain_strength, **kwargs)
+    def _solve_bqm(self, bqm, sampler, **kwargs):
+        res = sampler.sample(
+            bqm, num_reads=self.num_reads, label=self.label, chain_strength=self.chain_strength, **kwargs)
         return res
 
     def _construct_result(self, result: SampleSet) -> Result:
         distribution = {}
         energies = {}
-        for (value, energy, occ) in result.record:
+        for (value, energy, occ) in zip(result.record.sample, result.record.energy, result.record.num_occurrences, strict=True):
             bitstring = ''.join(map(str, value))
             if bitstring in distribution:
                 distribution[bitstring] += occ
@@ -51,17 +53,23 @@ class TabuBackend(Backend):
         self.sampler = TabuSampler()
 
 
-class DwaveBackend(Backend):
-    def __init__(self, name: str = "DWaveSampler", parameters: list = None) -> None:
-        super().__init__(name, parameters)
-        self.sampler = EmbeddingComposite(DWaveSampler())
-
-
 class SimulatedAnnealingBackend(Backend):
     def __init__(self, name: str = "SimulatedAnnealingSampler", parameters: list = None) -> None:
         super().__init__(name, parameters)
         self.sampler = SimulatedAnnealingSampler()
 
 
+class SteepestDescentBackend(Backend):
+    def __init__(self, name: str = 'SteepestDescentBackend', parameters: list | None = None) -> None:
+        super().__init__(name, parameters)
+        self.sampler = SteepestDescentSampler()
+
+
+class DwaveBackend(Backend):
+    def __init__(self, name: str = "DWaveSampler", parameters: list = None) -> None:
+        super().__init__(name, parameters)
+        self.sampler = EmbeddingComposite(DWaveSampler())
+
+
 __all__ = ['DwaveSolver', 'TabuBackend',
-           'DwaveBackend', 'SimulatedAnnealingBackend']
+           'DwaveBackend', 'SimulatedAnnealingBackend', 'SteepestDescentBackend']
