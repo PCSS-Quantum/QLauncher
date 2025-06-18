@@ -1,7 +1,7 @@
 """ Algorithms for Qiskit routines """
 import json
 from datetime import datetime
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 
@@ -13,6 +13,7 @@ from qiskit.primitives.base.base_primitive import BasePrimitive
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_algorithms.minimum_eigensolvers import QAOA as QiskitQAOA
 from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
+from qiskit_algorithms.optimizers import Optimizer, COBYLA
 
 from quantum_launcher.base import Problem, Algorithm, Result
 from quantum_launcher.base.base import Backend
@@ -54,6 +55,7 @@ class QAOA(QiskitOptimizationAlgorithm):
 
     Args:
         p (int): The number of QAOA steps. Defaults to 1.
+        optimizer (Optimizer | None): Optimizer used during algorithm runtime. If set to `None` turns into COBYLA. Defaults to None,
         alternating_ansatz (bool): Whether to use an alternating ansatz. Defaults to False. If True, it's recommended to provide a mixer_h to alg_kwargs.
         aux: Auxiliary input for the QAOA algorithm.
         **alg_kwargs: Additional keyword arguments for the base class.
@@ -62,6 +64,7 @@ class QAOA(QiskitOptimizationAlgorithm):
         name (str): The name of the algorithm.
         aux: Auxiliary input for the QAOA algorithm.
         p (int): The number of QAOA steps.
+        optimizer (Optimizer): Optimizer used during algorithm runtime.
         alternating_ansatz (bool): Whether to use an alternating ansatz.
         parameters (list): List of parameters for the algorithm.
         mixer_h (SparsePauliOp | None): The mixer Hamiltonian.
@@ -69,11 +72,12 @@ class QAOA(QiskitOptimizationAlgorithm):
     """
     _algorithm_format = 'hamiltonian'
 
-    def __init__(self, p: int = 1, alternating_ansatz: bool = False, aux=None, **alg_kwargs):
+    def __init__(self, p: int = 1, optimizer: Optimizer | None = None, alternating_ansatz: bool = False, aux=None, **alg_kwargs):
         super().__init__(**alg_kwargs)
         self.name: str = 'qaoa'
         self.aux = aux
         self.p: int = p
+        self.optimizer: Optimizer = optimizer if optimizer is not None else COBYLA()
         self.alternating_ansatz: bool = alternating_ansatz
         self.parameters = ['p']
         self.mixer_h: SparsePauliOp | None = None
@@ -132,7 +136,6 @@ class QAOA(QiskitOptimizationAlgorithm):
         tag = self.make_tag(problem, backend)
         sampler = backend.samplerV1
         # sampler.set_options(job_tags=[tag])
-        optimizer = backend.optimizer
 
         if self.alternating_ansatz:
             if self.mixer_h is None:
@@ -141,7 +144,7 @@ class QAOA(QiskitOptimizationAlgorithm):
                 self.initial_state = formatter.get_QAOAAnsatz_initial_state(
                     problem)
 
-        qaoa = QiskitQAOA(sampler, optimizer, reps=self.p, callback=qaoa_callback,
+        qaoa = QiskitQAOA(sampler, self.optimizer, reps=self.p, callback=qaoa_callback,
                           mixer=self.mixer_h, initial_state=self.initial_state, **self.alg_kwargs)
         qaoa_result = qaoa.compute_minimum_eigenvalue(hamiltonian, self.aux)
         depth = qaoa.ansatz.decompose(reps=10).depth()

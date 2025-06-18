@@ -8,7 +8,6 @@ import qiskit
 from qiskit.primitives import Sampler
 from qiskit.primitives.base.sampler_result import SamplerResult
 from qiskit.result import QuasiDistribution
-from qiskit_algorithms.optimizers import COBYLA
 
 from quantum_launcher.base import Backend
 from quantum_launcher.base.translator import Translation
@@ -61,7 +60,6 @@ class CirqBackend(Backend):
 
     def __init__(self, name: Literal['local_simulator'] = 'local_simulator'):
         self.sampler = self.samplerV1 = CirqSampler()
-        self.optimizer = COBYLA()
         super().__init__(name)
 
 

@@ -4,7 +4,6 @@ from typing import Literal
 from qiskit.providers import BackendV1, BackendV2
 from qiskit.primitives import BackendSamplerV2, BackendEstimatorV2
 from qiskit_ibm_runtime import Options
-from qiskit_algorithms.optimizers import COBYLA
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel
 
@@ -44,7 +43,6 @@ class AerBackend(QiskitBackend):
 
         self.sampler = BackendSamplerV2(backend=self.simulator)
         self.estimator = BackendEstimatorV2(backend=self.simulator)
-        self.optimizer = COBYLA()
 
         self._configure_auto_behavior()
 
