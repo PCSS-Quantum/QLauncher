@@ -247,9 +247,6 @@ class FALQON(QiskitOptimizationAlgorithm):
 
         self.n_qubits = cost_h.num_qubits
 
-        if self.driver_h is None:
-            self.driver_h = SparsePauliOp.from_sparse_list([("X", [i], 1) for i in range(self.n_qubits)], num_qubits=self.n_qubits)
-
         best_sample, betas, energies, depths, cnot_counts = self._falqon_subroutine(cost_h, backend)
 
         best_data: BitArray = best_sample[0].data.meas
@@ -323,7 +320,8 @@ class FALQON(QiskitOptimizationAlgorithm):
         """
 
         if self.driver_h is None:
-            driver_hamiltonian = SparsePauliOp.from_sparse_list([("X", [i], 1) for i in range(self.n_qubits)], num_qubits=self.n_qubits)
+            self.driver_h = SparsePauliOp.from_sparse_list([("X", [i], 1) for i in range(self.n_qubits)], num_qubits=self.n_qubits)
+            driver_hamiltonian = self.driver_h
         else:
             driver_hamiltonian = self.driver_h
 
