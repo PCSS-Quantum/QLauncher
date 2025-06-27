@@ -1,42 +1,54 @@
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
-from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
+from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend, TabuBackend, SteepestDescentBackend
 from quantum_launcher.problems import EC, JSSP, MaxCut, Raw, TSP
 from pyqubo import Spin
 TESTING_DIR = 'testing'
 
 
-def test_ec():
-    """ Testing function for Exact Cover """
-    pr = EC.from_preset(instance_name='micro')
-    solver = DwaveSolver(1)
-    backend = SimulatedAnnealingBackend()
-    launcher = QuantumLauncher(pr, solver, backend)
+def _test_with_backend(problem, solver, backend):
+    launcher = QuantumLauncher(problem, solver, backend)
 
     inform = launcher.run()
-    assert inform is not None
+    assert isinstance(inform, Result)
+    return inform
+
+
+def _test_with_simulated_annealing(problem, solver):
+    return _test_with_backend(problem, solver, SimulatedAnnealingBackend())
+
+
+def _test_with_steepest_descent(problem, solver):
+    return _test_with_backend(problem, solver, SteepestDescentBackend())
+
+
+def _test_with_tabu(problem, solver):
+    return _test_with_backend(problem, solver, TabuBackend())
+
+
+# Repeated code for verboseness of errors
+def test_ec():
+    """ Testing function for Exact Cover """
+    problem = EC.from_preset(instance_name='micro')
+    solver = DwaveSolver(1, num_reads=10)
+    _test_with_simulated_annealing(problem, solver)
+    _test_with_steepest_descent(problem, solver)
 
 
 def test_jssp():
-    """ Testing function for Job Shop Shedueling Problem """
-    pr = JSSP.from_preset(instance_name='default', optimization_problem=True)
-    solver = DwaveSolver(1)
-    backend = SimulatedAnnealingBackend()
-    launcher = QuantumLauncher(pr, solver, backend)
-
-    inform = launcher.run()
-    assert inform is not None
+    """ Testing function for Job Shop Scheduling Problem """
+    problem = JSSP.from_preset(instance_name='default', optimization_problem=True)
+    solver = DwaveSolver(1, num_reads=10)
+    _test_with_simulated_annealing(problem, solver)
+    _test_with_steepest_descent(problem, solver)
 
 
 def test_maxcut():
     """ Testing function for Max Cut """
-    pr = MaxCut.from_preset(instance_name='default')
-    solver = DwaveSolver(1)
-    backend = SimulatedAnnealingBackend()
-    launcher = QuantumLauncher(pr, solver, backend)
-
-    inform = launcher.run()
-    assert inform is not None
+    problem = MaxCut.from_preset(instance_name='default')
+    solver = DwaveSolver(1, num_reads=10)
+    _test_with_simulated_annealing(problem, solver)
+    _test_with_steepest_descent(problem, solver)
 
 
 def test_raw():
@@ -47,24 +59,31 @@ def test_raw():
     H += 1 * qubits[1]
     H += -5 * qubits[0] * qubits[1]
     bqm = H.compile().to_bqm()
-    pr = Raw(bqm)
-    solver = DwaveSolver(1)
-    backend = SimulatedAnnealingBackend()
-    launcher = QuantumLauncher(pr, solver, backend)
-
-    inform = launcher.run()
-    assert isinstance(inform, Result)
-    bitstring = inform.best_bitstring
-    assert bitstring in ['00', '01', '10', '11']
+    problem = Raw(bqm)
+    solver = DwaveSolver(1, num_reads=10)
+    results = [
+        _test_with_simulated_annealing(problem, solver),
+        _test_with_steepest_descent(problem, solver)
+    ]
+    for res in results:
+        bitstring = res.best_bitstring
+        assert bitstring in ['00', '01', '10', '11']
 
 
 def test_tsp():
     """ Testing function for TSP """
-    pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
-    solver = DwaveSolver(1)
-    backend = SimulatedAnnealingBackend()
-    launcher = QuantumLauncher(pr, solver, backend)
+    problem = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
+    solver = DwaveSolver(1, num_reads=10)
+    _test_with_simulated_annealing(problem, solver)
+    _test_with_steepest_descent(problem, solver)
 
-    inform = launcher.run()
 
-    assert isinstance(inform, Result)
+def test_tabu_backend():
+    qubits = [Spin(f"x{i}") for i in range(1)]
+    H = 0
+    H += -3 * qubits[0]
+    bqm = H.compile().to_bqm()
+    problem = Raw(bqm)
+    solver = DwaveSolver(1, timeout=0.1, num_restarts=1)
+
+    _test_with_tabu(problem, solver)

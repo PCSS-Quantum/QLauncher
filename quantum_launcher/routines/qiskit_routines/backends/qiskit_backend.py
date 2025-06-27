@@ -10,7 +10,6 @@ from qiskit.primitives import (
     Sampler
 )
 
-from qiskit_algorithms.optimizers import COBYLA
 from qiskit_ibm_runtime import Options
 
 from quantum_launcher.base import Backend
@@ -20,17 +19,6 @@ from quantum_launcher.routines.qiskit_routines.backends.utils import (
     set_estimator_auto_run_behavior, set_sampler_auto_run_behavior,
     AUTO_TRANSPILE_ESTIMATOR_TYPE, AUTO_TRANSPILE_SAMPLER_TYPE
 )
-
-from qiskit.providers import BackendV1, BackendV2
-from qiskit.primitives import (
-    BackendSamplerV2,
-    BackendEstimatorV2,
-    StatevectorEstimator,
-    StatevectorSampler,
-    Sampler
-)
-from qiskit_algorithms.optimizers import COBYLA, SPSA
-from qiskit_ibm_runtime import Options
 
 
 class QiskitBackend(Backend):
@@ -43,7 +31,6 @@ class QiskitBackend(Backend):
         backendv1v2 (BackendV1 | BackendV2 | None, optional): Predefined backend to use with name 'backendv1v2'. Defaults to None.
         sampler (BaseSamplerV2): The sampler used for sampling.
         estimator (BaseEstimatorV2): The estimator used for estimation.
-        optimizer (Optimizer): The optimizer used for optimization.
     """
 
     def __init__(
@@ -87,14 +74,12 @@ class QiskitBackend(Backend):
         if self.name == 'local_simulator':
             self.estimator = StatevectorEstimator()
             self.sampler = StatevectorSampler()
-            self.optimizer = COBYLA()
         elif self.name == 'backendv1v2':
             if self.backendv1v2 is None:
                 raise AttributeError(
                     'Please indicate a backend when in backendv1v2 mode.')
             self.estimator = BackendEstimatorV2(backend=self.backendv1v2)
             self.sampler = BackendSamplerV2(backend=self.backendv1v2)
-            self.optimizer = SPSA() if self.backendv1v2.name.startswith('ibm') else COBYLA()  # set spsa for real backends
 
         else:
             raise ValueError(f"Unsupported mode for this backend:'{self.name}'")

@@ -6,7 +6,7 @@ from collections.abc import Callable
 import logging
 
 
-AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'none', 'fn']
+AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'bqm', 'none', 'fn']
 
 
 @dataclass

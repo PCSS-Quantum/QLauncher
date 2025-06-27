@@ -2,7 +2,6 @@
 from typing import Literal
 
 from qiskit.providers import BackendV1, BackendV2
-from qiskit_algorithms.optimizers import SPSA, COBYLA
 from qiskit_ibm_runtime import EstimatorV2, SamplerV2
 from qiskit_ibm_runtime import Session, Options
 
@@ -46,7 +45,6 @@ class IBMBackend(QiskitBackend):
                     'Please indicate a backend when in backendv1v2 mode.')
             self.estimator = EstimatorV2(self.backendv1v2)
             self.sampler = SamplerV2(self.backendv1v2)
-            self.optimizer = SPSA() if self.backendv1v2.name.startswith('ibm') else COBYLA()  # set spsa for real backends
 
         elif self.name == 'session':
             if self.session is None:
@@ -55,7 +53,6 @@ class IBMBackend(QiskitBackend):
             else:
                 self.estimator = EstimatorV2(mode=self.session, options=self.options)
                 self.sampler = SamplerV2(mode=self.session, options=self.options)
-                self.optimizer = SPSA()
         else:
             raise ValueError(
                 " ".join([
