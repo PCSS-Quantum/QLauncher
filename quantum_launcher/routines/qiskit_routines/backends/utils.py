@@ -9,13 +9,24 @@ AUTO_TRANSPILE_SAMPLER_TYPE = TypeVar('AUTO_TRANSPILE_SAMPLER_TYPE', BackendSamp
 AUTO_TRANSPILE_ESTIMATOR_TYPE = TypeVar('AUTO_TRANSPILE_ESTIMATOR_TYPE', BackendEstimatorV2, EstimatorV2)
 
 
-def _get_transpiled_pubs(pubs: list[tuple | QuantumCircuit], backend: BackendV1 | BackendV2, optimization_level: int = 2) -> list[tuple | QuantumCircuit]:
+def _get_transpiled_sampler_pubs(pubs: list[tuple | QuantumCircuit], backend: BackendV1 | BackendV2, optimization_level: int = 2) -> list[tuple | QuantumCircuit]:
     new_pubs = []
     for pub in pubs:
         if isinstance(pub, QuantumCircuit):
             pub = transpile(pub, backend, optimization_level=optimization_level)
         elif isinstance(pub, tuple):
             pub = (transpile(pub[0], backend, optimization_level=optimization_level), *pub[1:])
+        new_pubs.append(pub)
+    return new_pubs
+
+
+def _get_transpiled_estimator_pubs(pubs: list[tuple], backend: BackendV1 | BackendV2, optimization_level: int = 2) -> list[tuple | QuantumCircuit]:
+    new_pubs = []
+    for pub in pubs:
+        circuit, operator, *args = pub
+        transp_circ: QuantumCircuit = transpile(circuit, backend, optimization_level=optimization_level)
+        transp_op = operator.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits)
+        pub = (transp_circ, transp_op, *args)
         new_pubs.append(pub)
     return new_pubs
 
@@ -57,7 +68,7 @@ def set_sampler_auto_run_behavior(sampler: AUTO_TRANSPILE_SAMPLER_TYPE, auto_tra
 
     def run_wrapper(pubs, *args, shots: int | None = None):
         if auto_transpile:
-            pubs = _get_transpiled_pubs(pubs, sampler._backend, optimization_level=auto_transpile_level)
+            pubs = _get_transpiled_sampler_pubs(pubs, sampler._backend, optimization_level=auto_transpile_level)
         if auto_assign:
             pubs = _assign_sampler_pubs(pubs)
 
@@ -84,7 +95,7 @@ def set_estimator_auto_run_behavior(estimator: AUTO_TRANSPILE_ESTIMATOR_TYPE, au
 
     def run_wrapper(pubs, *args, precision: float | None = None):
         if auto_transpile:
-            pubs = _get_transpiled_pubs(pubs, estimator._backend, optimization_level=auto_transpile_level)
+            pubs = _get_transpiled_estimator_pubs(pubs, estimator._backend, optimization_level=auto_transpile_level)
         if auto_assign:
             pubs = _assign_estimator_pubs(pubs)
         return func(pubs, *args, precision=precision)
