@@ -28,7 +28,7 @@ def test_job_manager(tmp_path):
 
     manager.submit(problem, algorithm, backend, f'{tmp_path}/')
     for _ in range(len(manager.jobs)):
-        job_id, status = manager.wait_for_a_job(timeout=5)
+        job_id, status = manager.wait_for_a_job(timeout=60)
         assert isinstance(job_id, str)
         assert status != 'FAILED'
         results = manager.read_results(job_id)

@@ -1,5 +1,6 @@
 """ file with orca algorithms subclasses """
-from typing import List, Literal
+from typing import Literal
+from inspect import getfullargspec
 from collections.abc import Callable
 import numpy as np
 
@@ -40,9 +41,9 @@ class BBS(Algorithm):
     """
     _algorithm_format = 'qubo'
 
-    def __init__(self, format: Literal['qubo', 'qubo_fn'] = 'qubo', **kwargs) -> None:
+    def __init__(self, algorithm_format: Literal['qubo', 'qubo_fn'] = 'qubo', **kwargs) -> None:
         super().__init__()
-        self._algorithm_format = format
+        self._algorithm_format = algorithm_format
         self.kwargs = kwargs
         self.input_state = self.kwargs.pop('input_state', None)
 
@@ -61,13 +62,13 @@ class BBS(Algorithm):
             len(self.input_state),
             objective,
             self.input_state,
-            **self.kwargs
+            **{k: v for k, v in self.kwargs.items() if k in getfullargspec(BinaryBosonicSolver.__init__)[0]}
         )
-        self.bbs.train(**self.kwargs)
+        self.bbs.train(**{k: v for k, v in self.kwargs.items() if k in getfullargspec(BinaryBosonicSolver.train)[0]})
 
         return self.construct_results(self.bbs)
 
-    def get_bitstring(self, result: List[float]) -> str:
+    def get_bitstring(self, result: list[float]) -> str:
         return ''.join(map(str, map(int, result)))
 
     def construct_results(self, results: BinaryBosonicSolver) -> Result:
