@@ -4,7 +4,7 @@ import pytest
 from quantum_launcher.workflow.pilotjob_scheduler import JobManager
 from quantum_launcher import QuantumLauncher, Result
 from quantum_launcher.problems import EC
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
+from quantum_launcher.routines.qiskit_routines import FALQON, QiskitBackend
 from quantum_launcher.routines.qiskit_routines.algorithms import EducatedGuess
 # TODO: Make tests take shorter time to launch, and address event loop problem
 
@@ -23,7 +23,7 @@ def test_job_manager(tmp_path):
     assert isinstance(manager, JobManager)
 
     problem = EC.from_preset('micro')
-    algorithm = QAOA(p=1)
+    algorithm = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
 
     manager.submit(problem, algorithm, backend, f'{tmp_path}/')
