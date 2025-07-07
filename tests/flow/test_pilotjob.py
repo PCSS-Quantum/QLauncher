@@ -28,7 +28,7 @@ def test_job_manager(tmp_path):
 
     manager.submit(problem, algorithm, backend, f'{tmp_path}/')
     for _ in range(len(manager.jobs)):
-        job_id, status = manager.wait_for_a_job()
+        job_id, status = manager.wait_for_a_job(timeout=5)
         assert isinstance(job_id, str)
         assert status != 'FAILED'
         results = manager.read_results(job_id)
@@ -44,7 +44,7 @@ def test_educated_guess(tmp_path):
     """ Testing function for QATM """
     # TODO Optimize this test, it takes way too long, as the algorithm is long
     pr = EC.from_preset('micro')
-    educated_guess = EducatedGuess(2, 3)
+    educated_guess = EducatedGuess(2, 2, max_job_batch_size=1)
     educated_guess.output_initial = f'{tmp_path}/'
     educated_guess.output_interpolated = f'{tmp_path}/'
     educated_guess.output = f'{tmp_path}/'

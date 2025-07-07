@@ -3,6 +3,8 @@ import math
 import os
 from collections.abc import Callable
 
+import weakref
+
 import numpy as np
 import scipy
 
@@ -15,13 +17,14 @@ from quantum_launcher.routines.qiskit_routines.algorithms.qiskit_native import Q
 class EducatedGuess(Algorithm):
     _algorithm_format = 'hamiltonian'
 
-    def __init__(self, starting_p: int = 3, max_p: int = 8, verbose: bool = False):
+    def __init__(self, starting_p: int = 3, max_p: int = 8, max_job_batch_size: int | None = None, verbose: bool = False):
         """
         Algorithm utilizing all available cores to run multiple QAOA's in parallel to find optimal parameters.
 
         Args:
             starting_p (int, optional): Initial value of QAOA's p parameter. Defaults to 3.
             max_p (int, optional): Maximum value for QAOA's p parameter. Defaults to 8.
+            max_job_batch_size: Maximum number of jobs to run for a given p value. If None, run as many as possible. Defaults to None.
             verbose (bool, optional): Verbose. Defaults to False.
         """
         self.output_initial = 'initial/'
@@ -34,9 +37,12 @@ class EducatedGuess(Algorithm):
         self.min_energy = math.inf
         self.manager = JobManager()
         self.best_job_id = ''
+        self.max_jobs = max_job_batch_size
+
+        weakref.finalize(self, self.manager.stop)  # Kill the running jobs in case of a crash or otherwise
 
     def run(self, problem: Problem, backend: QiskitBackend, formatter: Callable) -> Result:
-        self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial)
+        self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial, n_jobs=self.max_jobs)
         print(f'{len(self.manager.jobs)} jobs submitted to qcg')
 
         found_optimal_params = False
@@ -51,13 +57,14 @@ class EducatedGuess(Algorithm):
             if has_potential:
                 found_optimal_params = self._search_for_job_with_optimal_params(jobid, energy, problem, backend)
 
-            self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial)
+            self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial, n_jobs=self.max_jobs)
 
         result = self.manager.read_results(self.best_job_id)
         self.manager.stop()
         return result
 
     def _search_for_job_with_optimal_params(self, previous_job_id, previous_energy, problem, backend) -> bool:
+        new_job_id = None
         for p in range(self.p_init + 1, self.p_max + 1):
             previous_job_results = self.manager.read_results(previous_job_id).result
             initial_point = self._interpolate_f(list(previous_job_results['SamplingVQEResult'].optimal_point), p-1)
@@ -74,7 +81,7 @@ class EducatedGuess(Algorithm):
                 previous_job_id = new_job_id
             else:
                 return False
-        self.best_job_id = new_job_id
+        self.best_job_id = new_job_id if new_job_id is not None else previous_job_id
         return True
 
     def _process_job(self, jobid: str, p: int, energy_to_compare: float, compare_factor: float = 1.0) -> tuple[
