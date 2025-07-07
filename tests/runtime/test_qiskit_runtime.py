@@ -1,15 +1,51 @@
 import numpy as np
+
+import pytest
+
 from qiskit.quantum_info import SparsePauliOp
 from quantum_launcher import QuantumLauncher
 from quantum_launcher.base import Result
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
+from quantum_launcher.routines.qiskit_routines import QAOA, FALQON, QiskitBackend, AQTBackend
 from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
+
+
+def test_falqon():
+    pr = EC.from_preset(instance_name='micro')
+    qaoa = FALQON(max_reps=1)
+    backend = QiskitBackend('local_simulator')
+    launcher = QuantumLauncher(pr, qaoa, backend)
+
+    results = launcher.run()
+    assert isinstance(results, Result)
+
+
+def test_falqon_reject():
+    """Test if FALQON rejects backends with only v1 samplers"""
+    pr = EC.from_preset(instance_name='micro')
+    qaoa = FALQON(max_reps=1)
+    backend = AQTBackend('local_simulator')
+    launcher = QuantumLauncher(pr, qaoa, backend)
+
+    with pytest.raises(ValueError):
+        results = launcher.run()
+
+
+def test_QAOA():
+    pr = EC.from_preset(instance_name='micro')
+    qaoa = QAOA(p=1)
+    backend = QiskitBackend('local_simulator')
+    launcher = QuantumLauncher(pr, qaoa, backend)
+
+    results = launcher.run()
+    assert isinstance(results, Result)
+
+#! We use FALQON for problem tests as it is very fast to execute
 
 
 def test_ec():
     """ Testing function for Exact Cover """
     pr = EC.from_preset(instance_name='micro')
-    qaoa = QAOA(p=1)
+    qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -21,7 +57,7 @@ def test_ec():
 def test_qatm():
     """ Testing function for QATM """
     pr = QATM.from_file(path='data/qatm/', instance_name='RCP_3.txt')
-    qaoa = QAOA(p=1)
+    qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -33,7 +69,7 @@ def test_qatm():
 def test_jssp():
     """ Testing function for Job Shop Shedueling Problem """
     pr = JSSP.from_preset('default', optimization_problem=True)
-    qaoa = QAOA(p=1)
+    qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -45,7 +81,7 @@ def test_jssp():
 def test_maxcut():
     """ Testing function for Max Cut """
     pr = MaxCut.from_preset(instance_name='default')
-    qaoa = QAOA(p=1)
+    qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -59,7 +95,7 @@ def test_raw():
     hamiltonian = SparsePauliOp.from_list(
         [("ZZ", -1), ("ZI", 2), ("IZ", 2), ("II", -1)])
     pr = Raw(hamiltonian)
-    qaoa = QAOA(p=1)
+    qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -72,7 +108,7 @@ def test_raw():
 def test_tsp():
     """ Testing function for TSP """
     pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
-    qaoa = QAOA(p=1)
+    qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
     launcher = QuantumLauncher(pr, qaoa, backend)
 
@@ -88,7 +124,7 @@ def test_graph_coloring():
     gc = GraphColoring.from_preset("small")
     num_colors = gc.num_colors
     color_bit_length = int(np.ceil(np.log2(num_colors)))
-    qaoa = QAOA(p=1)
+    qaoa = FALQON(max_reps=1)
     backend = QiskitBackend("local_simulator")
     launcher = QuantumLauncher(gc, qaoa, backend)
     inform = launcher.run()
