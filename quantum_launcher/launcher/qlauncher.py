@@ -71,28 +71,28 @@ class QuantumLauncher:
         logging.info('Algorithm ended successfully!')
         return self.result
 
-    def save(self, path: str, format: Literal['pickle', 'txt', 'json'] = 'pickle'):
+    def save(self, path: str, save_format: Literal['pickle', 'txt', 'json'] = 'pickle'):
         logging.info(f'Saving results to file: {path}')
-        if format == 'pickle':
+        if save_format == 'pickle':
             with open(path, mode='wb') as f:
                 pickle.dump(self.result, f)
-        elif format == 'json':
+        elif save_format == 'json':
             with open(path, mode='w', encoding='utf-8') as f:
                 json.dump(self.result.__dict__, f, default=fix_json)
-        elif format == 'txt':
+        elif save_format == 'txt':
             with open(path, mode='w', encoding='utf-8') as f:
                 f.write(self.result.__str__())
         else:
             raise ValueError(
-                f'format: {format} in not supported try: pickle, txt, csv or json')
+                f'format: {save_format} in not supported try: pickle, txt, csv or json')
 
-    def process(self, *, file_path: Optional[str] = None, format: Union[Literal['pickle', 'txt', 'json'], list[Literal['pickle', 'txt', 'json']]] = 'pickle', **kwargs) -> dict:
+    def process(self, *, file_path: Optional[str] = None, save_format: Union[Literal['pickle', 'txt', 'json'], list[Literal['pickle', 'txt', 'json']]] = 'pickle', **kwargs) -> dict:
         """
         Runs the algorithm, processes the data, and saves the results if specified.
 
         Args:
             file_path (Optional[str]): Flag indicating whether to save the results to a file. Defaults to None.
-            format (Union[Literal['pickle', 'txt', 'json'], list[Literal['pickle', 'txt', 'json']]]): Format in which file should be saved. Defaults to 'pickle'
+            save_format (Union[Literal['pickle', 'txt', 'json'], list[Literal['pickle', 'txt', 'json']]]): Format in which file should be saved. Defaults to 'pickle'
 
         Returns:
             dict: The processed results.
@@ -106,14 +106,12 @@ class QuantumLauncher:
         res['backend_setup'] = self.backend.setup
         res['results'] = results
 
-        self._file_name = self.problem.path + '-' + \
-            self.backend.path + '-' \
-            + self.algorithm.path + '-' + str(energy)
+        self._file_name = self.problem.path + '-' + self.backend.path + '-' + self.algorithm.path + '-' + str(energy)
 
-        if file_path is not None and isinstance(format, str):
-            self.save(file_path, format)
-        if file_path is not None and isinstance(format, list):
-            for form in format:
+        if file_path is not None and isinstance(save_format, str):
+            self.save(file_path, save_format)
+        if file_path is not None and isinstance(save_format, list):
+            for form in save_format:
                 self.save(file_path, form)
         return res
 

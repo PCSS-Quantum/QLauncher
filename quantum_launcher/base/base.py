@@ -42,19 +42,27 @@ class Result:
         """
         best_bitstring = min(energy_distribution, key=energy_distribution.get)
         best_energy = energy_distribution[best_bitstring]
-        most_common_bitstring = max(
-            bitstring_distribution, key=bitstring_distribution.get)
+        most_common_bitstring = max(bitstring_distribution, key=bitstring_distribution.get)
         most_common_bitstring_energy = energy_distribution[most_common_bitstring]
         num_of_samples = int(sum(bitstring_distribution.values()))
 
-        mean_value = sum(energy_distribution[bitstring] * occ for bitstring,
-                         occ in bitstring_distribution.items()) / num_of_samples
+        mean_value = sum(energy_distribution[bitstring] * occ for bitstring, occ in bitstring_distribution.items()) / num_of_samples
         std = 0
         for bitstring, occ in bitstring_distribution.items():
             std += occ * ((energy_distribution[bitstring] - mean_value)**2)
         std = (std/(num_of_samples-1))**0.5
-        return Result(best_bitstring, best_energy, most_common_bitstring, most_common_bitstring_energy,
-                      bitstring_distribution, energy_distribution, num_of_samples, mean_value, std, result)
+        return Result(
+            best_bitstring,
+            best_energy,
+            most_common_bitstring,
+            most_common_bitstring_energy,
+            bitstring_distribution,
+            energy_distribution,
+            num_of_samples,
+            mean_value,
+            std,
+            result
+        )
 
 
 class Backend:
@@ -80,9 +88,6 @@ class Backend:
 
     def _get_path(self):
         return f'{self.name}'
-
-
-P = TypeVar('P', bound=type['Problem'])
 
 
 class Problem(ABC):
@@ -118,7 +123,7 @@ class Problem(ABC):
         self.name = self.__class__.__name__.lower()
 
     @classmethod
-    def from_file(cls: P, path: str) -> P:
+    def from_file(cls: type['Problem'], path: str) -> 'Problem':
         with open(path, 'rb') as f:
             instance = pickle.load(f)
         return cls(instance)
@@ -143,12 +148,12 @@ class Problem(ABC):
         Returns:
             The result.
         """
-        exp += exp
+        exp += exp  # ?: this is perplexing
         with open(log_path, 'rb') as file:
             res = pickle.load(file)
         return res
 
-    def analyze_result(self, result):
+    def analyze_result(self, result) -> Any:
         """
         Analyzes the result.
 
@@ -156,6 +161,7 @@ class Problem(ABC):
             result: The result.
 
         """
+        raise NotImplementedError()
 
 
 class Algorithm(ABC):
@@ -175,7 +181,6 @@ class Algorithm(ABC):
     """
     _algorithm_format: AVAILABLE_FORMATS = 'none'
 
-    @abstractmethod
     def __init__(self, **alg_kwargs) -> None:
         self.name: str = self.__class__.__name__.lower()
         self.path: str | None = None
