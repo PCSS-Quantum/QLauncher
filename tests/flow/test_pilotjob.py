@@ -6,7 +6,7 @@ from quantum_launcher import QuantumLauncher, Result
 from quantum_launcher.problems import EC
 from quantum_launcher.routines.qiskit_routines import FALQON, QiskitBackend
 from quantum_launcher.routines.qiskit_routines.algorithms import EducatedGuess
-# TODO: Make tests take shorter time to launch, and address event loop problem
+# TODO: address event loop problem (To @dsiera: what was the problem?)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -42,7 +42,6 @@ def test_job_manager(tmp_path):
 
 def test_educated_guess(tmp_path):
     """ Testing function for QATM """
-    # TODO Optimize this test, it takes way too long, as the algorithm is long
     pr = EC.from_preset('micro')
     educated_guess = EducatedGuess(2, 2, max_job_batch_size=1)
     educated_guess.output_initial = f'{tmp_path}/'
