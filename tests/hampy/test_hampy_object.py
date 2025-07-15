@@ -1,5 +1,5 @@
-from quantum_launcher.hampy.object import Equation, Variable
-from quantum_launcher.hampy.equations import one_in_n
+from qlauncher.hampy.object import Equation, Variable
+from qlauncher.hampy.equations import one_in_n
 
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Sampler

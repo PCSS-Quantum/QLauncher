@@ -9,9 +9,9 @@ from qiskit_aqt_provider import AQTProvider
 
 from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 
-from quantum_launcher import QuantumLauncher
-from quantum_launcher.problems import EC
-from quantum_launcher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA
+from qlauncher import QuantumLauncher
+from qlauncher.problems import EC
+from qlauncher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA
 
 import pytest
 

@@ -1,5 +1,5 @@
-from quantum_launcher.hampy.object import Equation
-from quantum_launcher.hampy.debug import TruthTable
+from qlauncher.hampy.object import Equation
+from qlauncher.hampy.debug import TruthTable
 from qiskit.quantum_info import SparsePauliOp
 
 
