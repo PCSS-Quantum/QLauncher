@@ -1,5 +1,4 @@
 """ Module with functionalities for debugging Hamiltonians and checking their boolean properties """
-from typing import Union
 from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +8,7 @@ from quantum_launcher.hampy.object import Equation
 
 
 class TruthTable:
-    def __init__(self, equation: Union[Equation, SparsePauliOp], return_int: bool = True):
+    def __init__(self, equation: Equation | SparsePauliOp, return_int: bool = True):
         if isinstance(equation, SparsePauliOp):
             hamiltonian = equation
             self.size = hamiltonian.num_qubits
@@ -52,7 +51,7 @@ class TruthTable:
             )
         }
 
-    def __getitem__(self, index: Union[str, int]):
+    def __getitem__(self, index: str | int):
         if isinstance(index, int):
             index = bin(index)[2:].zfill(self.size)
         return self.truth_table[index]
