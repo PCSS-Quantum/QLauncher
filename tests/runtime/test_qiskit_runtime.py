@@ -3,10 +3,10 @@ import numpy as np
 import pytest
 
 from qiskit.quantum_info import SparsePauliOp
-from quantum_launcher import QuantumLauncher
-from quantum_launcher.base import Result
-from quantum_launcher.routines.qiskit_routines import QAOA, FALQON, IBMBackend, AQTBackend
-from quantum_launcher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
+from qlauncher import QuantumLauncher
+from qlauncher.base import Result
+from qlauncher.routines.qiskit_routines import QAOA, FALQON, IBMBackend, AQTBackend
+from qlauncher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
 
 TESTING_DIR = 'testing'
 

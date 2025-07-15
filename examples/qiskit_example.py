@@ -1,6 +1,6 @@
 """ Example of how Quantum Launcher works """
-from quantum_launcher import QuantumLauncher, problems
-from quantum_launcher.routines.qiskit_routines import IBMBackend, QAOA
+from qlauncher import QuantumLauncher, problems
+from qlauncher.routines.qiskit_routines import IBMBackend, QAOA
 
 
 def main():

@@ -1,5 +1,5 @@
 [project]
-name = "quantum-launcher"
+name = "qlauncher"
 version = "2.0.4"
 description = "Quantum Launcher is modular tool, for solving many problems on many algorithms using many quantum computing backends"
 readme = "README.md"
@@ -26,7 +26,7 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["quantum_launcher*"]
+include = ["qlauncher*"]
 
 [project.optional-dependencies]
 orca = ["numba==0.60.0", "torch"]

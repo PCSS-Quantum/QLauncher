@@ -1,7 +1,7 @@
-from quantum_launcher import QuantumLauncher
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
-from quantum_launcher.base.base import Result
-from quantum_launcher.problems import TSP
+from qlauncher import QuantumLauncher
+from qlauncher.routines.qiskit_routines import QAOA, QiskitBackend
+from qlauncher.base.base import Result
+from qlauncher.problems import TSP
 import warnings
 import pytest
 
