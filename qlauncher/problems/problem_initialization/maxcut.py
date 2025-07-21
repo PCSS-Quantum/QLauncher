@@ -12,7 +12,7 @@ class MaxCut(Problem):
 
     This class represents MaxCut Problem which is a combinatorial optimization problem that involves partitioning the
     vertices of a graph into two sets such that the number of edges between the two sets is maximized. The class contains
-    an instance of the problem, so it can be passed into Quantum Launcher.
+    an instance of the problem, so it can be passed into QLauncher.
 
     Attributes:
         instance (nx.Graph): The graph instance representing the problem.

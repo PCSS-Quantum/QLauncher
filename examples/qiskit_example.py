@@ -1,4 +1,4 @@
-""" Example of how Quantum Launcher works """
+""" Example of how QLauncher works """
 from qlauncher import QuantumLauncher, problems
 from qlauncher.routines.qiskit_routines import IBMBackend, QAOA
 

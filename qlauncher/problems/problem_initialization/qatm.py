@@ -16,7 +16,7 @@ class QATM(Problem):
     This class represents Quantum Aircraft Traffic Management (QATM) problem which is a combinatorial optimization problem
     that involves scheduling a set of aircrafts on a set of manouvers. Each aircraft consists of a sequence of manouvers
     that must be performed. The objective is to find a schedule that minimizes the number of collisions between aircrafts.
-    The class contains an instance of the problem, so it can be passed into Quantum Launcher.
+    The class contains an instance of the problem, so it can be passed into QLauncher.
 
     Attributes:
         onehot (str): The one-hot encoding used for the problem.

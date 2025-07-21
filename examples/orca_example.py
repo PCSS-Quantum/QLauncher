@@ -1,4 +1,4 @@
-""" Quantum Launcher for Orca """
+""" QLauncher for Orca """
 from qlauncher import QuantumLauncher
 from qlauncher.problems import MaxCut
 from qlauncher.routines.orca_routines import OrcaBackend, BBS

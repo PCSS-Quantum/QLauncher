@@ -1,13 +1,12 @@
 import json
 import os
 import sys
-from typing import Dict, Tuple, Type
 from qlauncher import QuantumLauncher
 from qlauncher.routines.qiskit_routines import QAOA, QiskitBackend
 from qlauncher.problems import MaxCut, EC, JSSP, QATM, Problem
 import dill
 
-PROBLEM_DICT: Dict[str, Type[Problem]] = {
+PROBLEM_DICT: dict[str, type[Problem]] = {
     'MaxCut': MaxCut,
     'EC': EC,
     'JSSP': JSSP,
@@ -23,8 +22,8 @@ BACKEND_DICT = {
 }
 
 
-def parse_arguments() -> Tuple[QuantumLauncher, str]:
-    """ Returns Quantum Launcher object and output file path """
+def parse_arguments() -> tuple[QuantumLauncher, str]:
+    """ Returns QLauncher object and output file path """
     if len(sys.argv) == 3:
         input_file_path = sys.argv[1]
         with open(input_file_path, 'rb') as f:

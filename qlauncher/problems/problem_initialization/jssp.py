@@ -15,7 +15,7 @@ class JSSP(Problem):
     This class represents Job Shop Scheduling Problem (JSSP) which is a combinatorial optimization problem that involves 
     scheduling a set of jobs on a set of machines. Each job consists of a sequence of operations that must be performed 
     on different machines. The objective is to find a schedule that minimizes the makespan, i.e., the total time required
-    to complete all jobs. The class contains an instance of the problem, so it can be passed into Quantum Launcher.
+    to complete all jobs. The class contains an instance of the problem, so it can be passed into QLauncher.
 
 
     Attributes:

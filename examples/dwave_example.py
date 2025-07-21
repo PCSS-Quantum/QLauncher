@@ -1,4 +1,4 @@
-""" Quantum Launcher for Orca """
+""" QLauncher for Orca """
 from qlauncher import *
 from qlauncher import problems
 from qlauncher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver

@@ -14,7 +14,7 @@ class EC(Problem):
 
     The exact cover problem is a combinatorial optimization problem that involves finding a subset of a given set
     of elements such that the subset covers all elements and the number of elements in the subset is minimized.
-    The class contains an instance of the problem, so it can be passed into Quantum Launcher.
+    The class contains an instance of the problem, so it can be passed into QLauncher.
 
     Attributes:
         onehot (str): The one-hot encoding used for the problem.

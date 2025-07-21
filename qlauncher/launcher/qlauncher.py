@@ -10,9 +10,9 @@ from qlauncher.problems import Raw
 
 class QuantumLauncher:
     """
-    Quantum Launcher class.
+    QLauncher class.
 
-    Quantum launcher is used to run quantum algorithms on specific problem instances and backends.
+    Qlauncher is used to run quantum algorithms on specific problem instances and backends.
     It provides methods for binding parameters, preparing the problem, running the algorithm, and processing the results.
 
     Attributes:

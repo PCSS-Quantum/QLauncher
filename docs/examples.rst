@@ -1,8 +1,8 @@
 Examples
 ========
 
-| Using Quantum Launcher is simple. 
-| Simply specify the problem, algorithm and backend you want to use, and Quantum Launcher will take care of the rest.
+| Using QLauncher is simple. 
+| Simply specify the problem, algorithm and backend you want to use, and QLauncher will take care of the rest.
 | Here are some examples to get you started.
 | (These examples are also available in the examples directory of the repository.)
 

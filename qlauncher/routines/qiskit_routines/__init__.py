@@ -2,7 +2,7 @@
 ``qiskit_routines``
 ================
 
-The Quantum Launcher version for Qiskit-based architecture.
+The QLauncher version for Qiskit-based architecture.
 """
 from .algorithms import QAOA, EducatedGuess, FALQON
 from qlauncher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend

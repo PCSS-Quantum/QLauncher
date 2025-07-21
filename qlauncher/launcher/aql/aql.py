@@ -116,7 +116,7 @@ class AQL:
         **kwargs
     ) -> AQLTask:
         """
-        Add a Quantum launcher task to the execution queue.
+        Add a QLauncher task to the execution queue.
 
         Args:
             launcher (QuantumLauncher | Tuple[Problem, Algorithm, Backend]): Launcher instance that will be run.
