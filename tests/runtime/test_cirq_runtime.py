@@ -1,6 +1,6 @@
 from qiskit.quantum_info import SparsePauliOp
 
-from qlauncher import QuantumLauncher
+from qlauncher import QLauncher
 from qlauncher.base import Result
 from qlauncher.problems import MaxCut, Raw
 from qlauncher.routines.qiskit_routines import QAOA
@@ -11,7 +11,7 @@ def test_cirq():
     problem = MaxCut.from_preset('default')
     algorithm = QAOA(p=2)
     backend = CirqBackend()
-    launcher = QuantumLauncher(problem, algorithm, backend)
+    launcher = QLauncher(problem, algorithm, backend)
 
     results = launcher.run()
     assert isinstance(results, Result)
@@ -24,7 +24,7 @@ def test_raw():
     pr = Raw(hamiltonian)
     qaoa = QAOA()
     backend = CirqBackend()
-    launcher = QuantumLauncher(pr, qaoa, backend)
+    launcher = QLauncher(pr, qaoa, backend)
 
     results = launcher.run()
     assert results is not None

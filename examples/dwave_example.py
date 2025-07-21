@@ -9,7 +9,7 @@ def main():
     problem = problems.MaxCut(instance_name='default')
     alg = DwaveSolver(1)
     backend = SimulatedAnnealingBackend('local')
-    launcher = QuantumLauncher(problem, alg, backend)
+    launcher = QLauncher(problem, alg, backend)
     res = launcher.run()
     print(alg.get_bitstring(res))
 

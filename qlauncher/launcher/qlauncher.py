@@ -8,7 +8,7 @@ from qlauncher.base import Problem, Algorithm, Backend, Result
 from qlauncher.problems import Raw
 
 
-class QuantumLauncher:
+class QLauncher:
     """
     QLauncher class.
 
@@ -25,7 +25,7 @@ class QuantumLauncher:
 
     Example of usage::
 
-            from templates import QuantumLauncher
+            from templates import QLauncher
             from problems import MaxCut
             from qiskit_routines import QAOA, QiskitBackend
 
@@ -33,7 +33,7 @@ class QuantumLauncher:
             algorithm = QAOA()
             backend = QiskitBackend('local_simulator')
 
-            launcher = QuantumLauncher(problem, algorithm, backend)
+            launcher = QLauncher(problem, algorithm, backend)
             result = launcher.process(save_pickle=True)
             print(result)
 
@@ -50,7 +50,7 @@ class QuantumLauncher:
         self.formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
 
         if logger is None:
-            logger = logging.getLogger('QuantumLauncher')
+            logger = logging.getLogger('QLauncher')
         self.logger = logger
 
         self.result: Result | None = None

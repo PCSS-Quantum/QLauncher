@@ -1,4 +1,4 @@
-"""Wrapper for QuantumLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
+"""Wrapper for QLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
 from collections.abc import Callable
 from typing import Any
 from threading import Event, Thread

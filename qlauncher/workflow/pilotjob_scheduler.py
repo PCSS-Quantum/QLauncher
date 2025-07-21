@@ -3,7 +3,7 @@ import pickle
 import sys
 
 from qlauncher.base.base import Algorithm, Backend, Problem, Result
-from qlauncher.launcher.qlauncher import QuantumLauncher
+from qlauncher.launcher.qlauncher import QLauncher
 from qlauncher.exceptions import DependencyError
 try:
     import dill
@@ -106,7 +106,7 @@ class JobManager:
                              output: str, cores: int = 1) -> dict:
         job_uid = f'{len(self.jobs):05d}'
         output_file = os.path.abspath(f'{output}output.{job_uid}')
-        launcher = QuantumLauncher(problem, algorithm, backend)
+        launcher = QLauncher(problem, algorithm, backend)
         input_file = os.path.abspath(f'{output}output.{job_uid}')
         with open(input_file, 'wb') as f:
             dill.dump(launcher, f)

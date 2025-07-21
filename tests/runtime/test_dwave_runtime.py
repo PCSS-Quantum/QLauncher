@@ -1,4 +1,4 @@
-from qlauncher import QuantumLauncher
+from qlauncher import QLauncher
 from qlauncher.base import Result
 from qlauncher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend, TabuBackend, SteepestDescentBackend
 from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP
@@ -7,7 +7,7 @@ TESTING_DIR = 'testing'
 
 
 def _test_with_backend(problem, solver, backend):
-    launcher = QuantumLauncher(problem, solver, backend)
+    launcher = QLauncher(problem, solver, backend)
 
     inform = launcher.run()
     assert isinstance(inform, Result)

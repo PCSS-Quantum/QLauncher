@@ -1,17 +1,17 @@
-"""Wrapper for QuantumLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
-from typing import Tuple, Literal
+"""Wrapper for QLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
+from typing import Literal
 from collections.abc import Callable
 import time
 
 from qlauncher.problems import Raw
 from qlauncher.base.base import Backend, Algorithm, Problem, Result
-from qlauncher.launcher.qlauncher import QuantumLauncher
+from qlauncher.launcher.qlauncher import QLauncher
 from qlauncher.launcher.aql.aql_task import AQLTask, get_timeout
 
 
 class AQL:
     """
-    Launches QuantumLauncher task asynchronously.
+    Launches QLauncher task asynchronously.
 
     Attributes:
         tasks (list[AQLTask]): list of submitted tasks.
@@ -110,7 +110,7 @@ class AQL:
 
     def add_task(
         self,
-        launcher: QuantumLauncher | Tuple[Problem, Algorithm, Backend],
+        launcher: QLauncher | tuple[Problem, Algorithm, Backend],
         dependencies: list[AQLTask] | None = None,
         callbacks: list[Callable] | None = None,
         **kwargs
@@ -119,7 +119,7 @@ class AQL:
         Add a QLauncher task to the execution queue.
 
         Args:
-            launcher (QuantumLauncher | Tuple[Problem, Algorithm, Backend]): Launcher instance that will be run.
+            launcher (QLauncher | tuple[Problem, Algorithm, Backend]): Launcher instance that will be run.
             dependencies (list[AQLTask] | None, optional): Tasks that must finish first before this task. Defaults to None.
             callbacks (list[Callable] | None, optional): 
                     Functions to run when the task finishes. 
@@ -130,7 +130,7 @@ class AQL:
             AQLTask: Pointer to the submitted task.
         """
         if isinstance(launcher, tuple):
-            launcher = QuantumLauncher(*launcher)
+            launcher = QLauncher(*launcher)
 
         dependencies_list = dependencies if dependencies is not None else []
 
@@ -155,7 +155,7 @@ class AQL:
         )
 
         def quantum_task(formatted, *_):
-            ql = QuantumLauncher(
+            ql = QLauncher(
                 Raw(formatted, launcher.problem.instance_name),
                 launcher.algorithm,
                 launcher.backend

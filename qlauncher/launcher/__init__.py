@@ -1,2 +1,2 @@
-from .qlauncher import QuantumLauncher
+from .qlauncher import QLauncher
 from .aql import AQL
