@@ -1,12 +1,13 @@
-from qlauncher.hampy.object import Equation, Variable
-from qlauncher.hampy.equations import one_in_n
+from pprint import pprint
+from warnings import filterwarnings
 
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Sampler
 from qiskit_algorithms.optimizers import COBYLA
 from qiskit_algorithms.minimum_eigensolvers import QAOA
-from pprint import pprint
-from warnings import filterwarnings
+
+from qlauncher.hampy.object import Equation, Variable
+from qlauncher.hampy.equations import one_in_n
 filterwarnings('ignore')
 
 

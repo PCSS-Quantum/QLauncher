@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 from qiskit import transpile
 from qiskit.result import QuasiDistribution
