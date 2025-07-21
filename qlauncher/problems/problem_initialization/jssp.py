@@ -1,6 +1,6 @@
 """  Module for Job Shop Scheduling Problem (JSSP)."""
 from collections import defaultdict
-from typing import Dict, List, Literal, Tuple
+from typing import Literal
 try:
     from qlauncher.problems.problem_formulations.jssp.qiskit_scheduler import get_jss_hamiltonian
 except ModuleNotFoundError:
@@ -22,11 +22,11 @@ class JSSP(Problem):
         max_time (int): The maximum time for the scheduling problem.
         onehot (str): The one-hot encoding method to be used.
         optimization_problem (bool): Flag indicating whether the problem is an optimization problem or a decision problem.
-        results (dict): Dictionary to store the results of the problem instance.
+        results (dict): dictionary to store the results of the problem instance.
 
     """
 
-    def __init__(self, max_time: int, instance: Dict[str, List[Tuple[str, int]]],
+    def __init__(self, max_time: int, instance: dict[str, list[tuple[str, int]]],
                  instance_name: str = 'unnamed', optimization_problem: bool = False, onehot: Literal['exact', 'quadratic'] = 'exact') -> None:
         super().__init__(instance=instance, instance_name=instance_name)
         self.max_time = max_time

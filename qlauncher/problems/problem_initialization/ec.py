@@ -1,7 +1,7 @@
 """  This module contains the EC class."""
 import ast
 from collections import defaultdict
-from typing import List, Optional, Set
+
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -24,7 +24,7 @@ class EC(Problem):
 
     """
 
-    def __init__(self, instance: List[Set[int]] = None, instance_name: str = 'unnamed') -> None:
+    def __init__(self, instance: list[set[int]] = None, instance_name: str = 'unnamed') -> None:
         super().__init__(instance=instance, instance_name=instance_name)
 
     @property
@@ -63,7 +63,7 @@ class EC(Problem):
             read_file = file.read()
         self.instance = ast.literal_eval(read_file)
 
-    def visualize(self, marked: Optional[str] = None):
+    def visualize(self, marked: str | None = None):
         G = nx.Graph()
         size = len(self.instance)
         ec = list(map(lambda x: set(map(str, x)), self.instance))

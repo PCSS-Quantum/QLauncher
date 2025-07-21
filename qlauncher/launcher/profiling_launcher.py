@@ -1,4 +1,3 @@
-from typing import Tuple
 import cProfile
 import pstats
 from qlauncher.base import Algorithm, Backend, Problem, Result
@@ -12,7 +11,7 @@ class ProfilingLauncher(QLauncher):
         super().__init__(problem, algorithm, backend)
         self._profiler_path = profiler_path
 
-    def run(self) -> Tuple[Result, pstats.Stats]:
+    def run(self) -> tuple[Result, pstats.Stats]:
         with cProfile.Profile() as pr:
             result = super().run()
         stats = pstats.Stats(pr)

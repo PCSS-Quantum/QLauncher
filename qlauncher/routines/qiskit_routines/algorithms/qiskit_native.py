@@ -203,7 +203,7 @@ class FALQON(QiskitOptimizationAlgorithm):
         n (int): The number of iterations to run the algorithm.
         cost_h (Optional[Operator]): The cost Hamiltonian for the problem.
         n_qubits (int): The number of qubits in the problem.
-        parameters (List[str]): The list of algorithm parameters.
+        parameters (list[str]): The list of algorithm parameters.
 
     """
     _algorithm_format = 'hamiltonian'

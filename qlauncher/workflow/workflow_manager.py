@@ -1,23 +1,24 @@
 import concurrent.futures
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+from typing import Any, Literal
+from collections.abc import Callable
 from qlauncher.base import Algorithm
 
 
 class Task:
-    def __init__(self, func: Callable, args: Tuple[Any] = None, kwargs: Dict[str, Any] = None, num_output: int = 1):
+    def __init__(self, func: Callable, args: tuple[Any] | None = None, kwargs: dict[str, Any] | None = None, num_output: int = 1):
         if args is None:
             args = tuple()
         if kwargs is None:
             kwargs = {}
         self.func = func
-        self.dependencies: List[Task] = [arg for arg in args if isinstance(arg, Task)]
+        self.dependencies: list[Task] = [arg for arg in args if isinstance(arg, Task)]
         self.dependencies.extend([value for value in kwargs.values() if isinstance(value, Task)])
         self.args = args
         self.kwargs = kwargs
         self.done = False
         self.result = None
         self.num_output = num_output
-        self.subtasks: List[SubTask] = []
+        self.subtasks: list[SubTask] = []
 
     def run(self):
         binded_args = [arg.result if isinstance(arg, Task) else arg for arg in self.args]
@@ -50,7 +51,7 @@ class SubTask(Task):
 class Workflow(Algorithm):
     _algorithm_format = 'none'
 
-    def __init__(self, tasks: List[Task], input_task: Task, output_task: Task, input_format: str = 'none'):
+    def __init__(self, tasks: list[Task], input_task: Task, output_task: Task, input_format: str = 'none'):
         self.tasks = tasks
         self.input_task = input_task
         self.output_task = output_task
@@ -66,11 +67,11 @@ class Workflow(Algorithm):
 
 class WorkflowManager:
     def __init__(self, manager: Literal['ql', 'prefect', 'airflow'] = 'ql'):
-        self.tasks: List[Task] = []
+        self.tasks: list[Task] = []
         self.manager = manager
-        self.input_task: Optional[Task] = None
+        self.input_task: Task | None = None
         self.input_task_format: str = 'none'
-        self.output_task: Optional[Task] = None
+        self.output_task: Task | None = None
 
     def __enter__(self):
         return self
@@ -78,7 +79,7 @@ class WorkflowManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    def task(self, func, args: Tuple = None, kwargs: Dict = None, num_output=None) -> Task:
+    def task(self, func, args: tuple | None = None, kwargs: dict | None = None, num_output=None) -> Task:
         args = args or tuple()
         kwargs = kwargs or dict()
         new_task = Task(func, args, kwargs, num_output=num_output)
@@ -111,9 +112,10 @@ class WorkflowManager:
         return Workflow(self.tasks, self.input_task, self.output_task, input_format=self.input_task_format)
 
 
-def _execute_workflow(tasks: List[Task], executor: concurrent.futures.Executor, max_iterations: Optional[bool] = None):
+def _execute_workflow(tasks: list[Task], executor: concurrent.futures.Executor, max_iterations: int | None = None):
     remaining_tasks = set(tasks)
-    max_iterations, iteration = max_iterations or len(remaining_tasks), 0
+    max_iterations: int = max_iterations or len(remaining_tasks)
+    iteration = 0
     for _ in range(max_iterations):
         ready_tasks = list(filter(Task.is_ready, remaining_tasks))
 

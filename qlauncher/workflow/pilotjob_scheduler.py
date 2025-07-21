@@ -65,7 +65,7 @@ class JobManager:
             n_jobs: number of jobs to submit. If None, submit as many as possible (free_cores//cores_per_job). Defaults to None.
 
         Returns:
-            List[str]: List with Job Id's.
+            list[str]: List with Job Id's.
         """
         free_cores = self.manager.resources()['free_cores']
         if free_cores == 0:
