@@ -1,6 +1,8 @@
 """  This module contains the QATM class."""
 import os
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
@@ -24,9 +26,9 @@ class QATM(Problem):
 
     """
 
-    def __init__(self, onehot: str = 'exact', instance: any = None, instance_name: str | None = None,
+    def __init__(self, onehot: str = 'exact', instance: Any = None, instance_name: str | None = None,
                  optimization_problem: bool = False) -> None:
-        super().__init__(instance=instance, instance_name=instance_name)
+        super().__init__(instance=instance, instance_name=instance_name if instance_name is not None else "QATM")
         self.onehot = onehot
         self.optimization_problem = optimization_problem
 
@@ -41,10 +43,10 @@ class QATM(Problem):
         return f'{self.name}@{self.instance_name.split(".", 1)[0]}'
 
     @classmethod
-    def from_file(cls, instance_path: str, instance_name: str):
-        cm_path = os.path.join(instance_path, 'CM_' + instance_name)
+    def from_file(cls, path: str, instance_name: str = "QATM"):
+        cm_path = os.path.join(path, 'CM_' + instance_name)
         aircrafts_path = os.path.join(
-            instance_path, 'aircrafts_' + instance_name)
+            path, 'aircrafts_' + instance_name)
 
         instance = {'cm': np.loadtxt(cm_path), 'aircrafts': pd.read_csv(aircrafts_path, delimiter=' ', names=['manouver', 'aircraft'])}
         return QATM('exact', instance, instance_name)
@@ -60,29 +62,26 @@ class QATM(Problem):
             dict: A dictionary containing collisions, onehot violations, and changes as ndarrays.
         """
         keys = list(result.keys())
-        vectorized_result = (np.fromstring(
-            "".join(keys), 'u1') - ord('0')).reshape(len(result), -1)
+        vectorized_result = (np.fromstring("".join(keys), 'u1') - ord('0')).reshape(len(result), -1)
 
         cm = self.instance['cm'].copy().astype(int)
         np.fill_diagonal(cm, 0)
-        collisions = np.einsum(
-            'ij,ij->i', vectorized_result @ cm, vectorized_result) / 2
+        collisions = np.einsum('ij,ij->i', vectorized_result @ cm, vectorized_result) / 2
 
         df = pd.DataFrame(vectorized_result.transpose())
         df['aircraft'] = self.instance['aircrafts']['aircraft']
-        onehot_violations = (df.groupby(by='aircraft').sum()
-                             != 1).sum(axis=0).ravel()
+        onehot_violations = (df.groupby(by='aircraft').sum() != 1).sum(axis=0).ravel()
 
         df['manouver'] = self.instance['aircrafts']['manouver']
         no_changes = df[df['aircraft'] == df['manouver']]
-        changes = (len(no_changes) - no_changes.drop(
-            ['manouver', 'aircraft'], axis=1).sum()).ravel().astype(int)
+        changes = (len(no_changes) - no_changes.drop(['manouver', 'aircraft'], axis=1).sum()).ravel().astype(int)
         changes[onehot_violations != 0] = -1
 
-        at_least_one = (df.loc[:, df.columns != 'manouver'].groupby(
-            'aircraft').sum() > 0).all().ravel().astype(int)
+        at_least_one = (df.loc[:, df.columns != 'manouver'].groupby('aircraft').sum() > 0).all().ravel().astype(int)
 
-        return {'collisions': collisions,
-                'onehot_violations': onehot_violations,
-                'changes': changes,
-                'at_least_one': at_least_one}
+        return {
+            'collisions': collisions,
+            'onehot_violations': onehot_violations,
+            'changes': changes,
+            'at_least_one': at_least_one
+        }

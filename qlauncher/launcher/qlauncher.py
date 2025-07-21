@@ -1,5 +1,5 @@
 """ File with templates """
-from typing import Any, Literal, Optional, Union
+from typing import Literal
 import json
 import pickle
 import logging
@@ -39,23 +39,21 @@ class QuantumLauncher:
 
     """
 
-    def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend = None, logger: Optional[logging.Logger] = None) -> None:
+    def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend | None = None, logger: logging.Logger | None = None) -> None:
 
         if not isinstance(problem, Problem):
             problem = Raw(problem)
 
         self.problem: Problem = problem
         self.algorithm: Algorithm = algorithm
-        self.backend: Backend = backend
+        self.backend: Backend | None = backend
         self.formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
 
         if logger is None:
-            logger: logging.Logger = logging.getLogger('QuantumLauncher')
+            logger = logging.getLogger('QuantumLauncher')
         self.logger = logger
 
-        # logging.info(f'Found proper formatter, with formatter structure: {self.formatter.get_pipeline()}')
-
-        self.res: dict = {}
+        self.result: Result | None = None
 
     def run(self, **kwargs) -> Result:
         """
@@ -68,54 +66,39 @@ class QuantumLauncher:
         self.formatter.set_run_params(kwargs)
 
         self.result = self.algorithm.run(self.problem, self.backend, formatter=self.formatter)
-        logging.info('Algorithm ended successfully!')
+        self.logger.info('Algorithm ended successfully!')
         return self.result
 
-    def save(self, path: str, format: Literal['pickle', 'txt', 'json'] = 'pickle'):
-        logging.info(f'Saving results to file: {path}')
-        if format == 'pickle':
-            with open(path, mode='wb') as f:
-                pickle.dump(self.result, f)
-        elif format == 'json':
-            with open(path, mode='w', encoding='utf-8') as f:
-                json.dump(self.result.__dict__, f, default=fix_json)
-        elif format == 'txt':
-            with open(path, mode='w', encoding='utf-8') as f:
-                f.write(self.result.__str__())
-        else:
-            raise ValueError(
-                f'format: {format} in not supported try: pickle, txt, csv or json')
-
-    def process(self, *, file_path: Optional[str] = None, format: Union[Literal['pickle', 'txt', 'json'], list[Literal['pickle', 'txt', 'json']]] = 'pickle', **kwargs) -> dict:
+    def save(self, path: str, save_format: Literal['pickle', 'txt', 'json'] = 'pickle'):
         """
-        Runs the algorithm, processes the data, and saves the results if specified.
+        Save last run result to file
 
         Args:
-            file_path (Optional[str]): Flag indicating whether to save the results to a file. Defaults to None.
-            format (Union[Literal['pickle', 'txt', 'json'], list[Literal['pickle', 'txt', 'json']]]): Format in which file should be saved. Defaults to 'pickle'
+            path (str): File path.
+            save_format (Literal[&#39;pickle&#39;, &#39;txt&#39;, &#39;json&#39;], optional): Save format. Defaults to 'pickle'.
 
-        Returns:
-            dict: The processed results.
+        Raises:
+            ValueError: When no result is available or an incorrect save format was chosen
         """
-        results = self.run(**kwargs)
-        energy = results.result['energy']
-        res = {}
-        res['problem_setup'] = self.problem.setup
-        res['algorithm_setup'] = self.algorithm.setup
-        res['algorithm_setup']['variant'] = self.problem.variant
-        res['backend_setup'] = self.backend.setup
-        res['results'] = results
+        if self.result is None:
+            raise ValueError("No result to save")
 
-        self._file_name = self.problem.path + '-' + \
-            self.backend.path + '-' \
-            + self.algorithm.path + '-' + str(energy)
+        # if not os.path.isfile(path):
+        #     path = os.path.join(path, f'result-{datetime.now().isoformat(sep="_").replace(":","_")}.{save_format}')
 
-        if file_path is not None and isinstance(format, str):
-            self.save(file_path, format)
-        if file_path is not None and isinstance(format, list):
-            for form in format:
-                self.save(file_path, form)
-        return res
+        self.logger.info('Saving results to file: %s', str(path))
+        if save_format == 'pickle':
+            with open(path, mode='wb') as f:
+                pickle.dump(self.result, f)
+        elif save_format == 'json':
+            with open(path, mode='w', encoding='utf-8') as f:
+                json.dump(self.result.__dict__, f, default=fix_json)
+        elif save_format == 'txt':
+            with open(path, mode='w', encoding='utf-8') as f:
+                f.write(str(self.result))
+        else:
+            raise ValueError(
+                f'format: {save_format} in not supported try: pickle, txt, csv or json')
 
 
 def fix_json(o: object):

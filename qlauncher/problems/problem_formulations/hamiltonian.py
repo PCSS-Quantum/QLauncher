@@ -2,8 +2,8 @@
 from itertools import product
 import numpy as np
 
-from qiskit.quantum_info import SparsePauliOp
 from qiskit import QuantumCircuit
+from qiskit.quantum_info import SparsePauliOp
 from qiskit_optimization.converters import QuadraticProgramToQubo
 from qiskit_optimization.translators import from_ising
 
@@ -21,26 +21,6 @@ def hamiltonian_to_qubo(hamiltonian):
     conv = QuadraticProgramToQubo()
     qubo = conv.convert(qp).objective
     return qubo.quadratic.to_array(), 0
-
-
-def ring_ham(ring: set, n):
-    total = None
-    ring = list(ring)
-    for index in range(len(ring) - 1):
-        sparse_list = []
-        sparse_list.append((("XX", [ring[index], ring[index + 1]], 1)))
-        sparse_list.append((("YY", [ring[index], ring[index + 1]], 1)))
-        sp = SparsePauliOp.from_sparse_list(sparse_list, n)
-        if total is None:
-            total = sp
-        else:
-            total += sp
-    sparse_list = []
-    sparse_list.append((("XX", [ring[-1], ring[0]], 1)))
-    sparse_list.append((("YY", [ring[-1], ring[0]], 1)))
-    sp = SparsePauliOp.from_sparse_list(sparse_list, n)
-    total += sp
-    return SparsePauliOp(total)
 
 
 @formatter(problems.EC, 'hamiltonian')

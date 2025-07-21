@@ -47,13 +47,13 @@ class JobManager:
             str: Job Id.
         """
         if cores is None:
-            cores = max(1, self.manager.resources()['free_cores'])
+            cores = 1
         job = self._prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend,
                                         output=output_path, cores=cores)
         job_id = self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
         return job_id
 
-    def submit_many(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores_per_job: int = 1) -> List[str]:
+    def submit_many(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores_per_job: int = 1, n_jobs: int | None = None) -> List[str]:
         """
         Submits as many jobs as there are currently available cores.
 
@@ -63,6 +63,7 @@ class JobManager:
             backend (Backend): Backend.
             output_path (str): Path of output file.
             cores_per_job (int, optional): Number of cores per job. Defaults to 1.
+            n_jobs: number of jobs to submit. If None, submit as many as possible (free_cores//cores_per_job). Defaults to None.
 
         Returns:
             List[str]: List with Job Id's.
@@ -71,7 +72,7 @@ class JobManager:
         if free_cores == 0:
             return []
         qcg_jobs = Jobs()
-        for _ in range(free_cores//cores_per_job):
+        for _ in range(n_jobs if n_jobs is not None else free_cores//cores_per_job):
             job = self._prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path, cores=cores_per_job)
             qcg_jobs.add(**job.get('qcg_args'))
         return self.manager.submit(qcg_jobs)
@@ -154,7 +155,8 @@ class JobManager:
         Stops the manager process.
         """
         self.manager.cancel(self.jobs)
-        self.manager.finish()
+        if isinstance(self.manager, LocalManager):
+            self.manager.finish()
 
     def __del__(self):
         self.stop()

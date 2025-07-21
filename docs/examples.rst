@@ -12,8 +12,8 @@ Qiskit
 
 ::
 
-    from quantum_launcher import *
-    from quantum_launcher.routines.qiskit_routines import QiskitBackend, QAOA
+    from qlauncher import *
+    from qlauncher.routines.qiskit_routines import QiskitBackend, QAOA
 
     pr = problems.JSSP(3, 'exact', instance_name='toy', optimization_problem=True)
     alg = QAOA()
@@ -32,8 +32,8 @@ Dwave
 
 ::
 
-    from quantum_launcher import *
-    from quantum_launcher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
+    from qlauncher import *
+    from qlauncher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
 
     problem = problems.MaxCut(instance_name='default')
     alg = DwaveSolver(1)
@@ -51,8 +51,8 @@ Orca
 
 ::
 
-    from quantum_launcher import *
-    from quantum_launcher.routines.orca_routines import OrcaBackend, BBS
+    from qlauncher import *
+    from qlauncher.routines.orca_routines import OrcaBackend, BBS
 
     problem = problems.MaxCut(instance_name='default')
     alg = BBS()

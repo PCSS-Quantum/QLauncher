@@ -1,4 +1,4 @@
-from typing import Union, overload
+from typing import overload
 from qiskit.quantum_info import SparsePauliOp
 
 
@@ -48,19 +48,19 @@ class Equation:
     def is_quadratic(self) -> bool:
         return all(term.z.sum() <= 2 for term in self.hamiltonian.paulis)
 
-    def __or__(self, other: Union["Variable", "Equation"], /) -> "Equation":
+    def __or__(self, other: "Variable | Equation", /) -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
 
         return Equation(self.hamiltonian + other.hamiltonian - self.hamiltonian.compose(other.hamiltonian))
 
-    def __and__(self, other: Union["Variable", "Equation"], /) -> "Equation":
+    def __and__(self, other: "Variable | Equation", /) -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
 
         return Equation(self.hamiltonian.compose(other.hamiltonian))
 
-    def __xor__(self, other: Union["Variable", "Equation"], /) -> "Equation":
+    def __xor__(self, other: "Variable | Equation", /) -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
 
@@ -80,7 +80,7 @@ class Equation:
 
         return self.hamiltonian == other.hamiltonian
 
-    def __add__(self, other: Union["Equation", "Variable"]) -> "Equation":
+    def __add__(self, other: "Variable | Equation") -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
 
@@ -92,14 +92,14 @@ class Equation:
 
         return Equation(self.hamiltonian + other.hamiltonian)
 
-    def __mul__(self, other: Union["Equation", float]) -> "Equation":
+    def __mul__(self, other: "Equation | float") -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
         if isinstance(other, float) or isinstance(other, int):
             return Equation(float(other) * self.hamiltonian)
         return Equation(self.hamiltonian.compose(other.hamiltonian))
 
-    def __rmul__(self, other: Union["Equation", float]) -> "Equation":
+    def __rmul__(self, other: "Equation | float") -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
         if isinstance(other, float) or isinstance(other, int):
@@ -112,7 +112,7 @@ class Variable:
         self.index = index
         self.size = parent.size
 
-    def __xor__(self, other: Union["Variable", Equation], /) -> Equation:
+    def __xor__(self, other: "Equation | float", /) -> Equation:
         if isinstance(other, Equation):
             return self.to_equation() ^ other
 
@@ -121,7 +121,7 @@ class Variable:
         eq = Equation(SparsePauliOp.from_sparse_list([I, Z_term], self.size))
         return eq
 
-    def __or__(self, other: Union["Variable", Equation], /) -> Equation:
+    def __or__(self, other: "Variable | Equation", /) -> Equation:
         if isinstance(other, Equation):
             return self.to_equation() | other
 
@@ -132,7 +132,7 @@ class Variable:
         eq = Equation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
         return eq
 
-    def __and__(self, other: Union["Variable", Equation], /) -> Equation:
+    def __and__(self, other: "Variable | Equation", /) -> Equation:
 
         if isinstance(other, Equation):
             return self.to_equation() & other

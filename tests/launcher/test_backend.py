@@ -11,7 +11,7 @@ from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 
 from qlauncher import QuantumLauncher
 from qlauncher.problems import EC
-from qlauncher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA
+from qlauncher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA, FALQON
 
 import pytest
 
@@ -30,9 +30,17 @@ class DummyAQTProvider(AQTProvider):
         return offline_no_noise
 
 
-def run_backend(backend):
+def run_backend_qaoa(backend):
     problem = EC.from_preset('micro')
     launcher = QuantumLauncher(problem, QAOA(p=1), backend)
+
+    res = launcher.run()
+    assert res is not None
+
+
+def run_backend_falqon(backend):
+    problem = EC.from_preset('micro')
+    launcher = QuantumLauncher(problem, FALQON(max_reps=1), backend)
 
     res = launcher.run()
     assert res is not None
@@ -50,7 +58,7 @@ def test_AQT_backend_backendv1v2_simulator():
     assert isinstance(backend.estimator, AQTEstimator)
     assert isinstance(backend.sampler, AQTSampler)
 
-    run_backend(backend)
+    run_backend_qaoa(backend)
 
 
 def test_AQT_backend_local_simulator():
@@ -61,7 +69,7 @@ def test_AQT_backend_local_simulator():
     assert isinstance(backend.estimator, AQTEstimator)
     assert isinstance(backend.sampler, AQTSampler)
 
-    run_backend(backend)
+    run_backend_qaoa(backend)
 
 
 def test_AQT_backend_online_device():
@@ -77,7 +85,7 @@ def test_AQT_backend_online_device():
 
     assert backend.name == 'ibex_dummy'
 
-    run_backend(backend)
+    run_backend_qaoa(backend)
 
 
 def test_AQT_backend_loads_env(tmp_path):
@@ -89,6 +97,8 @@ def test_AQT_backend_loads_env(tmp_path):
 
     assert backend.provider.access_token == 'test'
 
+#! We use FALQON for backend tests (except AQT) as it is very fast to execute
+
 
 def test_IBM_session():
     backend = FakeAlmadenV2()
@@ -98,7 +108,7 @@ def test_IBM_session():
 
         assert ql_backend.sampler.mode == session
         assert ql_backend.estimator.mode == session
-        # run_backend(ql_backend)
+        run_backend_falqon(ql_backend)
 
 
 def test_Qiskit_local_session():
@@ -106,7 +116,7 @@ def test_Qiskit_local_session():
 
     assert backend.sampler is not None
     assert backend.estimator is not None
-    run_backend(backend)
+    run_backend_falqon(backend)
 
 
 def test_Qiskit_backendv1v2_session():
@@ -116,14 +126,14 @@ def test_Qiskit_backendv1v2_session():
     assert backend.estimator is not None
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
-    run_backend(backend)
+    run_backend_falqon(backend)
 
 
 def test_Aer_backend_local():
     backend = AerBackend('local_simulator', auto_transpile_level=0)
     assert isinstance(backend.sampler, BaseSamplerV2)
     assert isinstance(backend.estimator, BaseEstimatorV2)
-    run_backend(backend)
+    run_backend_falqon(backend)
 
 
 def test_Aer_backend_backendv1v2():
@@ -132,4 +142,4 @@ def test_Aer_backend_backendv1v2():
     assert isinstance(backend.estimator, BaseEstimatorV2)
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
-    run_backend(backend)
+    run_backend_falqon(backend)

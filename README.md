@@ -14,13 +14,13 @@ Quantum Launcher introduces an intuitive architectural framework by dividing the
 
 Additionally to ability of quickly changing tested problem, algorithm or backend Quantum Launcher comes with a bunch of useful features such as:
 
-- Random problem instances generator.
-- Automatic translation between problem formulations (e.g. QUBO -> Hamiltonian).
-- QASM-based translation to match different frameworks (such as running qiskit's algorithm on cirq's computer).
-- Asynchronous architecture to execute problems either standalone or in a grid.
-- Access to more advanced workflows with qcg-pilotjob.
-- Interface for simple profiling of algorithms.
-- Creation of more complex workflows using WorkflowManager enabling splitting algorithms across multiple devices.
+-   Random problem instances generator.
+-   Automatic translation between problem formulations (e.g. QUBO -> Hamiltonian).
+-   QASM-based translation to match different frameworks (such as running qiskit's algorithm on cirq's computer).
+-   Asynchronous architecture to execute problems either standalone or in a grid.
+-   Access to more advanced workflows with qcg-pilotjob.
+-   Interface for simple profiling of algorithms.
+-   Creation of more complex workflows using WorkflowManager enabling splitting algorithms across multiple devices.
 
 ## Installation
 
@@ -40,11 +40,11 @@ pip install 'quantum-launcher[orca]'
 
 to install all requirements necessary to run qiskit algorithms.
 
-- **qiskit**: support for IBM's qiskit algorithms and backends.
-- **orca**: support for Orca Computing algorithms and backends **NOTE** library ptseries is not public therefore one needs to install it on it's own.
-- **dwave**: support for D-Wave Systems algorithms and backends.
-- **cirq**: support for Google's cirq backends.
-- **pilotjob**: support for advanced job scheduling using Quantum Launcher and QCG PilotJob for more complex algorithm.
+-   **qiskit**: support for IBM's qiskit algorithms and backends.
+-   **orca**: support for Orca Computing algorithms and backends **NOTE** library ptseries is not public therefore one needs to install it on it's own.
+-   **dwave**: support for D-Wave Systems algorithms and backends.
+-   **cirq**: support for Google's cirq backends.
+-   **pilotjob**: support for advanced job scheduling using Quantum Launcher and QCG PilotJob for more complex algorithm.
 
 ## Supported problems, algorithms and backends
 
@@ -52,20 +52,20 @@ Quantum Launcher was made to simplify using of multiple different problems, algo
 
 Supported problems:
 
-- MaxCut
-- Exact Cover
-- Job Shop Shedueling
-- Air Traffic Management
-- Traveling Salesman Problem
-- Graph Coloring
+-   MaxCut
+-   Exact Cover
+-   Job Shop Shedueling
+-   Air Traffic Management
+-   Traveling Salesman Problem
+-   Graph Coloring
 
 For now supported backends are:
 
-- Qiskit
-- Orca Computing
-- D-wave
-- AQT
-- Cirq
+-   Qiskit
+-   Orca Computing
+-   D-wave
+-   AQT
+-   Cirq
 
 ## Usage examples
 
@@ -74,9 +74,9 @@ For example to solve MaxCut problem with QAOA on qiskit simulator all you need t
 
 ```py
 # Necessary imports
-from quantum_launcher import QuantumLauncher
-from quantum_launcher.problems import MaxCut
-from quantum_launcher.routines.qiskit_routines import QiskitBackend, QAOA
+from qlauncher import QuantumLauncher
+from qlauncher.problems import MaxCut
+from qlauncher.routines.qiskit_routines import QiskitBackend, QAOA
 
 # Selecting problem, algorithm and backend
 problem = MaxCut.from_preset('default')
@@ -94,9 +94,9 @@ A key advantage of our library is that changing algorithms (such as switching to
 
 ```py
 # Necessary imports
-from quantum_launcher import QuantumLauncher
-from quantum_launcher.problems import MaxCut
-from quantum_launcher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
+from qlauncher import QuantumLauncher
+from qlauncher.problems import MaxCut
+from qlauncher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
 
 # Selecting problem, algorithm and backend
 problem = MaxCut.from_preset('default')
