@@ -1,11 +1,11 @@
 import glob
 import shutil
 import pytest
-from quantum_launcher.workflow.pilotjob_scheduler import JobManager
-from quantum_launcher import QuantumLauncher, Result
-from quantum_launcher.problems import EC
-from quantum_launcher.routines.qiskit_routines import FALQON, QiskitBackend
-from quantum_launcher.routines.qiskit_routines.algorithms import EducatedGuess
+from qlauncher.workflow.pilotjob_scheduler import JobManager
+from qlauncher import QuantumLauncher, Result
+from qlauncher.problems import EC
+from qlauncher.routines.qiskit_routines import FALQON, QiskitBackend
+from qlauncher.routines.qiskit_routines.algorithms import EducatedGuess
 # TODO: address event loop problem (To @dsiera: what was the problem?)
 
 

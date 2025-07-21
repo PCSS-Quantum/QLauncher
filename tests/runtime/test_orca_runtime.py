@@ -4,10 +4,10 @@ try:
 except ImportError:
     skip(allow_module_level=True)
 
-from quantum_launcher import QuantumLauncher
-from quantum_launcher.routines.orca_routines import BBS, OrcaBackend
-from quantum_launcher.problems import EC, JSSP, MaxCut, Raw, TSP, GraphColoring
-from quantum_launcher.base import Result
+from qlauncher import QuantumLauncher
+from qlauncher.routines.orca_routines import BBS, OrcaBackend
+from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP, GraphColoring
+from qlauncher.base import Result
 import numpy as np
 
 

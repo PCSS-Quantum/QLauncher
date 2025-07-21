@@ -4,12 +4,12 @@ import pytest
 
 import psutil
 
-from quantum_launcher.base.base import Result
-from quantum_launcher.launcher.aql import AQL, AQLTask
-from quantum_launcher.problems import EC, TSP
-from quantum_launcher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
-from quantum_launcher.routines.qiskit_routines import QAOA, QiskitBackend
-from quantum_launcher.hampy import Equation
+from qlauncher.base.base import Result
+from qlauncher.launcher.aql import AQL, AQLTask
+from qlauncher.problems import EC, TSP
+from qlauncher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
+from qlauncher.routines.qiskit_routines import QAOA, QiskitBackend
+from qlauncher.hampy import Equation
 
 from dimod import SampleSet
 

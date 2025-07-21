@@ -1,7 +1,7 @@
-from quantum_launcher import QuantumLauncher
-from quantum_launcher.workflow import WorkflowManager
-from quantum_launcher.problems import MaxCut
-from quantum_launcher.base import Algorithm
+from qlauncher import QuantumLauncher
+from qlauncher.workflow import WorkflowManager
+from qlauncher.problems import MaxCut
+from qlauncher.base import Algorithm
 
 
 def task1():

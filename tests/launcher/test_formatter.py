@@ -1,5 +1,5 @@
-from quantum_launcher.base.adapter_structure import get_formatter, default_formatter
-from quantum_launcher.problems.problem_initialization import TSP
+from qlauncher.base.adapter_structure import get_formatter, default_formatter
+from qlauncher.problems.problem_initialization import TSP
 
 
 def test_unreachable_returns_default():

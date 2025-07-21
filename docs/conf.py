@@ -11,7 +11,7 @@ import better_apidoc
 
 conf_path = os.path.dirname(os.path.abspath(__file__))
 project_path = os.path.dirname(conf_path)
-lib_path = os.path.join(project_path, 'quantum_launcher')
+lib_path = os.path.join(project_path, 'qlauncher')
 sys.path.insert(0, project_path)
 
 
@@ -26,7 +26,7 @@ def run_apidoc(app):
         '--separate',
         '-o',
         os.path.join('.', 'API'),
-        lib_path,  # Generate docs only for quantum_launcher/
+        lib_path,  # Generate docs only for qlauncher/
     ])
 
 
