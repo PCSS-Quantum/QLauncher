@@ -32,4 +32,4 @@ Then you can get to know the library by checking out the following sections:
 
    examples
    tutorials
-   api_reference
+   API Documentation <API/quantum_launcher>
