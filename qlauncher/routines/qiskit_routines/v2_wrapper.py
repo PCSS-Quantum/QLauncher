@@ -84,7 +84,7 @@ class SamplerV2Adapter(BaseSamplerV1):
         """
         Args:
             sampler_v2 (BaseSamplerV2): V2 sampler to be adapted.
-            backend (Optional[Backend]): Backend to transpile circuits to.
+            backend (Backend | None): Backend to transpile circuits to.
         """
         self.sampler_v2 = sampler_v2
         self.backend = backend

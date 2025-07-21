@@ -190,18 +190,18 @@ class FALQON(QiskitOptimizationAlgorithm):
     Algorithm class with FALQON.
 
     Args:
-        driver_h (Optional[Operator]): The driver Hamiltonian for the problem.
+        driver_h (Operator | None): The driver Hamiltonian for the problem.
         delta_t (float): The time step for the evolution operators.
         beta_0 (float): The initial value of beta.
         n (int): The number of iterations to run the algorithm.
         **alg_kwargs: Additional keyword arguments for the base class.
 
     Attributes:
-        driver_h (Optional[Operator]): The driver Hamiltonian for the problem.
+        driver_h (Operator | None): The driver Hamiltonian for the problem.
         delta_t (float): The time step for the evolution operators.
         beta_0 (float): The initial value of beta.
         n (int): The number of iterations to run the algorithm.
-        cost_h (Optional[Operator]): The cost Hamiltonian for the problem.
+        cost_h (Operator | None): The cost Hamiltonian for the problem.
         n_qubits (int): The number of qubits in the problem.
         parameters (list[str]): The list of algorithm parameters.
 
