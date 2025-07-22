@@ -22,7 +22,7 @@ class JSSP(Problem):
         max_time (int): The maximum time for the scheduling problem.
         onehot (str): The one-hot encoding method to be used.
         optimization_problem (bool): Flag indicating whether the problem is an optimization problem or a decision problem.
-        results (dict): dictionary to store the results of the problem instance.
+        results (dict): Dictionary to store the results of the problem instance.
 
     """
 
