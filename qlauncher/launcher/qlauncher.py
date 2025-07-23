@@ -25,9 +25,9 @@ class QLauncher:
 
     Example of usage::
 
-            from templates import QLauncher
-            from problems import MaxCut
-            from qiskit_routines import QAOA, QiskitBackend
+            from qlauncher import QLauncher
+            from qlauncher.problems import MaxCut
+            from qlauncher.routines.qiskit_routines import QAOA, QiskitBackend
 
             problem = MaxCut(instance_name='default')
             algorithm = QAOA()
