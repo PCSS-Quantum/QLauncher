@@ -1,5 +1,4 @@
 """  This module contains the MaxCut class."""
-from typing import Optional
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -12,7 +11,7 @@ class MaxCut(Problem):
 
     This class represents MaxCut Problem which is a combinatorial optimization problem that involves partitioning the
     vertices of a graph into two sets such that the number of edges between the two sets is maximized. The class contains
-    an instance of the problem, so it can be passed into Quantum Launcher.
+    an instance of the problem, so it can be passed into QLauncher.
 
     Attributes:
         instance (nx.Graph): The graph instance representing the problem.
@@ -43,7 +42,7 @@ class MaxCut(Problem):
     def _get_path(self) -> str:
         return f'{self.name}@{self.instance_name}'
 
-    def visualize(self, bitstring: Optional[str] = None):
+    def visualize(self, bitstring: str | None = None):
         pos = nx.spring_layout(self.instance, seed=42)  # set seed for same node graphs in plt
         plt.figure(figsize=(8, 6))
         if bitstring is None:

@@ -4,7 +4,7 @@ try:
 except ImportError:
     skip(allow_module_level=True)
 
-from qlauncher import QuantumLauncher
+from qlauncher import QLauncher
 from qlauncher.routines.orca_routines import BBS, OrcaBackend
 from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP, GraphColoring
 from qlauncher.base import Result
@@ -16,7 +16,7 @@ def test_ec():
     pr = EC.from_preset(instance_name='micro')
     bbs = BBS(updates=1)
     backend = OrcaBackend('local_simulator')
-    launcher = QuantumLauncher(pr, bbs, backend)
+    launcher = QLauncher(pr, bbs, backend)
 
     inform = launcher.run()
     assert isinstance(inform, Result)
@@ -27,7 +27,7 @@ def test_jssp():
     pr = JSSP.from_preset(instance_name='default', optimization_problem=True)
     bbs = BBS(updates=1)
     backend = OrcaBackend('local_simulator')
-    launcher = QuantumLauncher(pr, bbs, backend)
+    launcher = QLauncher(pr, bbs, backend)
 
     inform = launcher.run()
     assert isinstance(inform, Result)
@@ -38,7 +38,7 @@ def test_maxcut():
     pr = MaxCut.from_preset(instance_name='default')
     bbs = BBS(updates=1)
     backend = OrcaBackend('local_simulator')
-    launcher = QuantumLauncher(pr, bbs, backend)
+    launcher = QLauncher(pr, bbs, backend)
 
     inform = launcher.run()
     assert isinstance(inform, Result)
@@ -50,7 +50,7 @@ def test_raw():
     pr = Raw(qubo)
     bbs = BBS(updates=1)
     backend = OrcaBackend('local_simulator')
-    launcher = QuantumLauncher(pr, bbs, backend)
+    launcher = QLauncher(pr, bbs, backend)
 
     inform = launcher.run()
     assert isinstance(inform, Result)
@@ -61,7 +61,7 @@ def test_tsp():
     pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
     bbs = BBS(updates=1)
     backend = OrcaBackend('local_simulator')
-    launcher = QuantumLauncher(pr, bbs, backend)
+    launcher = QLauncher(pr, bbs, backend)
 
     inform = launcher.run()
 
@@ -74,7 +74,7 @@ def test_graph_coloring():
     num_colors = gc.num_colors
     bbs = BBS(updates=1)
     backend = OrcaBackend("local_simulator")
-    launcher = QuantumLauncher(gc, bbs, backend)
+    launcher = QLauncher(gc, bbs, backend)
     inform = launcher.run()
     assert isinstance(inform, Result)
     solution = inform.best_bitstring

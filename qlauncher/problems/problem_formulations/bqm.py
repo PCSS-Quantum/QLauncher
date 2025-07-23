@@ -1,4 +1,3 @@
-from typing import Tuple
 import ast
 import numpy as np
 from pyqubo import Spin

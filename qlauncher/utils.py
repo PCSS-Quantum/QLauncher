@@ -1,1 +1,1 @@
-""" Utility functions for Quantum Launcher"""
+""" Utility functions for QLauncher"""

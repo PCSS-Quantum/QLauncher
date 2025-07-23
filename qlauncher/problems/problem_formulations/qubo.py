@@ -1,5 +1,4 @@
 """ Basic problems for Orca """
-from typing import Tuple
 import numpy as np
 from pyqubo import Array
 from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
@@ -101,7 +100,7 @@ class JSSPOrca:
     def _fix_get_jss_bqm(self, instance, max_time, config,
                          lagrange_one_hot=0,
                          lagrange_precedence=0,
-                         lagrange_share=0) -> Tuple[dict, list, None]:
+                         lagrange_share=0) -> tuple[dict, list, None]:
         pre_result = get_jss_bqm(instance, max_time, config,
                                  lagrange_one_hot=lagrange_one_hot,
                                  lagrange_precedence=lagrange_precedence,

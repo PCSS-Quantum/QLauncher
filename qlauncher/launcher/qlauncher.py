@@ -8,11 +8,11 @@ from qlauncher.base import Problem, Algorithm, Backend, Result
 from qlauncher.problems import Raw
 
 
-class QuantumLauncher:
+class QLauncher:
     """
-    Quantum Launcher class.
+    QLauncher class.
 
-    Quantum launcher is used to run quantum algorithms on specific problem instances and backends.
+    Qlauncher is used to run quantum algorithms on specific problem instances and backends.
     It provides methods for binding parameters, preparing the problem, running the algorithm, and processing the results.
 
     Attributes:
@@ -25,15 +25,15 @@ class QuantumLauncher:
 
     Example of usage::
 
-            from templates import QuantumLauncher
-            from problems import MaxCut
-            from qiskit_routines import QAOA, QiskitBackend
+            from qlauncher import QLauncher
+            from qlauncher.problems import MaxCut
+            from qlauncher.routines.qiskit_routines import QAOA, QiskitBackend
 
             problem = MaxCut(instance_name='default')
             algorithm = QAOA()
             backend = QiskitBackend('local_simulator')
 
-            launcher = QuantumLauncher(problem, algorithm, backend)
+            launcher = QLauncher(problem, algorithm, backend)
             result = launcher.process(save_pickle=True)
             print(result)
 
@@ -50,7 +50,7 @@ class QuantumLauncher:
         self.formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
 
         if logger is None:
-            logger = logging.getLogger('QuantumLauncher')
+            logger = logging.getLogger('QLauncher')
         self.logger = logger
 
         self.result: Result | None = None

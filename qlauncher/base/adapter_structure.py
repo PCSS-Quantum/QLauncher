@@ -1,12 +1,13 @@
 from collections import defaultdict
-from typing import Dict, Callable, Any
+from collections.abc import Callable
+from typing import Any
 from inspect import signature
 import warnings
 import networkx as nx
 from .base import Problem
 
-__QL_ADAPTERS: Dict[str, Dict[str, Callable]] = defaultdict(lambda: {})  # adapters[to][from]
-__QL_FORMATTERS: Dict[type[Problem] | None, Dict[str, Callable]] = defaultdict(lambda: {})  # formatters[problem][format]
+__QL_ADAPTERS: dict[str, dict[str, Callable]] = defaultdict(lambda: {})  # adapters[to][from]
+__QL_FORMATTERS: dict[type[Problem] | None, dict[str, Callable]] = defaultdict(lambda: {})  # formatters[problem][format]
 
 
 def _get_callable_name(c: Callable) -> str:

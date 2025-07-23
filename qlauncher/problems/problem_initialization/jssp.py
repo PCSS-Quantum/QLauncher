@@ -1,6 +1,6 @@
 """  Module for Job Shop Scheduling Problem (JSSP)."""
 from collections import defaultdict
-from typing import Dict, List, Literal, Tuple
+from typing import Literal
 try:
     from qlauncher.problems.problem_formulations.jssp.qiskit_scheduler import get_jss_hamiltonian
 except ModuleNotFoundError:
@@ -15,7 +15,7 @@ class JSSP(Problem):
     This class represents Job Shop Scheduling Problem (JSSP) which is a combinatorial optimization problem that involves 
     scheduling a set of jobs on a set of machines. Each job consists of a sequence of operations that must be performed 
     on different machines. The objective is to find a schedule that minimizes the makespan, i.e., the total time required
-    to complete all jobs. The class contains an instance of the problem, so it can be passed into Quantum Launcher.
+    to complete all jobs. The class contains an instance of the problem, so it can be passed into QLauncher.
 
 
     Attributes:
@@ -26,7 +26,7 @@ class JSSP(Problem):
 
     """
 
-    def __init__(self, max_time: int, instance: Dict[str, List[Tuple[str, int]]],
+    def __init__(self, max_time: int, instance: dict[str, list[tuple[str, int]]],
                  instance_name: str = 'unnamed', optimization_problem: bool = False, onehot: Literal['exact', 'quadratic'] = 'exact') -> None:
         super().__init__(instance=instance, instance_name=instance_name)
         self.max_time = max_time

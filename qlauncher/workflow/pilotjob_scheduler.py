@@ -1,10 +1,9 @@
 import os
 import pickle
 import sys
-from typing import List, Optional
 
 from qlauncher.base.base import Algorithm, Backend, Problem, Result
-from qlauncher.launcher.qlauncher import QuantumLauncher
+from qlauncher.launcher.qlauncher import QLauncher
 from qlauncher.exceptions import DependencyError
 try:
     import dill
@@ -15,12 +14,12 @@ except ImportError as e:
 
 
 class JobManager:
-    def __init__(self, manager: Optional[Manager] = None):
+    def __init__(self, manager: Manager | None = None):
         """
-        Job manager is Quantum Launcher's wrapper for process management system, current version works on top of qcg-pilotjob
+        Job manager is QLauncher's wrapper for process management system, current version works on top of qcg-pilotjob
 
         Args:
-            manager (Optional[Manager], optional): Manager system to schedule jobs, if set to None, the pilotjob's LocalManager is set.
+            manager (Manager | None, optional): Manager system to schedule jobs, if set to None, the pilotjob's LocalManager is set.
             Defaults to None.
         """
         self.jobs = {}
@@ -32,16 +31,16 @@ class JobManager:
     def _count_not_finished(self) -> int:
         return len([job for job in self.jobs.values() if job.get('finished') is False])
 
-    def submit(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores: Optional[int] = None) -> str:
+    def submit(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores: int | None = None) -> str:
         """
-        Submits Quantum Launcher job to the scheduler
+        Submits QLauncher job to the scheduler
 
         Args:
             problem (Problem): Problem.
             algorithm (Algorithm): Algorithm.
             backend (Backend): Backend.
             output_path (str): Path of output file.
-            cores (Optional[int], optional): Number of cores per task, if None value set to number of free cores (at least 1). Defaults to None.
+            cores (int | None, optional): Number of cores per task, if None value set to number of free cores (at least 1). Defaults to None.
 
         Returns:
             str: Job Id.
@@ -53,7 +52,7 @@ class JobManager:
         job_id = self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
         return job_id
 
-    def submit_many(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores_per_job: int = 1, n_jobs: int | None = None) -> List[str]:
+    def submit_many(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores_per_job: int = 1, n_jobs: int | None = None) -> list[str]:
         """
         Submits as many jobs as there are currently available cores.
 
@@ -66,7 +65,7 @@ class JobManager:
             n_jobs: number of jobs to submit. If None, submit as many as possible (free_cores//cores_per_job). Defaults to None.
 
         Returns:
-            List[str]: List with Job Id's.
+            list[str]: List with Job Id's.
         """
         free_cores = self.manager.resources()['free_cores']
         if free_cores == 0:
@@ -77,13 +76,13 @@ class JobManager:
             qcg_jobs.add(**job.get('qcg_args'))
         return self.manager.submit(qcg_jobs)
 
-    def wait_for_a_job(self, job_id: Optional[str] = None, timeout: Optional[int | float] = None) -> tuple[str, str]:
+    def wait_for_a_job(self, job_id: str | None = None, timeout: int | float | None = None) -> tuple[str, str]:
         """
         Waits for a job to finish and returns it's id and status.
 
         Args:
-            job_id (Optional[str], optional): Id of selected job, if None waiting for any job. Defaults to None.
-            timeout (Optional[int  |  float], optional): Timeout in seconds. Defaults to None.
+            job_id (str | None, optional): Id of selected job, if None waiting for any job. Defaults to None.
+            timeout (int  |  float | None, optional): Timeout in seconds. Defaults to None.
 
         Raises:
             ValueError: Raises if job_id not found or there are no jobs left.
@@ -107,7 +106,7 @@ class JobManager:
                              output: str, cores: int = 1) -> dict:
         job_uid = f'{len(self.jobs):05d}'
         output_file = os.path.abspath(f'{output}output.{job_uid}')
-        launcher = QuantumLauncher(problem, algorithm, backend)
+        launcher = QLauncher(problem, algorithm, backend)
         input_file = os.path.abspath(f'{output}output.{job_uid}')
         with open(input_file, 'wb') as f:
             dill.dump(launcher, f)

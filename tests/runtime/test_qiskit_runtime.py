@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from qiskit.quantum_info import SparsePauliOp
-from qlauncher import QuantumLauncher
+from qlauncher import QLauncher
 from qlauncher.base import Result
 from qlauncher.routines.qiskit_routines import QAOA, FALQON, QiskitBackend, AQTBackend
 from qlauncher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
@@ -13,7 +13,7 @@ def test_falqon():
     pr = EC.from_preset(instance_name='micro')
     qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
-    launcher = QuantumLauncher(pr, qaoa, backend)
+    launcher = QLauncher(pr, qaoa, backend)
 
     results = launcher.run()
     assert isinstance(results, Result)
@@ -24,7 +24,7 @@ def test_falqon_reject():
     pr = EC.from_preset(instance_name='micro')
     qaoa = FALQON(max_reps=1)
     backend = AQTBackend('local_simulator')
-    launcher = QuantumLauncher(pr, qaoa, backend)
+    launcher = QLauncher(pr, qaoa, backend)
 
     with pytest.raises(ValueError):
         results = launcher.run()
@@ -34,7 +34,7 @@ def test_QAOA():
     pr = EC.from_preset(instance_name='micro')
     qaoa = QAOA(p=1)
     backend = QiskitBackend('local_simulator')
-    launcher = QuantumLauncher(pr, qaoa, backend)
+    launcher = QLauncher(pr, qaoa, backend)
 
     results = launcher.run()
     assert isinstance(results, Result)
@@ -47,7 +47,7 @@ def test_ec():
     pr = EC.from_preset(instance_name='micro')
     qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
-    launcher = QuantumLauncher(pr, qaoa, backend)
+    launcher = QLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True, save_txt=True)
     results = launcher.run()
@@ -59,7 +59,7 @@ def test_qatm():
     pr = QATM.from_file(path='data/qatm/', instance_name='RCP_3.txt')
     qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
-    launcher = QuantumLauncher(pr, qaoa, backend)
+    launcher = QLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True)
     results = launcher.run()
@@ -71,7 +71,7 @@ def test_jssp():
     pr = JSSP.from_preset('default', optimization_problem=True)
     qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
-    launcher = QuantumLauncher(pr, qaoa, backend)
+    launcher = QLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True)
     results = launcher.run()
@@ -83,7 +83,7 @@ def test_maxcut():
     pr = MaxCut.from_preset(instance_name='default')
     qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
-    launcher = QuantumLauncher(pr, qaoa, backend)
+    launcher = QLauncher(pr, qaoa, backend)
 
     # results = launcher.process(save_pickle=True)
     results = launcher.run()
@@ -97,7 +97,7 @@ def test_raw():
     pr = Raw(hamiltonian)
     qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
-    launcher = QuantumLauncher(pr, qaoa, backend)
+    launcher = QLauncher(pr, qaoa, backend)
 
     results = launcher.run()
     assert results is not None
@@ -110,7 +110,7 @@ def test_tsp():
     pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
     qaoa = FALQON(max_reps=1)
     backend = QiskitBackend('local_simulator')
-    launcher = QuantumLauncher(pr, qaoa, backend)
+    launcher = QLauncher(pr, qaoa, backend)
 
     results = launcher.run()
     assert results is not None
@@ -126,7 +126,7 @@ def test_graph_coloring():
     color_bit_length = int(np.ceil(np.log2(num_colors)))
     qaoa = FALQON(max_reps=1)
     backend = QiskitBackend("local_simulator")
-    launcher = QuantumLauncher(gc, qaoa, backend)
+    launcher = QLauncher(gc, qaoa, backend)
     inform = launcher.run()
     assert isinstance(inform, Result)
     bitstring = inform.best_bitstring

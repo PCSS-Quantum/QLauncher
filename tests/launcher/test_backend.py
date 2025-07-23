@@ -9,7 +9,7 @@ from qiskit_aqt_provider import AQTProvider
 
 from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 
-from qlauncher import QuantumLauncher
+from qlauncher import QLauncher
 from qlauncher.problems import EC
 from qlauncher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA, FALQON
 
@@ -32,7 +32,7 @@ class DummyAQTProvider(AQTProvider):
 
 def run_backend_qaoa(backend):
     problem = EC.from_preset('micro')
-    launcher = QuantumLauncher(problem, QAOA(p=1), backend)
+    launcher = QLauncher(problem, QAOA(p=1), backend)
 
     res = launcher.run()
     assert res is not None
@@ -40,7 +40,7 @@ def run_backend_qaoa(backend):
 
 def run_backend_falqon(backend):
     problem = EC.from_preset('micro')
-    launcher = QuantumLauncher(problem, FALQON(max_reps=1), backend)
+    launcher = QLauncher(problem, FALQON(max_reps=1), backend)
 
     res = launcher.run()
     assert res is not None
