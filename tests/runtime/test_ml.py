@@ -1,7 +1,10 @@
 import numpy as np
 from qiskit.circuit import QuantumCircuit, Parameter
 
-from qlauncher import QuantumLauncher
+from qiskit_machine_learning.kernels import BaseKernel
+
+
+from qlauncher import QLauncher
 from qlauncher.problems import TabularML
 from qlauncher.routines.qiskit_routines import TrainQSVCKernel
 from qlauncher.routines.qiskit_routines import QiskitBackend
@@ -38,9 +41,10 @@ def test_run_qiskit():
     alg = TrainQSVCKernel(*make_trainable_circ(2))
     backend = QiskitBackend('local_simulator')
 
-    l = QuantumLauncher(problem, alg, backend)
+    l = QLauncher(problem, alg, backend)
     r = l.run()
     assert isinstance(r, Result)
+    assert isinstance(r.result, BaseKernel)
 
 
 def test_run_no_trainable():
@@ -52,9 +56,10 @@ def test_run_no_trainable():
     alg = TrainQSVCKernel(circ)
     backend = CirqBackend('local_simulator')
 
-    l = QuantumLauncher(problem, alg, backend)
+    l = QLauncher(problem, alg, backend)
     r = l.run()
     assert isinstance(r, Result)
+    assert isinstance(r.result, BaseKernel)
 
 
 def test_run_cirq():
@@ -62,6 +67,7 @@ def test_run_cirq():
     alg = TrainQSVCKernel(*make_trainable_circ(2))
     backend = CirqBackend('local_simulator')
 
-    l = QuantumLauncher(problem, alg, backend)
+    l = QLauncher(problem, alg, backend)
     r = l.run()
     assert isinstance(r, Result)
+    assert isinstance(r.result, BaseKernel)
