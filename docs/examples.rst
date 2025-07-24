@@ -1,8 +1,8 @@
 Examples
 ========
 
-| Using Quantum Launcher is simple. 
-| Simply specify the problem, algorithm and backend you want to use, and Quantum Launcher will take care of the rest.
+| Using QLauncher is simple. 
+| Simply specify the problem, algorithm and backend you want to use, and QLauncher will take care of the rest.
 | Here are some examples to get you started.
 | (These examples are also available in the examples directory of the repository.)
 
@@ -19,7 +19,7 @@ Qiskit
     alg = QAOA()
     backend = QiskitBackend('local_simulator')
 
-    launcher = QuantumLauncher(pr, alg, backend)
+    launcher = QLauncher(pr, alg, backend)
     
     result = launcher.run()
     print(result)
@@ -39,7 +39,7 @@ Dwave
     alg = DwaveSolver(1)
     backend = SimulatedAnnealingBackend('local')
 
-    launcher = QuantumLauncher(problem, alg, backend)
+    launcher = QLauncher(problem, alg, backend)
     
     result = launcher.run()
     print(result)
@@ -58,7 +58,7 @@ Orca
     alg = BBS()
     backend = OrcaBackend('local')
 
-    launcher = QuantumLauncher(problem, alg, backend)
+    launcher = QLauncher(problem, alg, backend)
 
     result = launcher.run()
     print(result)

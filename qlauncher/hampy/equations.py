@@ -3,13 +3,12 @@
 
 It's goal is too simplify the creation of more complex problem implementations, by creating them with use of smaller ones.
 """
-from typing import Optional
 from copy import copy
 from qiskit.quantum_info import SparsePauliOp
 from .object import Equation, Variable
 
 
-def one_in_n(variables: list[int | Variable], size: Optional[int] = None, quadratic: bool = False) -> Equation:
+def one_in_n(variables: list[int | Variable], size: int | None = None, quadratic: bool = False) -> Equation:
     """
     Generates Equation for One in N problem.
 
@@ -17,7 +16,7 @@ def one_in_n(variables: list[int | Variable], size: Optional[int] = None, quadra
 
     Args:
         variables (list[int  |  Variable]): Triggered variables or variable indexes
-        size (Optional[int], optional): Size of problem, if not given it takes the first found Variable.size value. Defaults to None.
+        size (int | None, optional): Size of problem, if not given it takes the first found Variable.size value. Defaults to None.
 
     Returns:
         Equation: Equation returning True if exactly one of passed indexes is 1, False otherwise

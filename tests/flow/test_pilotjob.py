@@ -2,7 +2,7 @@ import glob
 import shutil
 import pytest
 from qlauncher.workflow.pilotjob_scheduler import JobManager
-from qlauncher import QuantumLauncher, Result
+from qlauncher import QLauncher, Result
 from qlauncher.problems import EC
 from qlauncher.routines.qiskit_routines import FALQON, QiskitBackend
 from qlauncher.routines.qiskit_routines.algorithms import EducatedGuess
@@ -48,7 +48,7 @@ def test_educated_guess(tmp_path):
     educated_guess.output_interpolated = f'{tmp_path}/'
     educated_guess.output = f'{tmp_path}/'
     backend = QiskitBackend('local_simulator')
-    launcher = QuantumLauncher(pr, educated_guess, backend)
+    launcher = QLauncher(pr, educated_guess, backend)
 
     # inform = launcher.process(save_pickle=True)
     inform = launcher.run()

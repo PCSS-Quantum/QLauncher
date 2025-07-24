@@ -1,7 +1,7 @@
 """  This module contains the EC class."""
 import ast
 from collections import defaultdict
-from typing import List, Optional, Set
+
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -14,7 +14,7 @@ class EC(Problem):
 
     The exact cover problem is a combinatorial optimization problem that involves finding a subset of a given set
     of elements such that the subset covers all elements and the number of elements in the subset is minimized.
-    The class contains an instance of the problem, so it can be passed into Quantum Launcher.
+    The class contains an instance of the problem, so it can be passed into QLauncher.
 
     Attributes:
         onehot (str): The one-hot encoding used for the problem.
@@ -24,7 +24,7 @@ class EC(Problem):
 
     """
 
-    def __init__(self, instance: List[Set[int]] = None, instance_name: str = 'unnamed') -> None:
+    def __init__(self, instance: list[set[int]] = None, instance_name: str = 'unnamed') -> None:
         super().__init__(instance=instance, instance_name=instance_name)
 
     @property
@@ -63,7 +63,7 @@ class EC(Problem):
             read_file = file.read()
         self.instance = ast.literal_eval(read_file)
 
-    def visualize(self, marked: Optional[str] = None):
+    def visualize(self, marked: str | None = None):
         G = nx.Graph()
         size = len(self.instance)
         ec = list(map(lambda x: set(map(str, x)), self.instance))

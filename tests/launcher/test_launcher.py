@@ -1,5 +1,5 @@
 import os
-from qlauncher import QuantumLauncher
+from qlauncher import QLauncher
 from qlauncher.routines.qiskit_routines import FALQON, QiskitBackend
 from qlauncher.base.base import Result
 from qlauncher.problems import TSP
@@ -13,7 +13,7 @@ def prepare_launcher():
     algorithm = FALQON()
     backend = QiskitBackend('local_simulator')
 
-    launcher = QuantumLauncher(problem, algorithm, backend)
+    launcher = QLauncher(problem, algorithm, backend)
 
     return launcher
 
