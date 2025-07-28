@@ -51,13 +51,15 @@ class TrainQSVCKernel(Algorithm):
     """
     Train a quantum kernel with additional parameters to be optimized.
     The kernel will be optimized to provide maximum accuracy with a support vector classifier on the provided dataset.
-    If no additional parameters are provided, the algorithm will return
-        a kernel with a sampler assigned to the provided backend.
+    If no trainable parameters are provided, the algorithm will return
+        a :class:`qiskit_machine_learning.kernels.FidelityQuantumKernel` kernel with a sampler assigned to the provided backend.
+        Otherwise an instance of :class:`qiskit_machine_learning.kernels.TrainableFidelityQuantumKernel` with optimal 
+        parameters and a sampler assigned to the provided backend will be returned.
 
     Args:
         kernel_circuit(QuantumCircuit): A parametrizable quantum circuit. The measurements will be used to produce kernel output.
         trainable_params(Sequence[Parameter] | None, optional): 
-            aThe parameters to be optimized during training. If None no optimization will be done. Defaults to None.
+            The parameters to be optimized during training. If None no optimization will be done. Defaults to None.
     """
 
     _algorithm_format = 'tabular_ml'
