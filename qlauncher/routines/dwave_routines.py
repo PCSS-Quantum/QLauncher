@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from qlauncher.base import Algorithm, Problem, Backend, Result
+from qlauncher.base import Algorithm, Problem, Backend, OptimizationResult
 from qlauncher.exceptions import DependencyError
 try:
     from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
@@ -20,7 +20,7 @@ class DwaveSolver(Algorithm):
         self.label: str = 'TBD_TBD'
         super().__init__(**alg_kwargs)
 
-    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
+    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> OptimizationResult:
         self.label = f'{problem.name}_{problem.instance_name}'
 
         bqm: BinaryQuadraticModel = formatter(problem)
@@ -33,7 +33,7 @@ class DwaveSolver(Algorithm):
             bqm, num_reads=self.num_reads, label=self.label, chain_strength=self.chain_strength, **kwargs)
         return res
 
-    def _construct_result(self, result: SampleSet) -> Result:
+    def _construct_result(self, result: SampleSet) -> OptimizationResult:
         distribution = {}
         energies = {}
         for (value, energy, occ) in zip(result.record.sample, result.record.energy, result.record.num_occurrences, strict=True):
@@ -44,7 +44,11 @@ class DwaveSolver(Algorithm):
             distribution[bitstring] = occ
             energies[bitstring] = energy
 
-        return Result.from_distributions(distribution, energies, result)
+        return OptimizationResult(
+            data=result,
+            bitstring_counts=distribution,
+            energies=energies
+        )
 
 
 class TabuBackend(Backend):

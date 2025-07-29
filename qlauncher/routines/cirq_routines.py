@@ -47,7 +47,7 @@ class CirqSampler(Sampler):
                 else self._circuits[i].assign_parameters(dict(zip(self._parameters[i], value)))
             )
         distributions = [_CirqRunner.calculate_circuit(circuit) for circuit in bound_circuits]
-        quasi_dists = list(map(QuasiDistribution, distributions))
+        quasi_dists = list(map(lambda x: QuasiDistribution(x, shots=_CirqRunner.repetitions), distributions))
         return SamplerResult(quasi_dists, [{} for _ in range(len(parameter_values))])
 
 

@@ -1,7 +1,7 @@
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import QLauncher
-from qlauncher.base import Result
+from qlauncher.base import Result, OptimizationResult
 from qlauncher.problems import MaxCut, Raw
 from qlauncher.routines.qiskit_routines import QAOA
 from qlauncher.routines.cirq_routines import CirqBackend
@@ -28,5 +28,6 @@ def test_raw():
 
     results = launcher.run()
     assert results is not None
-    bitstring = results.best_bitstring
-    assert bitstring in ['00', '01', '10', '11']
+    assert isinstance(results, OptimizationResult)
+    bitstring = results.most_common_bitstring
+    assert bitstring in ['00', '01', '10', '11'] or bitstring in range(4)

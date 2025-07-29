@@ -107,8 +107,8 @@ def test_AQL_individual_tasks():
     assert len(res) == 2
     for r in res:
         assert isinstance(r, Result)
-    assert isinstance(res[0].result, dict)
-    assert isinstance(res[1].result, SampleSet)
+    assert isinstance(res[0].data, dict)
+    assert isinstance(res[1].data, SampleSet)
 
 
 @check_subprocesses_exit()

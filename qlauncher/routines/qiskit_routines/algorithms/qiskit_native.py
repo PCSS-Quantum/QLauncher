@@ -18,7 +18,7 @@ from qiskit_algorithms.minimum_eigensolvers import QAOA as QiskitQAOA
 from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
 from qiskit_algorithms.optimizers import Optimizer, COBYLA
 
-from qlauncher.base import Problem, Algorithm, Result
+from qlauncher.base import Problem, Algorithm, OptimizationResult
 from qlauncher.base.base import Backend
 from qlauncher.routines.cirq_routines import CirqBackend
 from qlauncher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
@@ -126,7 +126,7 @@ class QAOA(QiskitOptimizationAlgorithm):
                     res_dict = {**res_dict, **{key: path}}
         return res_dict
 
-    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
+    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> OptimizationResult:
         """ Runs the QAOA algorithm """
         if not (isinstance(backend, QiskitBackend) or isinstance(backend, CirqBackend)):
             raise ValueError('Backend should be CirqBackend, QiskitBackend or subclass.')
@@ -165,21 +165,13 @@ class QAOA(QiskitOptimizationAlgorithm):
                                       'usages': usages,
                                       'timestamps': timestamps})
 
-    def construct_result(self, result: dict) -> Result:
-
-        best_bitstring = self.get_bitstring(result)
-        best_energy = result['energy']
-
-        distribution = dict(result['SamplingVQEResult'].eigenstate.items())
-        most_common_value = max(
-            distribution, key=distribution.get)
-        most_common_bitstring = bin(most_common_value)[2:].zfill(
-            len(best_bitstring))
-        most_common_bitstring_energy = distribution[most_common_value]
-        num_of_samples = 0  # TODO: implement
-        average_energy = np.mean(result['energies'])
-        energy_std = np.std(result['energies'])
-        return Result(best_bitstring, best_energy, most_common_bitstring, most_common_bitstring_energy, distribution, result['energies'], num_of_samples, average_energy, energy_std, result)
+    def construct_result(self, result: dict) -> OptimizationResult:
+        n_samples = result['SamplingVQEResult'].eigenstate.shots
+        return OptimizationResult(
+            data=result,
+            bitstring_counts={k: int(v*n_samples) for k, v in result['SamplingVQEResult'].eigenstate.items()},
+            energies=result['energies']
+        )
 
     def get_bitstring(self, result) -> str:
         return result['SamplingVQEResult'].best_measurement['bitstring']
@@ -240,7 +232,7 @@ class FALQON(QiskitOptimizationAlgorithm):
     def _get_path(self) -> str:
         return f'{self.name}@{self.max_reps}@{self.delta_t}@{self.beta_0}'
 
-    def run(self, problem: Problem, backend: QiskitBackend, formatter: Callable) -> Result:
+    def run(self, problem: Problem, backend: QiskitBackend, formatter: Callable) -> OptimizationResult:
         """ Runs the FALQON algorithm """
 
         if isinstance(backend.sampler, BaseSamplerV1) or isinstance(backend.estimator, BaseEstimatorV1):
@@ -256,8 +248,7 @@ class FALQON(QiskitOptimizationAlgorithm):
         best_sample, betas, energies, depths, cnot_counts = self._falqon_subroutine(cost_h, backend)
 
         best_data: BitArray = best_sample[0].data.meas
-        counts: dict = best_data.get_counts()
-        shots = best_data.num_shots
+        counts: dict[str, int] = best_data.get_counts()
 
         result = {'betas': betas,
                   'energies': energies,
@@ -269,17 +260,10 @@ class FALQON(QiskitOptimizationAlgorithm):
                   'energy': min(energies),
                   }
 
-        return Result(
-            best_bitstring=max(counts, key=counts.get),
-            most_common_bitstring=max(counts, key=counts.get),
-            distribution={k: v/shots for k, v in counts.items()},
+        return OptimizationResult(
+            data=result,
+            bitstring_counts=counts,
             energies=energies,
-            energy_std=np.std(energies),
-            best_energy=min(energies),
-            num_of_samples=shots,
-            average_energy=np.mean(energies),
-            most_common_bitstring_energy=0,
-            result=result
         )
 
     def _add_ansatz_part(

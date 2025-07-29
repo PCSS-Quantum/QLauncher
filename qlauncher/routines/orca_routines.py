@@ -4,7 +4,7 @@ from inspect import getfullargspec
 from collections.abc import Callable
 import numpy as np
 
-from qlauncher.base import Problem, Algorithm, Result, Backend
+from qlauncher.base import Problem, Algorithm, OptimizationResult, Backend
 from qlauncher.exceptions import DependencyError
 
 try:
@@ -47,7 +47,7 @@ class BBS(Algorithm):
         self.kwargs = kwargs
         self.input_state = self.kwargs.pop('input_state', None)
 
-    def run(self, problem: Problem, backend: OrcaBackend, formatter: Callable[[Problem], np.ndarray]) -> Result:
+    def run(self, problem: Problem, backend: OrcaBackend, formatter: Callable[[Problem], np.ndarray]) -> OptimizationResult:
         # params = {"tbi_type": self.kwarga['tbi_type']}
         # if backend is not None:
         #     params.update(backend.get_args())
@@ -71,20 +71,14 @@ class BBS(Algorithm):
     def get_bitstring(self, result: list[float]) -> str:
         return ''.join(map(str, map(int, result)))
 
-    def construct_results(self, results: BinaryBosonicSolver) -> Result:
+    def construct_results(self, results: BinaryBosonicSolver) -> OptimizationResult:
         # TODO: add support for distribution (probably with different logger)
         best_bitstring = ''.join(
             map(str, map(int, results.config_min_encountered)))
         best_energy = results.E_min_encountered
-        most_common_bitstring = None
-        most_common_bitstring_energy = None
-        distribution = None
-        energy = None
-        num_of_samples = results.n_samples
-        average_energy = None
-        energy_std = None
-        #! Todo: instead of None attach relevant info from 'results'
         # results fail to pickle correctly btw
-        return Result(best_bitstring, best_energy, most_common_bitstring,
-                      most_common_bitstring_energy, distribution, energy,
-                      num_of_samples, average_energy, energy_std, None)
+        return OptimizationResult(
+            data=None,
+            bitstring_counts={best_bitstring: 1},
+            energies={best_bitstring: best_energy}
+        )

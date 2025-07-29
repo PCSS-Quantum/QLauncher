@@ -66,7 +66,7 @@ class EducatedGuess(Algorithm):
     def _search_for_job_with_optimal_params(self, previous_job_id, previous_energy, problem, backend) -> bool:
         new_job_id = None
         for p in range(self.p_init + 1, self.p_max + 1):
-            previous_job_results = self.manager.read_results(previous_job_id).result
+            previous_job_results = self.manager.read_results(previous_job_id).data
             initial_point = self._interpolate_f(list(previous_job_results['SamplingVQEResult'].optimal_point), p-1)
 
             new_job_id = self.manager.submit(problem, QAOA(p=p, initial_point=initial_point),
@@ -86,7 +86,7 @@ class EducatedGuess(Algorithm):
 
     def _process_job(self, jobid: str, p: int, energy_to_compare: float, compare_factor: float = 1.0) -> tuple[
             float, bool]:
-        result = self.manager.read_results(jobid).result
+        result = self.manager.read_results(jobid).data
         optimal_point = result['SamplingVQEResult'].optimal_point
         has_potential = False
         linear = self._check_linearity(optimal_point, p)

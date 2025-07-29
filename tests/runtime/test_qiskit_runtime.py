@@ -4,7 +4,7 @@ import pytest
 
 from qiskit.quantum_info import SparsePauliOp
 from qlauncher import QLauncher
-from qlauncher.base import Result
+from qlauncher.base import Result, OptimizationResult
 from qlauncher.routines.qiskit_routines import QAOA, FALQON, QiskitBackend, AQTBackend
 from qlauncher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
 
@@ -101,7 +101,8 @@ def test_raw():
 
     results = launcher.run()
     assert results is not None
-    bitstring = results.best_bitstring
+    assert isinstance(results, OptimizationResult)
+    bitstring = results.most_common_bitstring
     assert bitstring in ['00', '01', '10', '11']
 
 
@@ -114,7 +115,8 @@ def test_tsp():
 
     results = launcher.run()
     assert results is not None
-    bitstring = results.best_bitstring
+    assert isinstance(results, OptimizationResult)
+    bitstring = results.most_common_bitstring
     assignments = [bitstring[i:i+3] for i in range(0, len(bitstring), 3)]
     assert len(assignments) == 3
 
@@ -128,7 +130,7 @@ def test_graph_coloring():
     backend = QiskitBackend("local_simulator")
     launcher = QLauncher(gc, qaoa, backend)
     inform = launcher.run()
-    assert isinstance(inform, Result)
-    bitstring = inform.best_bitstring
+    assert isinstance(inform, OptimizationResult)
+    bitstring = inform.most_common_bitstring
     num_qubits = len(bitstring)
     assert num_qubits == gc.instance.number_of_nodes() * color_bit_length, "error in encoding, solution contains wrong number of qubits"

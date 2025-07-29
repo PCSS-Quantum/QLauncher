@@ -1,68 +1,87 @@
 from abc import ABC, abstractmethod
+import statistics
 from dataclasses import dataclass
 import pickle
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal
 from collections.abc import Callable
 import logging
-
 
 AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'bqm', 'none', 'fn']
 
 
 @dataclass
 class Result:
-    best_bitstring: str
-    best_energy: float
-    most_common_bitstring: str
-    most_common_bitstring_energy: float
-    distribution: dict
-    energies: dict
-    num_of_samples: int
-    average_energy: float
-    energy_std: float
-    result: Any
+    data: Any
 
     def __str__(self):
-        return f"Result(bitstring={self.best_bitstring}, energy={self.best_energy})"
+        return f"Result holding data of type{type(self.data)}"
 
     def __repr__(self):
         return str(self)
 
-    def best(self):
-        return self.best_bitstring, self.best_energy
 
-    def most_common(self):
-        return self.most_common_bitstring, self.most_common_bitstring_energy
+@dataclass
+class OptimizationResult(Result):
+    bitstring_counts: dict[str, int] | dict[int, int]
+    energies: dict[str, float] | dict[int, float] | list[float]
 
-    @staticmethod
-    def from_distributions(bitstring_distribution: dict[str, float], energy_distribution: dict[str, float], result: Any = None) -> "Result":
+    def __str__(self) -> str:
+        return f"Optimization result from {self.n_samples} samples"
+
+    @property
+    def best_bitstring(self) -> str | None:
+        """Bitstring with least energy, if info is available, else None"""
+        if isinstance(self.energies, dict):
+            return min(self.energies, key=self.energies.get)
+        return None
+
+    @property
+    def best_energy(self) -> float:
+        """Lowest encountered energy"""
+        if isinstance(self.energies, dict):
+            return min(self.energies.values())
+        return min(self.energies)
+
+    @property
+    def most_common_bitstring(self) -> str:
+        """Most commonly sampled bitstring"""
+        return max(self.bitstring_counts, key=self.bitstring_counts.get)
+
+    @property
+    def most_common_bitstring_energy(self) -> float | None:
+        """Energy of most commonly sampled bitstring, if available, else None"""
+        if isinstance(self.energies, dict):
+            return self.energies[self.most_common_bitstring]
+        return None
+
+    @property
+    def average_energy(self) -> float:
         """
-        Constructs the Result object from Dictionary with bitstring to num of occurrences,
-        dictionary mapping bitstring to energy and optional result (rest)
+        Average energy. If energy per bitstring is available, 
+        then the number of bitstring occurrences is taken into account.
         """
-        best_bitstring = min(energy_distribution, key=energy_distribution.get)
-        best_energy = energy_distribution[best_bitstring]
-        most_common_bitstring = max(bitstring_distribution, key=bitstring_distribution.get)
-        most_common_bitstring_energy = energy_distribution[most_common_bitstring]
-        num_of_samples = int(sum(bitstring_distribution.values()))
+        if isinstance(self.energies, dict):
+            return statistics.mean([c*self.energies[bs] for bs, c in self.energies.items()])
+        return statistics.mean(self.energies)
 
-        mean_value = sum(energy_distribution[bitstring] * occ for bitstring, occ in bitstring_distribution.items()) / num_of_samples
-        std = 0
-        for bitstring, occ in bitstring_distribution.items():
-            std += occ * ((energy_distribution[bitstring] - mean_value)**2)
-        std = (std/(num_of_samples-1))**0.5
-        return Result(
-            best_bitstring,
-            best_energy,
-            most_common_bitstring,
-            most_common_bitstring_energy,
-            bitstring_distribution,
-            energy_distribution,
-            num_of_samples,
-            mean_value,
-            std,
-            result
-        )
+    @property
+    def energy_std(self) -> float:
+        """
+        Standard deviation of energies. If energy per bitstring is available, 
+        then the number of bitstring occurrences is taken into account.
+        """
+        if isinstance(self.energies, dict):
+            mean = self.average_energy
+            std = 0
+            for bitstring, occ in self.bitstring_counts.items():
+                std += occ * ((self.energies[bitstring] - mean)**2)
+            return (std/(self.n_samples-1))**0.5
+        return statistics.stdev(self.energies)
+
+    @property
+    def n_samples(self):
+        """Total samples taken."""
+        return sum(self.bitstring_counts.values())
 
 
 class Backend:
