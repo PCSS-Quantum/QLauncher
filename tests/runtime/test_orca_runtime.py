@@ -5,7 +5,7 @@ except ImportError:
     skip(allow_module_level=True)
 
 from qlauncher import QLauncher
-from qlauncher.routines.orca_routines import BBS, OrcaBackend
+from qlauncher.routines.orca import BBS, OrcaBackend
 from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP, GraphColoring
 from qlauncher.base import Result
 import numpy as np

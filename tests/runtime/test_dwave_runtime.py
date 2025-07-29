@@ -1,6 +1,6 @@
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend, TabuBackend, SteepestDescentBackend
+from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend, TabuBackend, SteepestDescentBackend
 from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP
 from pyqubo import Spin
 TESTING_DIR = 'testing'

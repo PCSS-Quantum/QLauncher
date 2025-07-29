@@ -7,7 +7,7 @@ from qiskit_ibm_runtime import Options
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel
 
-from qlauncher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
+from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
 class AerBackend(QiskitBackend):

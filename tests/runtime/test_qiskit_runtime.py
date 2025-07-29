@@ -5,7 +5,7 @@ import pytest
 from qiskit.quantum_info import SparsePauliOp
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.routines.qiskit_routines import QAOA, FALQON, QiskitBackend, AQTBackend
+from qlauncher.routines.qiskit import QAOA, FALQON, QiskitBackend, AQTBackend
 from qlauncher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
 
 

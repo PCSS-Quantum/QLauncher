@@ -1,6 +1,6 @@
 from qlauncher.launcher.profiling_launcher import ProfilingLauncher
 from qlauncher import problems
-from qlauncher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
+from qlauncher.routines.dwave import SimulatedAnnealingBackend, DwaveSolver
 
 
 def main():

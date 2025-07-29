@@ -21,7 +21,7 @@ from qiskit_algorithms.optimizers import Optimizer, COBYLA
 from qlauncher.base import Problem, Algorithm, Result
 from qlauncher.base.base import Backend
 from qlauncher.routines.cirq_routines import CirqBackend
-from qlauncher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
+from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
 class QiskitOptimizationAlgorithm(Algorithm):

@@ -3,7 +3,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qlauncher import QLauncher
 from qlauncher.base import Result
 from qlauncher.problems import MaxCut, Raw
-from qlauncher.routines.qiskit_routines import QAOA
+from qlauncher.routines.qiskit import QAOA
 from qlauncher.routines.cirq_routines import CirqBackend
 
 

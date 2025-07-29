@@ -13,9 +13,9 @@ from qiskit.primitives import (
 from qiskit_ibm_runtime import Options
 
 from qlauncher.base import Backend
-from qlauncher.routines.qiskit_routines.v2_wrapper import SamplerV2Adapter
+from qlauncher.routines.qiskit.v2_wrapper import SamplerV2Adapter
 
-from qlauncher.routines.qiskit_routines.backends.utils import (
+from qlauncher.routines.qiskit.backends.utils import (
     set_estimator_auto_run_behavior, set_sampler_auto_run_behavior,
     AUTO_TRANSPILE_ESTIMATOR_TYPE, AUTO_TRANSPILE_SAMPLER_TYPE
 )

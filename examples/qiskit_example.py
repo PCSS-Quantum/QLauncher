@@ -1,6 +1,6 @@
 """ Example of how QLauncher works """
 from qlauncher import QLauncher, problems
-from qlauncher.routines.qiskit_routines import IBMBackend, QAOA
+from qlauncher.routines.qiskit import IBMBackend, QAOA
 
 
 def main():
