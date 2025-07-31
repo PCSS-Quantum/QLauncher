@@ -8,6 +8,9 @@ stages:
 default:
   before_script:
     - python --version; pip --version
+    - apt-get update
+    - apt-get upgrade -y
+    - apt-get install -y git
     - pip install uv
     - uv venv .venv
     - source .venv/bin/activate
