@@ -2,7 +2,6 @@
 from typing import Literal
 from inspect import getfullargspec
 from collections.abc import Callable
-import inspect
 import numpy as np
 
 from qlauncher.base import Problem, Algorithm, Result, Backend
