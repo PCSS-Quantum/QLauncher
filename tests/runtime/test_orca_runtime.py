@@ -1,14 +1,9 @@
-from pytest import skip
-try:
-    import ptseries
-except ImportError:
-    skip(allow_module_level=True)
+import numpy as np
 
 from qlauncher import QLauncher
 from qlauncher.routines.orca_routines import BBS, OrcaBackend
 from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP, GraphColoring
 from qlauncher.base import Result
-import numpy as np
 
 
 def test_ec():
