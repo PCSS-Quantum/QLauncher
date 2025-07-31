@@ -33,3 +33,5 @@ dwave-tabu
 # Scheduling
 qcg-pilotjob
 dill
+multiprocess
+pathos

@@ -1,7 +1,7 @@
-from quantum_launcher import QuantumLauncher
-from quantum_launcher.workflow import WorkflowManager
-from quantum_launcher.problems import MaxCut
-from quantum_launcher.base import Algorithm
+from qlauncher import QLauncher
+from qlauncher.workflow import WorkflowManager
+from qlauncher.problems import MaxCut
+from qlauncher.base import Algorithm
 
 
 def task1():
@@ -43,7 +43,7 @@ def test_workflow():
 
     workflow = wm.to_workflow()
     assert isinstance(workflow, Algorithm)
-    launcher = QuantumLauncher(20, workflow)
+    launcher = QLauncher(20, workflow)
     result = launcher.run()
     assert result == 60
 
@@ -56,6 +56,6 @@ def test_workflow_format():
 
     workflow = wm.to_workflow()
     assert workflow._algorithm_format == 'qubo'
-    launcher = QuantumLauncher(MaxCut.from_preset(instance_name='default'), workflow)
+    launcher = QLauncher(MaxCut.from_preset(instance_name='default'), workflow)
     result = launcher.run()
     assert result == 1

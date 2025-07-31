@@ -1,17 +1,17 @@
 Tutorials
 ============
 
-This section contains several tutorials, that will help you to get started with Quantum Launcher.
+This section contains several tutorials, that will help you to get started with QLauncher.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Learn about Hampy, a Quantum Launcher submodule which helps in constructing hamiltonians:
+   :caption: Learn about Hampy, a QLauncher submodule which helps in constructing hamiltonians:
    
    tutorials/hampy_tutorial
 
 .. toctree::
    :maxdepth: 1
-   :caption: Get familiar with predefined problems implemented in Quantum Launcher:
+   :caption: Get familiar with predefined problems implemented in QLauncher:
 
    tutorials/problem_types
 
@@ -23,13 +23,13 @@ This section contains several tutorials, that will help you to get started with 
 
 .. toctree::
    :maxdepth: 1
-   :caption: Learn how quantum launcher maintains compatibility with many quantum circuit framework, or add your own:
+   :caption: Learn how QLauncher maintains compatibility with many quantum circuit framework, or add your own:
 
    tutorials/circuit_translations
 
 .. toctree::
    :maxdepth: 1
-   :caption: Get familiar with quantum algorithms and backend supported by Quantum Launcher:
+   :caption: Get familiar with quantum algorithms and backend supported by QLauncher:
 
    backends
 

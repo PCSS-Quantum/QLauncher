@@ -1,6 +1,6 @@
-""" Example of how Quantum Launcher works """
-from quantum_launcher import QuantumLauncher, problems
-from quantum_launcher.routines.qiskit_routines import IBMBackend, QAOA
+""" Example of how QLauncher works """
+from qlauncher import QLauncher, problems
+from qlauncher.routines.qiskit_routines import IBMBackend, QAOA
 
 
 def main():
@@ -9,7 +9,7 @@ def main():
     alg = QAOA()
     backend = IBMBackend('local_simulator')
 
-    launcher = QuantumLauncher(pr, alg, backend)
+    launcher = QLauncher(pr, alg, backend)
     print(launcher.run())
 
 

@@ -1,7 +1,7 @@
-""" Quantum Launcher for Orca """
-from quantum_launcher import QuantumLauncher
-from quantum_launcher.problems import MaxCut
-from quantum_launcher.routines.orca_routines import OrcaBackend, BBS
+""" QLauncher for Orca """
+from qlauncher import QLauncher
+from qlauncher.problems import MaxCut
+from qlauncher.routines.orca_routines import OrcaBackend, BBS
 
 
 def main():
@@ -9,7 +9,7 @@ def main():
     problem = MaxCut.from_preset(instance_name='default')
     alg = BBS()
     backend = OrcaBackend('local')
-    launcher = QuantumLauncher(problem, alg, backend)
+    launcher = QLauncher(problem, alg, backend)
     result = launcher.run()
     print(result)
 

@@ -1,7 +1,7 @@
 [project]
-name = "quantum-launcher"
-version = "2.0.2"
-description = "Quantum Launcher is modular tool, for solving many problems on many algorithms using many quantum computing backends"
+name = "qlauncher"
+version = "2.0.4"
+description = "QLauncher is modular tool, for solving many problems on many algorithms using many quantum computing backends"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -10,10 +10,11 @@ dependencies = [
     "numpy<=1.26.4",
     "overrides",
     "pandas",
+    "pathos>=0.3.3",
     "matplotlib",
     "pyqubo",
     "scipy",
-    "qiskit",
+    "qiskit < 2.0",
     "qiskit_algorithms",
     "qiskit_aqt_provider",
     "qiskit_ibm_runtime",
@@ -25,7 +26,7 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["quantum_launcher*"]
+include = ["qlauncher*"]
 
 [project.optional-dependencies]
 orca = ["numba==0.60.0", "torch"]

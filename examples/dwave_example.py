@@ -1,7 +1,7 @@
-""" Quantum Launcher for Orca """
-from quantum_launcher import *
-from quantum_launcher import problems
-from quantum_launcher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
+""" QLauncher for Orca """
+from qlauncher import *
+from qlauncher import problems
+from qlauncher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
 
 
 def main():
@@ -9,7 +9,7 @@ def main():
     problem = problems.MaxCut(instance_name='default')
     alg = DwaveSolver(1)
     backend = SimulatedAnnealingBackend('local')
-    launcher = QuantumLauncher(problem, alg, backend)
+    launcher = QLauncher(problem, alg, backend)
     res = launcher.run()
     print(alg.get_bitstring(res))
 

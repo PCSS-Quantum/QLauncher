@@ -11,3 +11,4 @@ pylatexenc
 pytest
 pytest_httpx
 pytest-asyncio
+psutil

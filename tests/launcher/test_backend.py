@@ -9,7 +9,9 @@ from qiskit_aqt_provider import AQTProvider
 
 from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 
-from quantum_launcher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend
+from qlauncher import QLauncher
+from qlauncher.problems import EC
+from qlauncher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA, FALQON
 
 import pytest
 
@@ -28,17 +30,35 @@ class DummyAQTProvider(AQTProvider):
         return offline_no_noise
 
 
+def run_backend_qaoa(backend):
+    problem = EC.from_preset('micro')
+    launcher = QLauncher(problem, QAOA(p=1), backend)
+
+    res = launcher.run()
+    assert res is not None
+
+
+def run_backend_falqon(backend):
+    problem = EC.from_preset('micro')
+    launcher = QLauncher(problem, FALQON(max_reps=1), backend)
+
+    res = launcher.run()
+    assert res is not None
+
+
 def test_AQT_backend_backendv1v2_simulator():
     with pytest.raises(ValueError):
-        backend = AQTBackend(token="test_token", name='backendv1v2_simulator')
+        backend = AQTBackend(token="test_token", name='backendv1v2')
 
-    backend = AQTBackend('backendv1v2_simulator', backendv1v2=FakeAlmadenV2())
+    backend = AQTBackend('backendv1v2', backendv1v2=FakeAlmadenV2())
 
-    assert backend.name == 'backendv1v2_simulator'
+    assert backend.name == 'backendv1v2'
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
     assert isinstance(backend.estimator, AQTEstimator)
     assert isinstance(backend.sampler, AQTSampler)
+
+    run_backend_qaoa(backend)
 
 
 def test_AQT_backend_local_simulator():
@@ -48,6 +68,8 @@ def test_AQT_backend_local_simulator():
     assert isinstance(backend.backendv1v2, OfflineSimulatorResource)
     assert isinstance(backend.estimator, AQTEstimator)
     assert isinstance(backend.sampler, AQTSampler)
+
+    run_backend_qaoa(backend)
 
 
 def test_AQT_backend_online_device():
@@ -63,6 +85,8 @@ def test_AQT_backend_online_device():
 
     assert backend.name == 'ibex_dummy'
 
+    run_backend_qaoa(backend)
+
 
 def test_AQT_backend_loads_env(tmp_path):
     env_path = os.path.join(tmp_path, '.env')
@@ -73,15 +97,18 @@ def test_AQT_backend_loads_env(tmp_path):
 
     assert backend.provider.access_token == 'test'
 
+#! We use FALQON for backend tests (except AQT) as it is very fast to execute
+
 
 def test_IBM_session():
     backend = FakeAlmadenV2()
 
     with Session(backend=backend) as session:
-        ql_backend = IBMBackend('device', session=session)
+        ql_backend = IBMBackend('session', session=session, auto_transpile_level=3)
 
         assert ql_backend.sampler.mode == session
         assert ql_backend.estimator.mode == session
+        run_backend_falqon(ql_backend)
 
 
 def test_Qiskit_local_session():
@@ -89,28 +116,30 @@ def test_Qiskit_local_session():
 
     assert backend.sampler is not None
     assert backend.estimator is not None
-    assert backend.optimizer is not None
+    run_backend_falqon(backend)
 
 
 def test_Qiskit_backendv1v2_session():
-    backend = QiskitBackend('backendv1v2_simulator', backendv1v2=FakeAlmadenV2())
+    backend = QiskitBackend('backendv1v2', backendv1v2=FakeAlmadenV2(), auto_transpile_level=0)
 
     assert backend.sampler is not None
     assert backend.estimator is not None
-    assert backend.optimizer is not None
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
+    run_backend_falqon(backend)
 
 
 def test_Aer_backend_local():
-    backend = AerBackend('local_simulator')
+    backend = AerBackend('local_simulator', auto_transpile_level=0)
     assert isinstance(backend.sampler, BaseSamplerV2)
     assert isinstance(backend.estimator, BaseEstimatorV2)
+    run_backend_falqon(backend)
 
 
 def test_Aer_backend_backendv1v2():
-    backend = AerBackend('backendv1v2_simulator', backendv1v2=FakeAlmadenV2())
+    backend = AerBackend('backendv1v2', backendv1v2=FakeAlmadenV2(), auto_transpile_level=0)
     assert isinstance(backend.sampler, BaseSamplerV2)
     assert isinstance(backend.estimator, BaseEstimatorV2)
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
+    run_backend_falqon(backend)

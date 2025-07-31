@@ -1,12 +1,12 @@
-from quantum_launcher.workflow.pilotjob_scheduler import JobManager
-from quantum_launcher import QuantumLauncher, Result
-from quantum_launcher.problems import MaxCut
-from quantum_launcher.routines.qiskit_routines import QAOA, IBMBackend
-from quantum_launcher.routines.qiskit_routines.algorithms import EducatedGuess
-import shutil
 import glob
+import shutil
 import pytest
-# TODO: Make tests take shorter time to launch, and address event loop problem
+from qlauncher.workflow.pilotjob_scheduler import JobManager
+from qlauncher import QLauncher, Result
+from qlauncher.problems import EC
+from qlauncher.routines.qiskit_routines import FALQON, QiskitBackend
+from qlauncher.routines.qiskit_routines.algorithms import EducatedGuess
+# TODO: address event loop problem (To @dsiera: what was the problem?)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -22,13 +22,13 @@ def test_job_manager(tmp_path):
     manager = JobManager()
     assert isinstance(manager, JobManager)
 
-    problem = MaxCut.from_preset('default')
-    algorithm = QAOA(p=1)
-    backend = IBMBackend('local_simulator')
+    problem = EC.from_preset('micro')
+    algorithm = FALQON(max_reps=1)
+    backend = QiskitBackend('local_simulator')
 
     manager.submit(problem, algorithm, backend, f'{tmp_path}/')
     for _ in range(len(manager.jobs)):
-        job_id, status = manager.wait_for_a_job()
+        job_id, status = manager.wait_for_a_job(timeout=60)
         assert isinstance(job_id, str)
         assert status != 'FAILED'
         results = manager.read_results(job_id)
@@ -42,14 +42,13 @@ def test_job_manager(tmp_path):
 
 def test_educated_guess(tmp_path):
     """ Testing function for QATM """
-    # TODO Optimize this test, it takes way too long, as the algorithm is long
-    pr = MaxCut.from_preset('default')
-    educated_guess = EducatedGuess(2, 3)
+    pr = EC.from_preset('micro')
+    educated_guess = EducatedGuess(2, 2, max_job_batch_size=1)
     educated_guess.output_initial = f'{tmp_path}/'
     educated_guess.output_interpolated = f'{tmp_path}/'
     educated_guess.output = f'{tmp_path}/'
-    backend = IBMBackend('local_simulator')
-    launcher = QuantumLauncher(pr, educated_guess, backend)
+    backend = QiskitBackend('local_simulator')
+    launcher = QLauncher(pr, educated_guess, backend)
 
     # inform = launcher.process(save_pickle=True)
     inform = launcher.run()
