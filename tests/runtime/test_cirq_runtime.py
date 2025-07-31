@@ -4,7 +4,7 @@ from qlauncher import QLauncher
 from qlauncher.base import Result
 from qlauncher.problems import MaxCut, Raw
 from qlauncher.routines.qiskit import QAOA
-from qlauncher.routines.cirq_routines import CirqBackend
+from qlauncher.routines.cirq import CirqBackend
 
 
 def test_cirq():
