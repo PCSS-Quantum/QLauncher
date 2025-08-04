@@ -27,7 +27,7 @@ To install the qlauncher use the following command:
 
 ::
 
-   pip install quantum-launcher
+   pip install qlauncher
 
 ----------------
 Optional install
@@ -36,7 +36,7 @@ QLauncher aims to work for many different architectures. Therefore in order to r
 
 ::
 
-   pip install 'quantum-launcher[orca]'
+   pip install 'qlauncher[orca]'
 
 to install all requirements necessary to run orca algorithms.
 
