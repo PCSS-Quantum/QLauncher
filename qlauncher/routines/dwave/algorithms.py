@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 from qlauncher.base import Algorithm, Problem, Result
 from qlauncher.exceptions import DependencyError
-from qlauncher.routines.dwave.backends import DwaveBackend
+from qlauncher.routines.dwave.backends import BQMBackend
 try:
     from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
     from dimod import SampleSet
@@ -21,7 +21,7 @@ class DwaveSolver(Algorithm):
         self.label: str = 'TBD_TBD'
         super().__init__(**alg_kwargs)
 
-    def run(self, problem: Problem, backend: DwaveBackend, formatter: Callable) -> Result:
+    def run(self, problem: Problem, backend: BQMBackend, formatter: Callable) -> Result:
         self.label = f'{problem.name}_{problem.instance_name}'
 
         bqm: BinaryQuadraticModel = formatter(problem)

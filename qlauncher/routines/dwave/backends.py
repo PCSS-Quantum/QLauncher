@@ -15,7 +15,7 @@ except ImportError as e:
     raise DependencyError(e, install_hint='dwave') from e
 
 
-class DwaveBackend(Backend, ABC):
+class BQMBackend(Backend, ABC):
     """Base dwave backend"""
 
     def __init__(self, name: str, parameters: list | None = None) -> None:
@@ -27,7 +27,7 @@ class DwaveBackend(Backend, ABC):
         """Get a dimod sampler"""
 
 
-class TabuBackend(DwaveBackend):
+class TabuBackend(BQMBackend):
     """Tabu search simulator backend"""
 
     def __init__(self, parameters: list | None = None) -> None:
@@ -37,7 +37,7 @@ class TabuBackend(DwaveBackend):
         return TabuSampler()
 
 
-class SimulatedAnnealingBackend(DwaveBackend):
+class SimulatedAnnealingBackend(BQMBackend):
     """Simulated annealing simulator backend"""
 
     def __init__(self, parameters: list | None = None) -> None:
@@ -47,7 +47,7 @@ class SimulatedAnnealingBackend(DwaveBackend):
         return SimulatedAnnealingSampler()
 
 
-class SteepestDescentBackend(DwaveBackend):
+class SteepestDescentBackend(BQMBackend):
     """Steepest descent simulator backend"""
 
     def __init__(self, parameters: list | None = None) -> None:
@@ -57,7 +57,7 @@ class SteepestDescentBackend(DwaveBackend):
         return SteepestDescentSampler()
 
 
-class DwaveDeviceBackend(DwaveBackend):
+class DwaveBackend(BQMBackend):
     """Real Dwave device backend"""
 
     def __init__(self, parameters: list | None = None) -> None:
