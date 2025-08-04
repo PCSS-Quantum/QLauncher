@@ -21,7 +21,7 @@ dependencies = [
     "qiskit_optimization",
     "qiskit_aer",
     "qcg-pilotjob",
-    "dill"
+    "dill",
 ]
 
 [tool.setuptools.packages.find]
@@ -29,6 +29,7 @@ where = ["."]
 include = ["qlauncher*"]
 
 [project.optional-dependencies]
+ml = ["qiskit-machine-learning","scikit_learn"]
 orca = ["numba==0.60.0", "torch"]
 dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
 cirq = ["cirq>=1.4.1", "ply"]

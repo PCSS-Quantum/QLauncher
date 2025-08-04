@@ -4,7 +4,7 @@
 
 The QLauncher version for Qiskit-based architecture.
 """
-from .algorithms import QAOA, EducatedGuess, FALQON
+from qlauncher.routines.qiskit_routines.algorithms import QAOA, EducatedGuess, FALQON, TrainQSVCKernel
 from qlauncher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
 from qlauncher.routines.qiskit_routines.backends.ibm_backend import IBMBackend
 from qlauncher.routines.qiskit_routines.backends.aqt_backend import AQTBackend

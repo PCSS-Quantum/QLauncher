@@ -8,9 +8,13 @@ stages:
 default:
   before_script:
     - python --version; pip --version
+    - apt-get update
+    - apt-get upgrade -y
+    - apt-get install -y git
     - pip install uv
     - uv venv .venv
     - source .venv/bin/activate
+    - uv pip install git+https://ptseries-CI:${PTSERIES_TOKEN}@gitlab.pcss.pl/quantum/ptseries.git
     - uv pip install -r requirements.txt
     - uv pip install -r requirements-dev.txt
     - uv pip install --editable .
