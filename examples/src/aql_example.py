@@ -1,8 +1,8 @@
 from qlauncher.launcher.aql import AQLManager
 from qlauncher.problems import MaxCut, EC
-from qlauncher.routines.dwave_routines import DwaveSolver, SimulatedAnnealingBackend
-from qlauncher.routines.qiskit_routines import QAOA, IBMBackend
-from qlauncher.routines.orca_routines import BBS, OrcaBackend
+from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend
+from qlauncher.routines.qiskit import QAOA, IBMBackend
+from qlauncher.routines.orca import BBS, OrcaBackend
 
 
 with AQLManager() as launcher:

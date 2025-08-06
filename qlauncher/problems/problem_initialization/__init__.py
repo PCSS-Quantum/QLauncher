@@ -5,3 +5,4 @@ from .ec import EC
 from .maxcut import MaxCut
 from .tsp import TSP
 from .graph_coloring import GraphColoring
+from .tabular_ml import TabularML

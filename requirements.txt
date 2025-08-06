@@ -35,3 +35,7 @@ qcg-pilotjob
 dill
 multiprocess
 pathos
+
+#ML
+qiskit-machine-learning
+scikit_learn

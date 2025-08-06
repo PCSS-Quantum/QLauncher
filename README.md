@@ -76,7 +76,7 @@ For example to solve MaxCut problem with QAOA on qiskit simulator all you need t
 # Necessary imports
 from qlauncher import QLauncher
 from qlauncher.problems import MaxCut
-from qlauncher.routines.qiskit_routines import QiskitBackend, QAOA
+from qlauncher.routines.qiskit import QiskitBackend, QAOA
 
 # Selecting problem, algorithm and backend
 problem = MaxCut.from_preset('default')
@@ -96,7 +96,7 @@ A key advantage of our library is that changing algorithms (such as switching to
 # Necessary imports
 from qlauncher import QLauncher
 from qlauncher.problems import MaxCut
-from qlauncher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
+from qlauncher.routines.dwave import SimulatedAnnealingBackend, DwaveSolver
 
 # Selecting problem, algorithm and backend
 problem = MaxCut.from_preset('default')

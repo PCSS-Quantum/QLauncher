@@ -5,7 +5,7 @@ from qiskit.providers import BackendV1, BackendV2
 from qiskit_ibm_runtime import EstimatorV2, SamplerV2
 from qiskit_ibm_runtime import Session, Options
 
-from qlauncher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
+from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
 class IBMBackend(QiskitBackend):
