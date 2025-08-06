@@ -6,9 +6,8 @@ from qiskit_machine_learning.kernels import BaseKernel
 
 from qlauncher import QLauncher
 from qlauncher.problems import TabularML
-from qlauncher.routines.qiskit_routines import TrainQSVCKernel
-from qlauncher.routines.qiskit_routines import QiskitBackend
-from qlauncher.routines.cirq_routines import CirqBackend
+from qlauncher.routines.qiskit import TrainQSVCKernel, QiskitBackend
+from qlauncher.routines.cirq import CirqBackend
 from qlauncher.base import Result
 
 

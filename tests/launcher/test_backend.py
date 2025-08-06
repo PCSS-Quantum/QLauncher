@@ -11,7 +11,7 @@ from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 
 from qlauncher import QLauncher
 from qlauncher.problems import EC
-from qlauncher.routines.qiskit_routines import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA, FALQON
+from qlauncher.routines.qiskit import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA, FALQON
 
 import pytest
 

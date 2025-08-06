@@ -33,7 +33,7 @@ Dwave
 ::
 
     from qlauncher import *
-    from qlauncher.routines.dwave_routines import SimulatedAnnealingBackend, DwaveSolver
+    from qlauncher.routines.dwave import SimulatedAnnealingBackend, DwaveSolver
 
     problem = problems.MaxCut(instance_name='default')
     alg = DwaveSolver(1)
@@ -52,7 +52,7 @@ Orca
 ::
 
     from qlauncher import *
-    from qlauncher.routines.orca_routines import OrcaBackend, BBS
+    from qlauncher.routines.orca import OrcaBackend, BBS
 
     problem = problems.MaxCut(instance_name='default')
     alg = BBS()

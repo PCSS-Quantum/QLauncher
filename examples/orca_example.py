@@ -1,7 +1,7 @@
 """ QLauncher for Orca """
 from qlauncher import QLauncher
 from qlauncher.problems import MaxCut
-from qlauncher.routines.orca_routines import OrcaBackend, BBS
+from qlauncher.routines.orca import OrcaBackend, BBS
 
 
 def main():

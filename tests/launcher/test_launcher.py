@@ -1,6 +1,6 @@
 import os
 from qlauncher import QLauncher
-from qlauncher.routines.qiskit_routines import FALQON, QiskitBackend
+from qlauncher.routines.qiskit import FALQON, QiskitBackend
 from qlauncher.base.base import Result
 from qlauncher.problems import TSP
 import warnings

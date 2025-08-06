@@ -2,7 +2,7 @@ import json
 import os
 import sys
 from qlauncher import QLauncher
-from qlauncher.routines.qiskit_routines import QAOA, QiskitBackend
+from qlauncher.routines.qiskit import QAOA, QiskitBackend
 from qlauncher.problems import MaxCut, EC, JSSP, QATM, Problem
 import dill
 

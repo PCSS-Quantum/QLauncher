@@ -6,7 +6,7 @@ from qiskit.providers import BackendV1, BackendV2
 from qiskit.primitives import Sampler
 from qiskit_ibm_runtime import Options
 
-from qlauncher.routines.qiskit_routines import QiskitBackend
+from qlauncher.routines.qiskit import QiskitBackend
 from qlauncher.exceptions import DependencyError
 
 try:

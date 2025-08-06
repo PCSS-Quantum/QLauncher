@@ -12,8 +12,8 @@ from qiskit_machine_learning.kernels import TrainableFidelityQuantumKernel, Fide
 from qiskit_machine_learning.state_fidelities import ComputeUncompute, BaseStateFidelity
 
 from qlauncher.base.base import Backend, Problem, Algorithm, Result
-from qlauncher.routines.qiskit_routines.backends.qiskit_backend import QiskitBackend
-from qlauncher.routines.cirq_routines import CirqBackend
+from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
+from qlauncher.routines.cirq import CirqBackend
 
 
 class ComputeUncomputeCustom(ComputeUncompute):
