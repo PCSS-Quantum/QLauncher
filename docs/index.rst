@@ -1,35 +1,77 @@
-Quantum Launcher Docs
+QLauncher Docs
 =====================
 
 ----------------
 About project
 ----------------
-Quantum Launcher is a high-level python library that aims to simplify usage of different quantum algorithms. The goal is to make learning, using and benchmarking different quantum algorithms, hardware and problem formulations simpler.
+QLauncher is a high-level Python library that simplifies the process of running quantum algorithms. The library aims to make it easier to run, test, benchmark, and optimize quantum algorithms by providing tools that work across diverse configurations.
+The library contains a rich collection of preset problems and algorithms, eliminating the need to repeatedly implement foundational components such as problem-specific QUBO formulations or Hamiltonians. This approach significantly reduces the overhead when benchmarking different quantum approaches.
+QLauncher introduces an intuitive architectural framework by dividing the quantum computation pipeline into three distinct components: Problem, Algorithm, and Backend. This separation creates a universal interface that allows researchers and developers to focus on specific aspects of quantum computation while maintaining compatibility across the entire ecosystem.
 
-----------------
-Main idea
-----------------
-Quantum Launcher splits solving problems on Quantum Machine into 3 main components:
+------------------
+Supported features
+------------------
+Additionally to ability of quickly changing tested problem, algorithm or backend QLauncher comes with a bunch of useful features such as:
 
-- Problem: Formulation of the problem that we want to solve, for example: Maxcut or Exact Cover
-- Algorithm: Algorithm implementation that we want to use for solving problem, for example: QAOA, FALQON, BBS
-- Backend: The Hardware or local simulator that we want to use to execute our algorithm
-
+* Random problem instances generator.
+* Automatic translation between problem formulations (e.g. QUBO -> Hamiltonian).
+* QASM-based translation to match different frameworks (such as running qiskit's algorithm on cirq's computer).
+* Asynchronous architecture to execute problems either standalone or in a grid.
+* Access to more advanced workflows with qcg-pilotjob.
+* Interface for simple profiling of algorithms.
+* Creation of more complex workflows using WorkflowManager enabling splitting algorithms across multiple devices.
 ----------------
-Getting started
+Installation
 ----------------
-To install the quantum launcher use the following command:
+To install the qlauncher use the following command:
 
 ::
 
-   pip install quantum-launcher
+   pip install qlauncher
 
+----------------
+Optional install
+----------------
+QLauncher aims to work for many different architectures. Therefore in order to remain compatible with all of them QLauncher by default installs only necessary requirements allowing user to decide what frameworks does one want to use. To make installation easier, there is a bunch of downloads that can be done with optional dependencies, for example:
 
-Then you can get to know the library by checking out the following sections:
+::
+
+   pip install 'qlauncher[orca]'
+
+to install all requirements necessary to run orca algorithms.
+
+* orca: support for Orca Computing algorithms and backends NOTE library ptseries is not public therefore one needs to install it on its own.
+* dwave: support for D-Wave Systems algorithms and backends.
+* cirq: support for Google's cirq backends.
+* pilotjob: support for advanced job scheduling using QLauncher and QCG PilotJob for more complex algorithm.
+
+----------------
+Supported problems, algorithms and backends
+----------------
+QLauncher was made to simplify using of multiple different problems, algorithms and backends, therefore adding new things is relatively easy.
+
+Supported problems:
+
+* MaxCut
+* Exact Cover
+* Job Shop Shedueling
+* Air Traffic Management
+* Traveling Salesman Problem
+* Graph Coloring
+
+For now supported backends are:
+
+* Qiskit
+* Orca Computing
+* D-wave
+* AQT
+* Cirq
+
+You can get to know the library by checking out the following sections:
 
 .. toctree::
    :maxdepth: 1
 
    examples
    tutorials
-   api_reference
+   API Documentation <API/qlauncher>
