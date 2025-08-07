@@ -76,7 +76,7 @@ For example to solve MaxCut problem with QAOA on qiskit simulator all you need t
 # Necessary imports
 from qlauncher import QLauncher
 from qlauncher.problems import MaxCut
-from qlauncher.routines.qiskit_routines import QiskitBackend, QAOA
+from qlauncher.routines.qiskit import QiskitBackend, QAOA
 
 # Selecting problem, algorithm and backend
 problem = MaxCut.from_preset('default')

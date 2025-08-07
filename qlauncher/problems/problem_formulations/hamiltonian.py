@@ -23,6 +23,44 @@ def hamiltonian_to_qubo(hamiltonian):
     return qubo.quadratic.to_array(), 0
 
 
+@adapter("qubo", "hamiltonian")
+def qubo_to_hamiltonian(qubo: np.ndarray) -> SparsePauliOp:
+    q_matrix, offset = qubo
+    num_vars = q_matrix.shape[0]
+    pauli = 0
+    for i, col in enumerate(q_matrix):
+        for j, entry in enumerate(col):
+            if entry == 0:
+                continue
+            if i == j:
+                pauli += SparsePauliOp.from_sparse_list([('I', [0], .5), ('Z', [i], -.5)], num_vars)*entry
+            else:
+                pauli += SparsePauliOp.from_sparse_list([('I', [0], .25), ('Z', [i], -.25),
+                                                        ('Z', [j], -.25), ('ZZ', [i, j], .25)], num_vars)*entry
+    pauli += SparsePauliOp.from_sparse_list([('I', [], offset)], num_vars)
+    return pauli
+
+
+def ring_ham(ring: set, n):
+    total = None
+    ring = list(ring)
+    for index in range(len(ring) - 1):
+        sparse_list = []
+        sparse_list.append((("XX", [ring[index], ring[index + 1]], 1)))
+        sparse_list.append((("YY", [ring[index], ring[index + 1]], 1)))
+        sp = SparsePauliOp.from_sparse_list(sparse_list, n)
+        if total is None:
+            total = sp
+        else:
+            total += sp
+    sparse_list = []
+    sparse_list.append((("XX", [ring[-1], ring[0]], 1)))
+    sparse_list.append((("YY", [ring[-1], ring[0]], 1)))
+    sp = SparsePauliOp.from_sparse_list(sparse_list, n)
+    total += sp
+    return SparsePauliOp(total)
+
+
 @formatter(problems.EC, 'hamiltonian')
 class ECQiskit:
     def __call__(self, problem: problems.EC, onehot='exact') -> SparsePauliOp:

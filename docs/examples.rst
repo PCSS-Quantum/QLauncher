@@ -13,9 +13,9 @@ Qiskit
 ::
 
     from qlauncher import *
-    from qlauncher.routines.qiskit_routines import QiskitBackend, QAOA
+    from qlauncher.routines.qiskit import QiskitBackend, QAOA
 
-    pr = problems.JSSP(3, 'exact', instance_name='toy', optimization_problem=True)
+    pr = problems.JSSP(3, 'exact', instance_name='default', optimization_problem=True)
     alg = QAOA()
     backend = QiskitBackend('local_simulator')
 

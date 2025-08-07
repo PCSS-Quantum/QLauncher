@@ -1,5 +1,5 @@
 """
-``qiskit_routines``
+``qiskit``
 ================
 
 The QLauncher version for Qiskit-based architecture.

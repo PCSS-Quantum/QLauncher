@@ -27,7 +27,7 @@ class QLauncher:
 
             from qlauncher import QLauncher
             from qlauncher.problems import MaxCut
-            from qlauncher.routines.qiskit_routines import QAOA, QiskitBackend
+            from qlauncher.routines.qiskit import QAOA, QiskitBackend
 
             problem = MaxCut(instance_name='default')
             algorithm = QAOA()
