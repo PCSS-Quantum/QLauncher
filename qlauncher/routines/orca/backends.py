@@ -10,9 +10,6 @@ except ImportError as e:
 class OrcaBackend(Backend):
     """ local backend """
 
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-
     def get_bbs(
         self,
         pb_dim: int,
@@ -20,6 +17,7 @@ class OrcaBackend(Backend):
         input_state,
         **kwargs
     ) -> BinaryBosonicSolver:
+        """ returns BBS algorithm """
         return BinaryBosonicSolver(
             pb_dim=pb_dim,
             objective=objective,

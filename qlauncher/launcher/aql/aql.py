@@ -1,4 +1,4 @@
-"""Wrapper for QLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
+""" Wrapper for QLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing) """
 from typing import Literal
 from collections.abc import Callable
 import time
@@ -25,7 +25,7 @@ class AQL:
 
         t_real = aql.add_task(
             (
-                GraphColoring.from_preset('small'), 
+                GraphColoring.from_preset('small'),
                 QAOA(),
                 AQTBackend(token='valid_token', name='device')
             ),
@@ -35,7 +35,7 @@ class AQL:
 
         aql.add_task(
             (
-                GraphColoring.from_preset('small'), 
+                GraphColoring.from_preset('small'),
                 QAOA(),
                 QiskitBackend('local_simulator')
             ),
@@ -56,10 +56,10 @@ class AQL:
     ) -> None:
         """
         Args:
-            mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;], optional): 
-                    Task execution mode. 
+            mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;], optional):
+                    Task execution mode.
                     If 'optimize_session' all tasks running on a real quantum device get split into separate generation and run subtasks,
-                    then the quantum tasks are ran in one shorter block. 
+                    then the quantum tasks are ran in one shorter block.
                     Defaults to 'default'.
         """
 
@@ -88,9 +88,9 @@ class AQL:
         Blocks the thread until all tasks are finished.
 
         Args:
-            timeout (float | int | None, optional): 
-                    The maximum amount to wait for execution to finish. 
-                    If None, wait forever. If not None and time runs out, raises TimeoutError. 
+            timeout (float | int | None, optional):
+                    The maximum amount to wait for execution to finish.
+                    If None, wait forever. If not None and time runs out, raises TimeoutError.
                     Defaults to None.
             cancel_tasks_on_timeout (bool): Whether to cancel all other tasks when one task raises a TimeoutError.
 
@@ -121,9 +121,9 @@ class AQL:
         Args:
             launcher (QLauncher | tuple[Problem, Algorithm, Backend]): Launcher instance that will be run.
             dependencies (list[AQLTask] | None, optional): Tasks that must finish first before this task. Defaults to None.
-            callbacks (list[Callable] | None, optional): 
-                    Functions to run when the task finishes. 
-                    The task will be passed to the function as the only parameter. 
+            callbacks (list[Callable] | None, optional):
+                    Functions to run when the task finishes.
+                    The task will be passed to the function as the only parameter.
                     Defaults to None.
 
         Returns:
@@ -151,7 +151,7 @@ class AQL:
         # Split real device task into generation and actual run on a QC
         t_gen = AQLTask(
             gen_task,
-            dependencies=[dep for dep in dependencies_list if not dep in self._quantum_tasks]
+            dependencies=[dep for dep in dependencies_list if dep not in self._quantum_tasks]
         )
 
         def quantum_task(formatted, *_):
@@ -177,7 +177,7 @@ class AQL:
 
     def start(self):
         """Start tasks execution."""
-        for t in self._classical_tasks+self._quantum_tasks:
+        for t in self._classical_tasks + self._quantum_tasks:
             if t.cancelled() or t.done() or t.running():
                 raise ValueError("Cannot start again, some tasks were already ran or are currently running.")
 
@@ -207,7 +207,7 @@ class AQL:
             dependencies=self._quantum_tasks.copy()
         )
 
-        for ct in [t for t in self._classical_tasks if not t in quantum_dependencies]:
+        for ct in [t for t in self._classical_tasks if t not in quantum_dependencies]:
             ct.dependencies.append(gateway_task_quantum)
 
         self._classical_tasks.append(gateway_task_classical)

@@ -22,7 +22,7 @@ def one_in_n(variables: list[int | Variable], size: int | None = None, quadratic
         Equation: Equation returning True if exactly one of passed indexes is 1, False otherwise
     """
     if size is None:
-        for var in variable:
+        for var in variables:
             if isinstance(var, Variable):
                 size = var.size
                 break
@@ -38,8 +38,8 @@ def one_in_n(variables: list[int | Variable], size: int | None = None, quadratic
     if quadratic:
         for variable in new_variables:
             eq += variable
-        I = SparsePauliOp.from_sparse_list([('I', [], 1)], size)
-        hamiltonian = I - eq.hamiltonian
+        identity = SparsePauliOp.from_sparse_list([('I', [], 1)], size)
+        hamiltonian = identity - eq.hamiltonian
         return Equation(hamiltonian.compose(hamiltonian))
 
     for variable in new_variables:

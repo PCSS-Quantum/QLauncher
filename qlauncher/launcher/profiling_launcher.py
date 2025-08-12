@@ -1,3 +1,4 @@
+""" Launcher used for profiling (old version, waiting to be updated) """
 import cProfile
 import pstats
 from qlauncher.base import Algorithm, Backend, Problem, Result
@@ -11,9 +12,14 @@ class ProfilingLauncher(QLauncher):
         super().__init__(problem, algorithm, backend)
         self._profiler_path = profiler_path
 
-    def run(self) -> tuple[Result, pstats.Stats]:
+    def run_profiling(self) -> Result:
+        """ Run's the problem as usual in QLauncher, with profiling turned on.
+
+        Returns:
+            Result: Results
+        """
         with cProfile.Profile() as pr:
-            result = super().run()
+            result = self.run()
         stats = pstats.Stats(pr)
         stats.sort_stats(pstats.SortKey.TIME)
         stats.reverse_order()

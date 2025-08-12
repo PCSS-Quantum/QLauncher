@@ -39,7 +39,7 @@ class QLauncher:
 
     """
 
-    def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend | None = None, logger: logging.Logger | None = None) -> None:
+    def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend | None = None, logger: logging.Logger | None = None):
 
         if not isinstance(problem, Problem):
             problem = Raw(problem)
@@ -102,9 +102,7 @@ class QLauncher:
 
 
 def fix_json(o: object):
-    # if o.__class__.__name__ == 'SamplingVQEResult':
-    #     parsed = self.algorithm.parse_samplingVQEResult(o, self._full_path)
-    #     return parsed
+    """ fixes json packaging """
     if o.__class__.__name__ == 'complex128':
         return repr(o)
     print(
