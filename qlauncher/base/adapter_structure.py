@@ -1,3 +1,4 @@
+""" Base structure """
 from collections import defaultdict
 from collections.abc import Callable
 from typing import Any
@@ -34,8 +35,8 @@ class ProblemFormatter:
     Probably shouldn't be constructed directly, call :py:func:`get_formatter()`
     """
 
-    def __init__(self, formatter: Callable, adapters: list[Callable] | None = None):
-        self.formatter = formatter
+    def __init__(self, formatter_function: Callable, adapters: list[Callable] | None = None):
+        self.formatter = formatter_function
         self.adapters = [a['func'] for a in adapters] if adapters is not None else []
         self.adapter_requirements = _merge_dicts([a['formatter_requirements'] for a in adapters] if adapters is not None else [])
 
@@ -48,8 +49,9 @@ class ProblemFormatter:
 
         unused_count = len(run_params) - len(params_used)
         if unused_count > 0:
-            warnings.warn(
-                f"{unused_count} unused parameters. {_get_callable_name(self.formatter)} does not accept {[k for k in run_params if not k in params_used]}", Warning)
+            warnings.warn(f"{unused_count} unused parameters. " +
+                          f"{_get_callable_name(self.formatter)} does not accept " +
+                          f"{[k for k in run_params if not k in params_used]}", Warning)
         return self.formatter(*args, **kwargs, **params_used)
 
     def __call__(self, *args, **kwargs):
@@ -148,18 +150,18 @@ def _find_shortest_adapter_path(problem: type[Problem], alg_format: str) -> list
     Returns:
         List of formats or None if no path was found.
     """
-    G = nx.DiGraph()
+    graph = nx.DiGraph()
     for problem_node in __QL_FORMATTERS[problem]:
-        G.add_edge("__problem__", problem_node)
+        graph.add_edge("__problem__", problem_node)
 
     for out_form in __QL_ADAPTERS:
         for in_form in __QL_ADAPTERS[out_form]:
-            G.add_edge(in_form, out_form)
+            graph.add_edge(in_form, out_form)
 
-    if not G.has_node(alg_format):
+    if not graph.has_node(alg_format):
         return None
 
-    path = nx.shortest_path(G, "__problem__", alg_format)
+    path = nx.shortest_path(graph, "__problem__", alg_format)
     assert isinstance(path, list) or path is None, "Something went wrong in `nx.shortest_path`"
     return path
 
@@ -178,24 +180,25 @@ def get_formatter(problem: type[Problem], alg_format: str) -> ProblemFormatter:
     Raises:
         ValueError: If no combination of adapters can achieve conversion from problem to desired format.
     """
-    formatter, adapters = None, None
+    current_formatter, adapters = None, None
     available_problem_formats = set(__QL_FORMATTERS[problem].keys())
     if alg_format in available_problem_formats:
-        formatter = __QL_FORMATTERS[problem][alg_format]
+        current_formatter = __QL_FORMATTERS[problem][alg_format]
     else:
         path = _find_shortest_adapter_path(problem, alg_format)
 
         if path is None:
-            formatter = default_formatter
+            current_formatter = default_formatter
         else:
-            formatter = __QL_FORMATTERS[problem][path[1]]
+            current_formatter = __QL_FORMATTERS[problem][path[1]]
             adapters = []
-            for i in range(1, len(path)-1):
-                adapters.append(__QL_ADAPTERS[path[i+1]][path[i]])
+            for i in range(1, len(path) - 1):
+                adapters.append(__QL_ADAPTERS[path[i + 1]][path[i]])
 
-    return ProblemFormatter(formatter, adapters)
+    return ProblemFormatter(current_formatter, adapters)
 
 
 @formatter(None, 'none')
 def default_formatter(problem: Problem):
+    """ Return's instance of a problem """
     return problem.instance

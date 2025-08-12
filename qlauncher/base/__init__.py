@@ -1,3 +1,4 @@
+""" Base QLauncher structure types """
 from .base import Problem, Algorithm, Backend, Result
 from .adapter_structure import adapter, formatter
 

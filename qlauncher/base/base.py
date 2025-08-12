@@ -1,16 +1,17 @@
+""" Base classes """
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import pickle
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal
 from collections.abc import Callable
 import logging
 
-
-AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'bqm', 'none', 'fn', 'tabular_ml']
+AvailableFormats = Literal['hamiltonian', 'qubo', 'bqm', 'none', 'fn', 'tabular_ml']
 
 
 @dataclass
 class Result:
+    """ Task results """
     best_bitstring: str
     best_energy: float
     most_common_bitstring: str
@@ -29,9 +30,11 @@ class Result:
         return str(self)
 
     def best(self):
+        """ Best found energy """
         return self.best_bitstring, self.best_energy
 
     def most_common(self):
+        """ Most commonly found bitstring """
         return self.most_common_bitstring, self.most_common_bitstring_energy
 
     @staticmethod
@@ -50,7 +53,7 @@ class Result:
         std = 0
         for bitstring, occ in bitstring_distribution.items():
             std += occ * ((energy_distribution[bitstring] - mean_value)**2)
-        std = (std/(num_of_samples-1))**0.5
+        std = (std / (num_of_samples - 1))**0.5
         return Result(
             best_bitstring,
             best_energy,
@@ -71,20 +74,21 @@ class Backend:
 
     Attributes:
         name (str): The name of the backend.
-        path (str | None): The path to the backend (optional).
-        parameters (list): A list of parameters for the backend (optional).
 
     """
 
-    def __init__(self, name: str, parameters: list | None = None) -> None:
+    def __init__(self, name: str) -> None:
         self.name: str = name
         self.is_device = name == 'device'
-        self.path: str | None = None
-        self.parameters = parameters if parameters is not None else []
         self.logger: logging.Logger | None = None
 
     def set_logger(self, logger: logging.Logger):
+        """ Sets logger """
         self.logger = logger
+
+    def set_name(self, name: str) -> None:
+        """ Sets name """
+        self.name = name
 
     def _get_path(self):
         return f'{self.name}'
@@ -124,12 +128,14 @@ class Problem(ABC):
 
     @classmethod
     def from_file(cls: type['Problem'], path: str) -> 'Problem':
+        """ Creates problem from file """
         with open(path, 'rb') as f:
             instance = pickle.load(f)
         return cls(instance)
 
     @staticmethod
     def from_preset(instance_name: str, **kwargs):
+        """ Creates problem from preset """
         raise NotImplementedError()
 
     def __init_subclass__(cls) -> None:
@@ -179,7 +185,7 @@ class Algorithm(ABC):
         _get_path(self) -> str: Returns the common path for the algorithm.
         run(self, problem: Problem, backend: Backend): Runs the algorithm on a specific problem using a backend.
     """
-    _algorithm_format: AVAILABLE_FORMATS = 'none'
+    _algorithm_format: AvailableFormats = 'none'
 
     def __init__(self, **alg_kwargs) -> None:
         self.name: str = self.__class__.__name__.lower()

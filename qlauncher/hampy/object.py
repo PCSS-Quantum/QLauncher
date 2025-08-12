@@ -1,8 +1,18 @@
+""" Hampy objects implementation """
 from typing import overload
 from qiskit.quantum_info import SparsePauliOp
 
 
 class Equation:
+    """Equation object is responsible for arranging group of variables and making operations between them.
+    You can use equation to avoid grouping up the variables object as well as for optimization purposes.
+
+    Raises:
+        TypeError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     @overload
     def __init__(self, size: int): ...
     @overload
@@ -24,12 +34,14 @@ class Equation:
             raise TypeError('Wrong arguments!')
 
     def get_variable(self, index: int) -> "Variable":
+        """ return's variable object at the given index """
         assert isinstance(index, int), "Index needs to be an integer"
         obj = Variable(index, self)
         return obj
 
     @property
     def hamiltonian(self) -> SparsePauliOp:
+        """ Returns simplified hamiltonian. """
         return self._hamiltonian.simplify()
 
     @hamiltonian.setter
@@ -37,15 +49,18 @@ class Equation:
         self._hamiltonian = new_hamiltonian
 
     def to_sparse_pauli_op(self) -> SparsePauliOp:
+        """ Returns hamiltonian as SparsePauliOp. """
         return self.hamiltonian
 
     def get_order(self) -> int:
+        """ Returns order of equation. """
         equation_order = 0
-        for Z_term in self.hamiltonian.paulis:
-            equation_order = max(equation_order, str(Z_term).count('Z'))
+        for z_term in self.hamiltonian.paulis:
+            equation_order = max(equation_order, str(z_term).count('Z'))
         return equation_order
 
     def is_quadratic(self) -> bool:
+        """ Returns `True` if equation is up to quadratic """
         return all(term.z.sum() <= 2 for term in self.hamiltonian.paulis)
 
     def __or__(self, other: "Variable | Equation", /) -> "Equation":
@@ -67,8 +82,8 @@ class Equation:
         return Equation(self.hamiltonian + other.hamiltonian - (2 * self.hamiltonian.compose(other.hamiltonian)))
 
     def __invert__(self) -> "Equation":
-        I = ('I', [], 1)
-        identity = SparsePauliOp.from_sparse_list([I], self.size)
+        identity = ('I', [], 1)
+        identity = SparsePauliOp.from_sparse_list([identity], self.size)
         return Equation(identity - self.hamiltonian)
 
     def __getitem__(self, variable_number: int):
@@ -95,19 +110,22 @@ class Equation:
     def __mul__(self, other: "Equation | float") -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
-        if isinstance(other, float) or isinstance(other, int):
+        if isinstance(other, (int, float)):
             return Equation(float(other) * self.hamiltonian)
         return Equation(self.hamiltonian.compose(other.hamiltonian))
 
     def __rmul__(self, other: "Equation | float") -> "Equation":
         if isinstance(other, Variable):
             other = other.to_equation()
-        if isinstance(other, float) or isinstance(other, int):
+        if isinstance(other, (float, int)):
             return Equation(float(other) * self.hamiltonian)
         return Equation(self.hamiltonian.compose(other.hamiltonian))
 
 
 class Variable:
+    """Class for setting variables
+    """
+
     def __init__(self, index: int, parent: Equation):
         self.index = index
         self.size = parent.size
@@ -116,20 +134,20 @@ class Variable:
         if isinstance(other, Equation):
             return self.to_equation() ^ other
 
-        I = ('I', [], 0.5)
-        Z_term = ('ZZ', [self.index, other.index], -0.5)
-        eq = Equation(SparsePauliOp.from_sparse_list([I, Z_term], self.size))
+        identity = ('I', [], 0.5)
+        z_term = ('ZZ', [self.index, other.index], -0.5)
+        eq = Equation(SparsePauliOp.from_sparse_list([identity, z_term], self.size))
         return eq
 
     def __or__(self, other: "Variable | Equation", /) -> Equation:
         if isinstance(other, Equation):
             return self.to_equation() | other
 
-        I_term = ('I', [], 0.75)
-        Z1_term = ('Z', [self.index], -0.25)
-        Z2_term = ('Z', [other.index], -0.25)
-        ZZ_term = ('ZZ', [self.index, other.index], -0.25)
-        eq = Equation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
+        i_term = ('I', [], 0.75)
+        z1_term = ('Z', [self.index], -0.25)
+        z2_term = ('Z', [other.index], -0.25)
+        zz_term = ('ZZ', [self.index, other.index], -0.25)
+        eq = Equation([i_term, z1_term, z2_term, zz_term], self.size)
         return eq
 
     def __and__(self, other: "Variable | Equation", /) -> Equation:
@@ -137,19 +155,20 @@ class Variable:
         if isinstance(other, Equation):
             return self.to_equation() & other
 
-        I_term = ('I', [], 0.25)
-        Z1_term = ('Z', [self.index], -0.25)
-        Z2_term = ('Z', [other.index], -0.25)
-        ZZ_term = ('ZZ', [self.index, other.index], 0.25)
-        eq = Equation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
+        i_term = ('I', [], 0.25)
+        z1_term = ('Z', [self.index], -0.25)
+        z2_term = ('Z', [other.index], -0.25)
+        zz_term = ('ZZ', [self.index, other.index], 0.25)
+        eq = Equation([i_term, z1_term, z2_term, zz_term], self.size)
         return eq
 
     def __invert__(self) -> Equation:
-        I_term = ('I', [], 0.5)
-        Z_term = ('Z', [self.index], 0.5)
-        return Equation([I_term, Z_term], self.size)
+        i_term = ('I', [], 0.5)
+        z_term = ('Z', [self.index], 0.5)
+        return Equation([i_term, z_term], self.size)
 
     def to_equation(self) -> Equation:
-        I_term = ('I', [], 0.5)
-        Z_term = ('Z', [self.index], -0.5)
-        return Equation([I_term, Z_term], self.size)
+        """ Changes variable into equation """
+        i_term = ('I', [], 0.5)
+        z_term = ('Z', [self.index], -0.5)
+        return Equation([i_term, z_term], self.size)

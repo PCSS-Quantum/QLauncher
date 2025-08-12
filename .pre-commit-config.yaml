@@ -1,0 +1,21 @@
+repos:
+  - repo: https://github.com/hhatto/autopep8
+    rev: v2.3.2
+    hooks:
+      - id: autopep8
+        args: ["--max-line-length=140", "--in-place", "--aggressive", "--aggressive"]
+
+  - repo: local
+    hooks:
+      - id: pylint
+        exclude: ^(tests|docs)/.*$
+        name: pylint
+        entry: .venv/bin/pylint
+        language: system
+        types: [python]
+        args:
+          [
+            "-rn",
+            "-sn",
+            "--rcfile=pylintrc",
+          ]
