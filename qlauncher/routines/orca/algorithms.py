@@ -61,7 +61,10 @@ class BBS(Algorithm):
         objective = formatter(problem)
 
         if self.input_state is None:
-            self.input_state = [(i + 1) % 2 for i in range(len(objective))]
+            if not callable(objective):
+                self.input_state = [(i + 1) % 2 for i in range(len(objective))]
+            else:
+                raise ValueError('input_state needs to be provided if objective is a function (callable)')
         # TODO: use offset somehow
         if not callable(objective):
             objective, offset = objective
