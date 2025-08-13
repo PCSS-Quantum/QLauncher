@@ -60,14 +60,15 @@ class BBS(Algorithm):
             raise ValueError(f'{backend.__class__} is not supported by BBS algorithm, use OrcaBackend instead')
         objective = formatter(problem)
 
+        # TODO: use offset somehow
+        if not callable(objective):
+            objective, offset = objective
+
         if self.input_state is None:
             if not callable(objective):
                 self.input_state = [(i + 1) % 2 for i in range(len(objective))]
             else:
                 raise ValueError('input_state needs to be provided if objective is a function (callable)')
-        # TODO: use offset somehow
-        if not callable(objective):
-            objective, offset = objective
 
         tbi = backend.get_tbi()
         bbs = BinaryBosonicSolver(pb_dim=len(self.input_state),
