@@ -17,8 +17,8 @@ except ImportError as e:
 class BQMBackend(Backend, ABC):
     """Base dwave backend"""
 
-    def __init__(self, name: str, parameters: list | None = None) -> None:
-        super().__init__(name, parameters)
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
         self.sampler = self._get_sampler()
 
     @abstractmethod
@@ -29,8 +29,8 @@ class BQMBackend(Backend, ABC):
 class TabuBackend(BQMBackend):
     """Tabu search simulator backend"""
 
-    def __init__(self, parameters: list | None = None) -> None:
-        super().__init__("TabuBackend", parameters)
+    def __init__(self) -> None:
+        super().__init__("TabuBackend")
 
     def _get_sampler(self):
         return TabuSampler()
@@ -39,8 +39,8 @@ class TabuBackend(BQMBackend):
 class SimulatedAnnealingBackend(BQMBackend):
     """Simulated annealing simulator backend"""
 
-    def __init__(self, parameters: list | None = None) -> None:
-        super().__init__("SimulatedAnnealingBackend", parameters)
+    def __init__(self) -> None:
+        super().__init__("SimulatedAnnealingBackend")
 
     def _get_sampler(self) -> Sampler:
         return SimulatedAnnealingSampler()
@@ -49,8 +49,8 @@ class SimulatedAnnealingBackend(BQMBackend):
 class SteepestDescentBackend(BQMBackend):
     """Steepest descent simulator backend"""
 
-    def __init__(self, parameters: list | None = None) -> None:
-        super().__init__("SteepestDescentBackend", parameters)
+    def __init__(self) -> None:
+        super().__init__("SteepestDescentBackend")
 
     def _get_sampler(self) -> Sampler:
         return SteepestDescentSampler()
@@ -59,8 +59,8 @@ class SteepestDescentBackend(BQMBackend):
 class DwaveBackend(BQMBackend):
     """Real Dwave device backend"""
 
-    def __init__(self, parameters: list | None = None) -> None:
-        super().__init__("DwaveDevice", parameters)
+    def __init__(self) -> None:
+        super().__init__("DwaveDevice")
 
     def _get_sampler(self) -> Sampler:
         return EmbeddingComposite(DWaveSampler())

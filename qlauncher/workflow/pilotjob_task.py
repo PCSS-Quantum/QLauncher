@@ -1,10 +1,10 @@
 import json
 import os
 import sys
+import dill
 from qlauncher import QLauncher
 from qlauncher.routines.qiskit import QAOA, QiskitBackend
 from qlauncher.problems import MaxCut, EC, JSSP, QATM, Problem
-import dill
 
 PROBLEM_DICT: dict[str, type[Problem]] = {
     'MaxCut': MaxCut,
@@ -35,9 +35,9 @@ def parse_arguments() -> tuple[QLauncher, str]:
         algorithm = ALGORITHM_DICT[sys.argv[2]]
         backend = BACKEND_DICT[sys.argv[3]]
         kwargs = json.loads(sys.argv[4])
-        launcher = QLauncher(problem(**kwargs.get('problem', dict())),
-                             algorithm(**kwargs.get('algorithm', dict())),
-                             backend(**kwargs.get('backend', dict())))
+        launcher = QLauncher(problem(**kwargs.get('problem', {})),
+                             algorithm(**kwargs.get('algorithm', {})),
+                             backend(**kwargs.get('backend', {})))
         output_path = sys.argv[5]
     else:
         raise ValueError(f'Wrong number of arguments, expected 3 or 6 got {len(sys.argv)} instead')

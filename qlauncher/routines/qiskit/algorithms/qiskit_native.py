@@ -137,7 +137,7 @@ class QAOA(QiskitOptimizationAlgorithm):
             energies.append(mean)
 
         tag = self.make_tag(problem, backend)
-        sampler = backend.samplerV1
+        sampler = backend.sampler_v1
         # sampler.set_options(job_tags=[tag])
 
         if self.alternating_ansatz:

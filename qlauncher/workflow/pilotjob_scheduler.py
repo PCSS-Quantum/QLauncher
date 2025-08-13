@@ -14,6 +14,8 @@ except ImportError as e:
 
 
 class JobManager:
+    """ Job Manager class """
+
     def __init__(self, manager: Manager | None = None):
         """
         Job manager is QLauncher's wrapper for process management system, current version works on top of qcg-pilotjob

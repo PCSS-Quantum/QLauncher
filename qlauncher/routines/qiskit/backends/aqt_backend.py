@@ -92,5 +92,5 @@ class AQTBackend(QiskitBackend):
         self._configure_auto_behavior()
 
     @property
-    def samplerV1(self) -> Sampler:
+    def sampler_v1(self) -> Sampler:
         return self.sampler

@@ -59,7 +59,7 @@ class CirqBackend(Backend):
     """
 
     def __init__(self, name: Literal['local_simulator'] = 'local_simulator'):
-        self.sampler = self.samplerV1 = CirqSampler()
+        self.sampler = self.sampler_v1 = CirqSampler()
         super().__init__(name)
 
 

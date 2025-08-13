@@ -13,6 +13,7 @@ except ImportError as e:
 
 
 class DwaveSolver(Algorithm):
+    """ Solver for Dwave """
     _algorithm_format = 'bqm'
 
     def __init__(self, chain_strength=1, num_reads=1000, **alg_kwargs) -> None:

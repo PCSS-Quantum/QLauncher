@@ -84,7 +84,7 @@ class TrainQSVCKernel(Algorithm):
             raise ValueError(f"y is not of type np.ndarray: received {type(y)}")
 
         if isinstance(backend, (QiskitBackend, CirqBackend)):
-            sampler = backend.samplerV1
+            sampler = backend.sampler_v1
         else:
             raise ValueError(f"The accepted backends are QiskitBackend and CirqBackend, got {type(backend)}")
 

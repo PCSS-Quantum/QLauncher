@@ -37,7 +37,7 @@ def test_running():
 
 def test_workflow():
     with WorkflowManager() as wm:
-        data = wm.input(format='qubo')
+        data = wm.input(input_format='qubo')
         result = wm.task(task2, (data,))
         wm.output(result)
 
@@ -50,7 +50,7 @@ def test_workflow():
 
 def test_workflow_format():
     with WorkflowManager() as wm:
-        data = wm.input(format='qubo')
+        data = wm.input(input_format='qubo')
         result = wm.task(check_if_qubo, (data,))
         wm.output(result)
 

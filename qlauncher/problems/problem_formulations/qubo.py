@@ -2,7 +2,7 @@
 import numpy as np
 from pyqubo import Array
 from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
-import qlauncher.problems.problem_initialization as problem
+import qlauncher.problems.problem_initialization as problems
 
 from qlauncher.base import formatter, adapter
 
@@ -15,26 +15,26 @@ def qubo_to_fn(qubo):
     return qubo_fn
 
 
-@formatter(problem.MaxCut, 'qubo')
-def get_maxcut_qubo(problem: problem.MaxCut):
+@formatter(problems.MaxCut, 'qubo')
+def get_maxcut_qubo(problem: problems.MaxCut):
     """ Returns Qubo function """
     n = len(problem.instance)
-    Q = np.zeros((n, n))
+    qubo = np.zeros((n, n))
     for (i, j) in problem.instance.edges:
-        Q[i, i] += -1
-        Q[j, j] += -1
-        Q[i, j] += 1
-        Q[j, i] += 1
+        qubo[i, i] += -1
+        qubo[j, j] += -1
+        qubo[i, j] += 1
+        qubo[j, i] += 1
 
-    return Q, 0
+    return qubo, 0
 
 
-@formatter(problem.EC, 'qubo')
+@formatter(problems.EC, 'qubo')
 class ECOrca:
     gamma = 1
     delta = 0.05
 
-    def Jrr(self, route1, route2):
+    def jrr(self, route1, route2):
         s = len(set(route1).intersection(set(route2)))
         return s / 2
 
@@ -45,52 +45,52 @@ class ECOrca:
         s = i_sum - len(route1) * 2
         return s / 2
 
-    def calculate_jrr_hr(self, problem: problem.EC):
-        Jrr_dict = dict()
+    def calculate_jrr_hr(self, problem: problems.EC):
+        jrr_dict = dict()
         indices = np.triu_indices(len(problem.instance), 1)
         for i1, i2 in zip(indices[0], indices[1]):
-            Jrr_dict[(i1, i2)] = self.Jrr(
+            jrr_dict[(i1, i2)] = self.jrr(
                 problem.instance[i1], problem.instance[i2])
 
         hr_dict = dict()
-        for i in range(len(problem.instance)):
-            hr_dict[i] = self.hr(problem.instance[i], problem.instance)
+        for i, instance in enumerate(problem.instance):
+            hr_dict[i] = self.hr(instance, problem.instance)
 
-        return Jrr_dict, hr_dict
+        return jrr_dict, hr_dict
 
-    def calculate_lengths_tab(self, problem: problem.EC):
+    def calculate_lengths_tab(self, problem: problems.EC):
         tab = []
         for route in problem.instance:
             tab.append(len(route))
         return tab
 
-    def calculate_num_elements(self, problem: problem.EC):
+    def calculate_num_elements(self, problem: problems.EC):
         d = dict()
         for route in problem.instance:
             for el in route:
                 d[el] = 1
         return len(d)
 
-    def calculate_instance_size(self, problem: problem.EC):
+    def calculate_instance_size(self, problem: problems.EC):
         # Calculate instance size for training
         return len(problem.instance)
 
-    def __call__(self, problem: problem.EC):
-        self.num_elements = self.calculate_num_elements(problem)
-        self.len_routes = self.calculate_lengths_tab(problem)
-        Q = np.zeros((len(problem.instance), len(problem.instance)))
-        self.Jrr_dict, self.hr_dict = self.calculate_jrr_hr(problem)
-        for i in self.Jrr_dict:
-            Q[i[0]][i[1]] = self.Jrr_dict[i]
-            Q[i[1]][i[0]] = Q[i[0]][i[1]]
+    def __call__(self, problem: problems.EC):
+        # num_elements = self.calculate_num_elements(ec_problem)
+        # len_routes = self.calculate_lengths_tab(ec_problem)
+        qubo = np.zeros((len(problem.instance), len(problem.instance)))
+        jrr_dict, hr_dict = self.calculate_jrr_hr(problem)
+        for key, value in jrr_dict.items():
+            qubo[key[0]][key[1]] = value
+            qubo[key[1]][key[0]] = qubo[key[0]][key[1]]
 
-        for i in self.hr_dict:
-            Q[i][i] = -self.hr_dict[i]
+        for key, value in hr_dict.items():
+            qubo[key][key] = -value
 
-        return Q, 0
+        return qubo, 0
 
 
-@formatter(problem.JSSP, 'qubo')
+@formatter(problems.JSSP, 'qubo')
 class JSSPOrca:
     gamma = 1
     lagrange_one_hot = 1
@@ -109,7 +109,7 @@ class JSSPOrca:
                   pre_result.spin.offset)  # I need to change it into dict somehow
         return result, list(result[0].keys()), None
 
-    def calculate_instance_size(self, problem: problem.JSSP):
+    def calculate_instance_size(self, problem: problems.JSSP):
         # Calculate instance size for training
         _, variables, _ = self._fix_get_jss_bqm(problem.instance, problem.max_time, self.config,
                                                 lagrange_one_hot=self.lagrange_one_hot,
@@ -117,17 +117,17 @@ class JSSPOrca:
                                                 lagrange_share=self.lagrange_share)
         return len(variables)
 
-    def get_len_all_jobs(self, problem: problem.JSSP):
+    def get_len_all_jobs(self, problem: problems.JSSP):
         result = 0
         for job in problem.instance.values():
             result += len(job)
         return result
 
-    def one_hot_to_jobs(self, binary_vector, problem: problem.JSSP):
-        actually_its_qubo, variables, model = self._fix_get_jss_bqm(problem.instance, problem.max_time, self.config,
-                                                                    lagrange_one_hot=self.lagrange_one_hot,
-                                                                    lagrange_precedence=self.lagrange_precedence,
-                                                                    lagrange_share=self.lagrange_share)
+    def one_hot_to_jobs(self, binary_vector, problem: problems.JSSP):
+        _, variables, _ = self._fix_get_jss_bqm(problem.instance, problem.max_time, self.config,
+                                                lagrange_one_hot=self.lagrange_one_hot,
+                                                lagrange_precedence=self.lagrange_precedence,
+                                                lagrange_share=self.lagrange_share)
         result = [variables[i]
                   for i in range(len(variables)) if binary_vector[i] == 1]
         return result
@@ -138,7 +138,7 @@ class JSSPOrca:
         self.config['parameters']['job_shop_scheduler'] = {}
         self.config['parameters']['job_shop_scheduler']['problem_version'] = "optimization"
 
-    def __call__(self, problem: problem.JSSP):
+    def __call__(self, problem: problems.JSSP):
         # Define the matrix Q used for QUBO
         self.config = {}
         self.instance_size = self.calculate_instance_size(problem)
@@ -149,27 +149,27 @@ class JSSPOrca:
                                                                     lagrange_share=self.lagrange_share)
         reverse_dict_map = {v: i for i, v in enumerate(variables)}
 
-        Q = np.zeros((self.instance_size, self.instance_size))
+        qubo = np.zeros((self.instance_size, self.instance_size))
 
         for (label_i, label_j), value in actually_its_qubo[1].items():
             i = reverse_dict_map[label_i]
             j = reverse_dict_map[label_j]
-            Q[i, j] += value
-            Q[j, i] = Q[i, j]
+            qubo[i, j] += value
+            qubo[j, i] = qubo[i, j]
 
         for label_i, value in actually_its_qubo[0].items():
             i = reverse_dict_map[label_i]
-            Q[i, i] += value
-        return Q / max(np.max(Q), -np.min(Q)), 0
+            qubo[i, i] += value
+        return qubo / max(np.max(qubo), -np.min(qubo)), 0
 
 
-@formatter(problem.Raw, 'qubo')
-def get_raw_qubo(problem: problem.Raw):
+@formatter(problems.Raw, 'qubo')
+def get_raw_qubo(problem: problems.Raw):
     return problem.instance
 
 
-@formatter(problem.GraphColoring, 'qubo')
-def get_graph_coloring_qubo(problem: problem.GraphColoring):
+@formatter(problems.GraphColoring, 'qubo')
+def get_graph_coloring_qubo(problem: problems.GraphColoring):
     """ Returns Qubo function """
     num_qubits = problem.instance.number_of_nodes() * problem.num_colors
     x = Array.create('x', shape=(problem.instance.number_of_nodes(), problem.num_colors), vartype='BINARY')
@@ -181,12 +181,12 @@ def get_graph_coloring_qubo(problem: problem.GraphColoring):
             qubo += (x[n1, c] * x[n2, c])
     model = qubo.compile()
     qubo_dict, offset = model.to_qubo()
-    Q_matrix = np.zeros((num_qubits, num_qubits))
+    qubo = np.zeros((num_qubits, num_qubits))
     for i in range(num_qubits):
         for j in range(num_qubits):
             n1, c1 = i//problem.num_colors, i % problem.num_colors
             n2, c2 = j//problem.num_colors, j % problem.num_colors
             key = ("x["+str(n1)+"]["+str(c1)+"]", "x["+str(n2)+"]["+str(c2)+"]")
             if key in qubo_dict:
-                Q_matrix[i, j] = qubo_dict[key]
-    return Q_matrix, offset
+                qubo[i, j] = qubo_dict[key]
+    return qubo, offset

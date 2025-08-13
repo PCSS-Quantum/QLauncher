@@ -64,7 +64,7 @@ class BBS(Algorithm):
             self.input_state = [(i + 1) % 2 for i in range(len(objective))]
         # TODO: use offset somehow
         if not callable(objective):
-            objective, offset = objective
+            objective, _ = objective
 
         tbi = backend.get_tbi()
         bbs = BinaryBosonicSolver(pb_dim=len(self.input_state),

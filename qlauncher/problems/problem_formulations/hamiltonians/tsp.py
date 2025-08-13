@@ -2,6 +2,7 @@ from typing import Literal
 
 import numpy as np
 import networkx as nx
+from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.problems.problem_initialization import TSP
 
@@ -56,7 +57,7 @@ def make_non_collision_hamiltonian(node_count: int, quadratic=False):
     return -1 * eq.hamiltonian
 
 
-def make_connection_hamiltonian(edge_costs: np.ndarray, return_to_start: bool = True) -> np.ndarray:
+def make_connection_hamiltonian(edge_costs: np.ndarray, return_to_start: bool = True) -> SparsePauliOp:
     """
     Creates a Hamiltonian that represents the costs of picking each path.
 
@@ -98,7 +99,7 @@ def make_connection_hamiltonian(edge_costs: np.ndarray, return_to_start: bool = 
     return eq.hamiltonian
 
 
-def problem_to_hamiltonian(problem: TSP, constraints_weight: int = 5, costs_weight: int = 1, return_to_start: bool = True, onehot: Literal['exact', 'quadratic'] = 'exact') -> np.ndarray:
+def problem_to_hamiltonian(problem: TSP, constraints_weight: int = 5, costs_weight: int = 1, return_to_start: bool = True, onehot: Literal['exact', 'quadratic'] = 'exact') -> SparsePauliOp:
     """
     Creates a Hamiltonian for the TSP problem.
 

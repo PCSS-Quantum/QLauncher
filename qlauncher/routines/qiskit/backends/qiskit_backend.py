@@ -61,14 +61,14 @@ class QiskitBackend(Backend):
         self.backendv1v2 = backendv1v2
         self._auto_transpile_level = auto_transpile_level
         self._auto_assign = False
-        self._samplerV1: Sampler | None = None
+        self._sampler_v1: Sampler | None = None
         self._set_primitives_on_backend_name()
 
     @property
-    def samplerV1(self) -> Sampler:
-        if self._samplerV1 is None:
-            self._samplerV1 = SamplerV2Adapter(self.sampler)
-        return self._samplerV1
+    def sampler_v1(self) -> Sampler:
+        if self._sampler_v1 is None:
+            self._sampler_v1 = SamplerV2Adapter(self.sampler)
+        return self._sampler_v1
 
     def _set_primitives_on_backend_name(self):
         if self.name == 'local_simulator':

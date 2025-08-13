@@ -5,6 +5,8 @@ from qlauncher.base import Algorithm
 
 
 class Task:
+    """ Single task class """
+
     def __init__(self, func: Callable, args: tuple[Any] | None = None, kwargs: dict[str, Any] | None = None, num_output: int = 1):
         if args is None:
             args = tuple()
@@ -34,7 +36,9 @@ class Task:
             yield SubTask(self, i)
 
 
-class SubTask(Task):
+class SubTask:
+    """ Subtask class """
+
     def __init__(self, task: Task, index: int):
         self.task = task
         self.index = index
@@ -49,6 +53,7 @@ class SubTask(Task):
 
 
 class Workflow(Algorithm):
+    """ Workflow class """
     _algorithm_format = 'none'
 
     def __init__(self, tasks: list[Task], input_task: Task, output_task: Task, input_format: str = 'none'):
@@ -56,6 +61,7 @@ class Workflow(Algorithm):
         self.input_task = input_task
         self.output_task = output_task
         self._algorithm_format = input_format
+        super().__init__()
 
     def run(self, problem, backend, formatter):
         input_result = formatter(problem)
@@ -66,6 +72,8 @@ class Workflow(Algorithm):
 
 
 class WorkflowManager:
+    """ Workflow Manager class """
+
     def __init__(self, manager: Literal['ql', 'prefect', 'airflow'] = 'ql'):
         self.tasks: list[Task] = []
         self.manager = manager
@@ -81,7 +89,7 @@ class WorkflowManager:
 
     def task(self, func, args: tuple | None = None, kwargs: dict | None = None, num_output=None) -> Task:
         args = args or tuple()
-        kwargs = kwargs or dict()
+        kwargs = kwargs or {}
         new_task = Task(func, args, kwargs, num_output=num_output)
         self.tasks.append(new_task)
         return new_task
@@ -93,16 +101,17 @@ class WorkflowManager:
             _execute_workflow(self.tasks, executor)
         if self.output_task:
             return self.output_task.result
+        return None
 
     def print_dag(self):
         for task in self.tasks:
             dep_names = [dep.func.__name__ for dep in task.dependencies]
             print(f"{task.func.__name__} -> {dep_names}")
 
-    def input(self, format: str = 'none'):
+    def input(self, input_format: str = 'none'):
         self.input_task = Task(func=None)
         self.input_task.done = True
-        self.input_task_format = format
+        self.input_task_format = input_format
         return self.input_task
 
     def output(self, task: Task):

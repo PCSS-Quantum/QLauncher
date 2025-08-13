@@ -39,7 +39,7 @@ def test_v2_sampler_adapter_unnamed_measurements():
     circ.cx(0, 1)
     circ.measure(1, 0)
 
-    res = backend.samplerV1.run(circ).result()
+    res = backend.sampler_v1.run(circ).result()
 
     assert isinstance(res, SamplerResult)
 
