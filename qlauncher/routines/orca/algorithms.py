@@ -31,7 +31,7 @@ class BBS(Algorithm):
     _algorithm_format = 'qubo'
 
     def __init__(self, algorithm_format: Literal['qubo', 'fn'] = 'qubo',
-                 input_state: tuple[int] | None = None,
+                 input_state: list[int] | None = None,
                  n_samples: int = 100,
                  gradient_mode: str = "parameter-shift",
                  gradient_delta: float = np.pi / 6,
@@ -60,11 +60,11 @@ class BBS(Algorithm):
             raise ValueError(f'{backend.__class__} is not supported by BBS algorithm, use OrcaBackend instead')
         objective = formatter(problem)
 
+        if self.input_state is None:
+            self.input_state = [(i + 1) % 2 for i in range(len(objective))]
         # TODO: use offset somehow
         if not callable(objective):
             objective, offset = objective
-            if self.input_state is None:
-                self.input_state: list[int] = [not i % 2 for i in range(len(objective))]
 
         tbi = backend.get_tbi()
         bbs = BinaryBosonicSolver(pb_dim=len(self.input_state),
