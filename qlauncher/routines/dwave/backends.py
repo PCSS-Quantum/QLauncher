@@ -1,7 +1,6 @@
 """DWave backends"""
 
 from abc import abstractmethod, ABC
-from dimod import Sampler
 from qlauncher.base import Backend
 
 
