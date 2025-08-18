@@ -1,22 +1,19 @@
 """ Algorithms for Qiskit routines """
-import json
 from datetime import datetime
-from collections.abc import Callable
-
+from collections.abc import Callable, Iterable
+from typing import Literal
+import statistics
 import numpy as np
+from scipy.optimize import minimize
 
-from qiskit import qpy, QuantumCircuit
-from qiskit.circuit.library import PauliEvolutionGate
+from qiskit import QuantumCircuit
+from qiskit.circuit.library import PauliEvolutionGate, QAOAAnsatz
 
-from qiskit.primitives import PrimitiveResult, SamplerPubResult, BaseEstimatorV1, BaseSamplerV1
+from qiskit.primitives import PrimitiveResult, SamplerPubResult, BaseSamplerV1, BaseEstimatorV1, BaseSamplerV2
 from qiskit.primitives.containers import BitArray
 from qiskit.primitives.base.base_primitive import BasePrimitive
 
 from qiskit.quantum_info import SparsePauliOp
-
-from qiskit_algorithms.minimum_eigensolvers import QAOA as QiskitQAOA
-from qiskit_algorithms.minimum_eigensolvers import SamplingVQEResult
-from qiskit_algorithms.optimizers import Optimizer, COBYLA
 
 from qlauncher.base import Problem, Algorithm, Result
 from qlauncher.base.base import Backend
@@ -53,6 +50,49 @@ def commutator(op_a: SparsePauliOp, op_b: SparsePauliOp) -> SparsePauliOp:
     return op_a @ op_b - op_b @ op_a
 
 
+def int_to_bitstring(number: int, total_bits: int):
+    return np.binary_repr(number, total_bits)[::-1]
+
+
+def cvar_cost(probs_values: Iterable[tuple[float, float]], alpha: float):
+    """CVar cost function to be used instead of mean for qaoa training"""
+    if not (alpha > 0 and alpha <= 1):
+        raise ValueError("Alpha must be in range (0,1]")
+    cvar, acc = 0.0, 0.0
+    for p, v in sorted(probs_values, key=lambda x: x[1]):
+        if acc >= alpha:
+            break
+        acc += p
+        cvar += v * min(p, alpha-acc)
+    return cvar / alpha
+
+
+#! TODO: THIS IS FROM THE QISKIT QAOA TUTORIAL, WRITE OUR OWN
+_PARITY = np.array(
+    [-1 if bin(i).count("1") % 2 else 1 for i in range(256)],
+    dtype=np.complex128,
+)
+
+
+def evaluate_sparse_pauli(state: int, observable: SparsePauliOp) -> complex:
+    """Utility for the evaluation of the expectation value of a measured state.
+
+    Args:
+        state (int): The measured state.
+        observable (SparsePauliOp): The observable to evaluate the expectation value for.
+
+    Returns:
+        complex: The expectation value of the measured state.
+    """
+    packed_uint8 = np.packbits(observable.paulis.z, axis=1, bitorder="little")
+    state_bytes = np.frombuffer(
+        state.to_bytes(packed_uint8.shape[1], "little"), dtype=np.uint8
+    )
+    reduced = np.bitwise_xor.reduce(packed_uint8 & state_bytes, axis=1)
+    return np.sum(observable.coeffs * _PARITY[reduced])
+################################################################
+
+
 class QAOA(QiskitOptimizationAlgorithm):
     """Algorithm class with QAOA.
 
@@ -75,12 +115,26 @@ class QAOA(QiskitOptimizationAlgorithm):
     """
     _algorithm_format = 'hamiltonian'
 
-    def __init__(self, p: int = 1, optimizer: Optimizer | None = None, alternating_ansatz: bool = False, aux=None, **alg_kwargs):
+    def __init__(
+            self,
+            p: int = 1,
+            optimization_method: Literal['COBYLA'] = "COBYLA",
+            max_evaluations: int = 100,
+            training_aggregation_method: Literal['mean', 'cvar'] = 'mean',
+            cvar_alpha: float = 1,
+            alternating_ansatz: bool = False,
+            aux=None,
+            **alg_kwargs):
         super().__init__(**alg_kwargs)
         self.name: str = 'qaoa'
         self.aux = aux
         self.p: int = p
-        self.optimizer: Optimizer = optimizer if optimizer is not None else COBYLA()
+
+        self.optimization_method = optimization_method
+        self.max_evaluations = max_evaluations
+        self.training_aggregation_method = training_aggregation_method
+        self.cvar_alpha = cvar_alpha
+
         self.alternating_ansatz: bool = alternating_ansatz
         self.parameters = ['p']
         self.mixer_h: SparsePauliOp | None = None
@@ -95,50 +149,53 @@ class QAOA(QiskitOptimizationAlgorithm):
             'arg_kwargs': self.alg_kwargs
         }
 
-    def parse_samplingVQEResult(self, res: SamplingVQEResult, res_path) -> dict:
-        res_dict = {}
-        for k, v in vars(res).items():
-            if k[0] == "_":
-                key = k[1:]
-            else:
-                key = k
-            try:
-                res_dict = {**res_dict, **json.loads(json.dumps({key: v}))}
-            except TypeError as ex:
-                if str(ex) == 'Object of type complex128 is not JSON serializable':
-                    res_dict = {**res_dict, **
-                                json.loads(json.dumps({key: v}, default=repr))}
-                elif str(ex) == 'Object of type ndarray is not JSON serializable':
-                    res_dict = {**res_dict, **
-                                json.loads(json.dumps({key: v}, default=repr))}
-                elif str(ex) == 'keys must be str, int, float, bool or None, not ParameterVectorElement':
-                    res_dict = {**res_dict, **
-                                json.loads(json.dumps({key: repr(v)}))}
-                elif str(ex) == 'Object of type OptimizerResult is not JSON serializable':
-                    # recursion ftw
-                    new_v = self.parse_samplingVQEResult(v, res_path)
-                    res_dict = {**res_dict, **
-                                json.loads(json.dumps({key: new_v}))}
-                elif str(ex) == 'Object of type QuantumCircuit is not JSON serializable':
-                    path = res_path + '.qpy'
-                    with open(path, 'wb') as f:
-                        qpy.dump(v, f)
-                    res_dict = {**res_dict, **{key: path}}
-        return res_dict
+    def _get_optimized_circuit(self, circuit: QuantumCircuit, hamiltonian: SparsePauliOp, backend: QiskitBackend | CirqBackend) -> tuple[QuantumCircuit, list[float]]:
+        """
+        Optimize circuit params
+
+        Args:
+            circuit (QuantumCircuit): QAOA circuit to be optimized
+            backend (Backend): Backend containing sampler
+
+        Returns:
+            tuple[QuantumCircuit,list[float]]: Circuit with optimal param values applied, energy history
+        """
+        costs = []
+
+        def cost_fn(params: np.ndarray, circuit: QuantumCircuit, hamiltonian: SparsePauliOp, sampler: BaseSamplerV2):
+            job = sampler.run([(circuit, params)])
+            results = job.result()[0].data.meas.get_int_counts()
+            shots = sum(results.values())
+
+            probs_with_costs = {state: (count/shots, np.real(evaluate_sparse_pauli(state, hamiltonian)))
+                                for state, count in results.items()}
+
+            cost = (sum(prob*cost for prob, cost in probs_with_costs.values())
+                    if self.training_aggregation_method == 'mean' else
+                    cvar_cost(probs_with_costs.values(), self.cvar_alpha))
+            costs.append(cost)
+            return cost
+
+        res = minimize(
+            cost_fn,
+            np.array([np.pi]*(len(circuit.parameters)//2) + [np.pi / 2]*(len(circuit.parameters)//2)),
+            args=(circuit, hamiltonian, backend.sampler),
+            method=self.optimization_method,
+            tol=1e-2,
+            options={
+                'maxiter': self.max_evaluations
+            }
+        )
+
+        return circuit.assign_parameters(res.x), costs
 
     def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
         """ Runs the QAOA algorithm """
+
         if not (isinstance(backend, QiskitBackend) or isinstance(backend, CirqBackend)):
             raise ValueError('Backend should be CirqBackend, QiskitBackend or subclass.')
+
         hamiltonian: SparsePauliOp = formatter(problem)
-        energies = []
-
-        def qaoa_callback(evaluation_count, params, mean, std):
-            energies.append(mean)
-
-        tag = self.make_tag(problem, backend)
-        sampler = backend.samplerV1
-        # sampler.set_options(job_tags=[tag])
 
         if self.alternating_ansatz:
             if self.mixer_h is None:
@@ -147,42 +204,58 @@ class QAOA(QiskitOptimizationAlgorithm):
                 self.initial_state = formatter.get_QAOAAnsatz_initial_state(
                     problem)
 
-        qaoa = QiskitQAOA(sampler, self.optimizer, reps=self.p, callback=qaoa_callback,
-                          mixer=self.mixer_h, initial_state=self.initial_state, **self.alg_kwargs)
-        qaoa_result = qaoa.compute_minimum_eigenvalue(hamiltonian, self.aux)
-        depth = qaoa.ansatz.decompose(reps=10).depth()
-        if 'cx' in qaoa.ansatz.decompose(reps=10).count_ops():
-            cx_count = qaoa.ansatz.decompose(reps=10).count_ops()['cx']
+        circuit = QuantumCircuit(hamiltonian.num_qubits)
+        circuit.append(QAOAAnsatz(cost_operator=hamiltonian, reps=self.p).to_instruction(), range(hamiltonian.num_qubits))
+
+        circuit.measure_all()
+
+        opt_circuit, costs = self._get_optimized_circuit(circuit, hamiltonian, backend)
+
+        job = backend.sampler.run([(opt_circuit)])
+        results = job.result()[0].data.meas.get_int_counts()
+
+        final_energies = {
+            int_to_bitstring(k, opt_circuit.num_qubits): np.real(evaluate_sparse_pauli(k, hamiltonian))
+            for k in results.keys()
+        }
+        final_counts = {int_to_bitstring(k, opt_circuit.num_qubits): v for k, v in results.items()}
+
+        depth = opt_circuit.decompose(reps=10).depth()
+        if 'cx' in opt_circuit.decompose(reps=10).count_ops():
+            cx_count = opt_circuit.decompose(reps=10).count_ops()['cx']
         else:
             cx_count = 0
-        timestamps, usages, qpu_time = self.get_processing_times(tag, sampler)
-        return self.construct_result({'energy': qaoa_result.eigenvalue,
+
+        return self.construct_result({'energy': min(costs),
                                       'depth': depth,
                                       'cx_count': cx_count,
-                                      'qpu_time': qpu_time,
-                                      'energies': energies,
-                                      'SamplingVQEResult': qaoa_result,
-                                      'usages': usages,
-                                      'timestamps': timestamps})
+                                      'qpu_time': 0,
+                                      'training_costs': costs,
+                                      'final_sample_energies': final_energies,
+                                      'final_sample_counts': final_counts
+                                      })
 
     def construct_result(self, result: dict) -> Result:
+        counts, energies = result['final_sample_counts'], result['final_sample_energies']
+        num_of_samples = sum(counts.values())
+        average_energy = statistics.mean(energies.values())
+        energy_std = statistics.stdev(energies.values())
 
-        best_bitstring = self.get_bitstring(result)
-        best_energy = result['energy']
+        best_bs = min(energies, key=energies.get)
+        most_common_bs = max(counts, key=counts.get)
 
-        distribution = dict(result['SamplingVQEResult'].eigenstate.items())
-        most_common_value = max(
-            distribution, key=distribution.get)
-        most_common_bitstring = bin(most_common_value)[2:].zfill(
-            len(best_bitstring))
-        most_common_bitstring_energy = distribution[most_common_value]
-        num_of_samples = 0  # TODO: implement
-        average_energy = np.mean(result['energies'])
-        energy_std = np.std(result['energies'])
-        return Result(best_bitstring, best_energy, most_common_bitstring, most_common_bitstring_energy, distribution, result['energies'], num_of_samples, average_energy, energy_std, result)
-
-    def get_bitstring(self, result) -> str:
-        return result['SamplingVQEResult'].best_measurement['bitstring']
+        return Result(
+            best_bitstring=best_bs,
+            best_energy=min(energies.values()),
+            most_common_bitstring=most_common_bs,
+            most_common_bitstring_energy=energies[most_common_bs],
+            distribution={k: v/num_of_samples for k, v in counts.items()},
+            energies=energies,
+            num_of_samples=num_of_samples,
+            average_energy=average_energy,
+            energy_std=energy_std,
+            result=result
+        )
 
 
 class FALQON(QiskitOptimizationAlgorithm):
