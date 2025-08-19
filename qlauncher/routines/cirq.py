@@ -7,8 +7,9 @@ import math
 
 import numpy as np
 import qiskit
-from qiskit.primitives import Sampler, BaseSamplerV2, BitArray, DataBin
 
+from qiskit.result import QuasiDistribution
+from qiskit.primitives import Sampler, BaseSamplerV2, BitArray, DataBin
 from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.primitives.base.base_primitive_job import BasePrimitiveJob
 from qiskit.primitives.base.sampler_result import SamplerResult

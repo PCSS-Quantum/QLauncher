@@ -149,7 +149,7 @@ class QAOA(QiskitOptimizationAlgorithm):
             'arg_kwargs': self.alg_kwargs
         }
 
-    def _get_optimized_circuit(self, circuit: QuantumCircuit, hamiltonian: SparsePauliOp, backend: QiskitBackend | CirqBackend) -> tuple[QuantumCircuit, list[float]]:
+    def _get_optimized_circuit_params(self, circuit: QuantumCircuit, hamiltonian: SparsePauliOp, backend: QiskitBackend | CirqBackend) -> tuple[np.ndarray, list[float]]:
         """
         Optimize circuit params
 
@@ -162,8 +162,8 @@ class QAOA(QiskitOptimizationAlgorithm):
         """
         costs = []
 
-        def cost_fn(params: np.ndarray, circuit: QuantumCircuit, hamiltonian: SparsePauliOp, sampler: BaseSamplerV2):
-            job = sampler.run([(circuit, params)])
+        def cost_fn(params: np.ndarray):
+            job = backend.sampler.run([(circuit, params)])
             results = job.result()[0].data.meas.get_int_counts()
             shots = sum(results.values())
 
@@ -179,7 +179,6 @@ class QAOA(QiskitOptimizationAlgorithm):
         res = minimize(
             cost_fn,
             np.array([np.pi]*(len(circuit.parameters)//2) + [np.pi / 2]*(len(circuit.parameters)//2)),
-            args=(circuit, hamiltonian, backend.sampler),
             method=self.optimization_method,
             tol=1e-2,
             options={
@@ -187,7 +186,7 @@ class QAOA(QiskitOptimizationAlgorithm):
             }
         )
 
-        return circuit.assign_parameters(res.x), costs
+        return res.x, costs
 
     def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
         """ Runs the QAOA algorithm """
@@ -209,7 +208,9 @@ class QAOA(QiskitOptimizationAlgorithm):
 
         circuit.measure_all()
 
-        opt_circuit, costs = self._get_optimized_circuit(circuit, hamiltonian, backend)
+        opt_params, costs = self._get_optimized_circuit_params(circuit, hamiltonian, backend)
+
+        opt_circuit = circuit.assign_parameters(opt_params)
 
         job = backend.sampler.run([(opt_circuit)])
         results = job.result()[0].data.meas.get_int_counts()
@@ -232,14 +233,15 @@ class QAOA(QiskitOptimizationAlgorithm):
                                       'qpu_time': 0,
                                       'training_costs': costs,
                                       'final_sample_energies': final_energies,
-                                      'final_sample_counts': final_counts
+                                      'final_sample_counts': final_counts,
+                                      'optimal_point': opt_params
                                       })
 
     def construct_result(self, result: dict) -> Result:
         counts, energies = result['final_sample_counts'], result['final_sample_energies']
         num_of_samples = sum(counts.values())
         average_energy = statistics.mean(energies.values())
-        energy_std = statistics.stdev(energies.values())
+        energy_std = statistics.stdev(energies.values()) if len(energies) > 1 else 0
 
         best_bs = min(energies, key=energies.get)
         most_common_bs = max(counts, key=counts.get)
