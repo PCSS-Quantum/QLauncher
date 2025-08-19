@@ -203,6 +203,7 @@ class QAOA(QiskitOptimizationAlgorithm):
                 self.initial_state = formatter.get_QAOAAnsatz_initial_state(
                     problem)
 
+        # Cirq translation issues if we use QAOAAnsatz() by itself without appending it to a QuantumCircuit
         circuit = QuantumCircuit(hamiltonian.num_qubits)
         circuit.append(QAOAAnsatz(cost_operator=hamiltonian, reps=self.p).to_instruction(), range(hamiltonian.num_qubits))
 
@@ -210,32 +211,32 @@ class QAOA(QiskitOptimizationAlgorithm):
 
         opt_params, costs = self._get_optimized_circuit_params(circuit, hamiltonian, backend)
 
-        opt_circuit = circuit.assign_parameters(opt_params)
-
-        job = backend.sampler.run([(opt_circuit)])
+        job = backend.sampler.run([(circuit, opt_params)])
         results = job.result()[0].data.meas.get_int_counts()
 
         final_energies = {
-            int_to_bitstring(k, opt_circuit.num_qubits): np.real(evaluate_sparse_pauli(k, hamiltonian))
+            int_to_bitstring(k, circuit.num_qubits): np.real(evaluate_sparse_pauli(k, hamiltonian))
             for k in results.keys()
         }
-        final_counts = {int_to_bitstring(k, opt_circuit.num_qubits): v for k, v in results.items()}
+        final_counts = {int_to_bitstring(k, circuit.num_qubits): v for k, v in results.items()}
 
-        depth = opt_circuit.decompose(reps=10).depth()
-        if 'cx' in opt_circuit.decompose(reps=10).count_ops():
-            cx_count = opt_circuit.decompose(reps=10).count_ops()['cx']
+        depth = circuit.decompose(reps=10).depth()
+        if 'cx' in circuit.decompose(reps=10).count_ops():
+            cx_count = circuit.decompose(reps=10).count_ops()['cx']
         else:
             cx_count = 0
 
-        return self.construct_result({'energy': min(costs),
-                                      'depth': depth,
-                                      'cx_count': cx_count,
-                                      'qpu_time': 0,
-                                      'training_costs': costs,
-                                      'final_sample_energies': final_energies,
-                                      'final_sample_counts': final_counts,
-                                      'optimal_point': opt_params
-                                      })
+        return self.construct_result(
+            {
+                'energy': min(costs),
+                'depth': depth,
+                'cx_count': cx_count,
+                'qpu_time': 0,
+                'training_costs': costs,
+                'final_sample_energies': final_energies,
+                'final_sample_counts': final_counts,
+                'optimal_point': opt_params  # needed for educated_guess
+            })
 
     def construct_result(self, result: dict) -> Result:
         counts, energies = result['final_sample_counts'], result['final_sample_energies']
