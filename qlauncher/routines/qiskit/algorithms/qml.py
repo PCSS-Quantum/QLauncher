@@ -1,5 +1,5 @@
-from collections.abc import Callable
-from typing import Any, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 from qiskit.circuit import QuantumCircuit, Parameter
 from qiskit.primitives import BaseSampler, BaseSamplerV1, BaseSamplerV2
@@ -83,7 +83,7 @@ class TrainQSVCKernel(Algorithm):
         if not isinstance(y, np.ndarray):
             raise ValueError(f"y is not of type np.ndarray: received {type(y)}")
 
-        if isinstance(backend, QiskitBackend) or isinstance(backend, CirqBackend):
+        if isinstance(backend, (QiskitBackend, CirqBackend)):
             sampler = backend.samplerV1
         else:
             raise ValueError(f"The accepted backends are QiskitBackend and CirqBackend, got {type(backend)}")
