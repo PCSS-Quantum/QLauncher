@@ -1,9 +1,8 @@
-from typing import List, Literal
-from inspect import getfullargspec
+from typing import Literal
 from collections.abc import Callable
 import numpy as np
 
-from qlauncher.base import Problem, Algorithm, Result
+from qlauncher.base import Problem, Algorithm, Backend, Result
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.orca.backends import OrcaBackend
 
@@ -31,34 +30,58 @@ class BBS(Algorithm):
     """
     _algorithm_format = 'qubo'
 
-    def __init__(self, algorithm_format: Literal['qubo', 'qubo_fn'] = 'qubo', **kwargs) -> None:
+    def __init__(self, algorithm_format: Literal['qubo', 'fn'] = 'qubo',
+                 input_state: list[int] | None = None,
+                 n_samples: int = 100,
+                 gradient_mode: str = "parameter-shift",
+                 gradient_delta: float = np.pi / 6,
+                 sampling_factor: int = 1,
+                 learning_rate: float = 5e-2,
+                 learning_rate_flip: float = 1e-1,
+                 updates: int = 100):
         super().__init__()
         self._algorithm_format = algorithm_format
-        self.kwargs = kwargs
-        self.input_state = self.kwargs.pop('input_state', None)
+        self.bbs_params = {
+            'n_samples': n_samples,
+            'gradient_mode': gradient_mode,
+            'gradient_delta': gradient_delta,
+            'sampling_factor': sampling_factor,
+        }
+        self.training_params = {
+            'learning_rate': learning_rate,
+            'learning_rate_flip': learning_rate_flip,
+            'updates': updates,
+        }
+        self.input_state = input_state
 
-    def run(self, problem: Problem, backend: OrcaBackend, formatter: Callable[[Problem], np.ndarray]) -> Result:
+    def run(self, problem: Problem, backend: Backend, formatter: Callable[[Problem], np.ndarray]) -> Result:
 
+        if not isinstance(backend, OrcaBackend):
+            raise ValueError(f'{backend.__class__} is not supported by BBS algorithm, use OrcaBackend instead')
         objective = formatter(problem)
 
         # TODO: use offset somehow
         if not callable(objective):
             objective, offset = objective
-            if self.input_state is None:
-                self.input_state = [not i % 2 for i in range(len(objective))]
 
-        bbs = backend.get_bbs(
-            len(self.input_state),
-            objective,
-            self.input_state,
-            **{k: v for k, v in self.kwargs.items() if k in getfullargspec(BinaryBosonicSolver.__init__)[0]}
+        if self.input_state is None:
+            if not callable(objective):
+                self.input_state = [(i + 1) % 2 for i in range(len(objective))]
+            else:
+                raise ValueError('input_state needs to be provided if objective is a function (callable)')
 
-        )
-        bbs.train(**{k: v for k, v in self.kwargs.items() if k in getfullargspec(BinaryBosonicSolver.train)[0]})
+        tbi = backend.get_tbi()
+        bbs = BinaryBosonicSolver(pb_dim=len(self.input_state),
+                                  objective=objective,
+                                  input_state=self.input_state,
+                                  tbi=tbi,
+                                  **self.bbs_params)
+
+        bbs.train(**self.training_params)
 
         return self.construct_results(bbs)
 
-    def get_bitstring(self, result: List[float]) -> str:
+    def get_bitstring(self, result: list[float]) -> str:
         return ''.join(map(str, map(int, result)))
 
     def construct_results(self, solver: BinaryBosonicSolver) -> Result:

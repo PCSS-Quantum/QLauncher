@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from qlauncher.base import Algorithm, Problem, Result
+from qlauncher.base import Algorithm, Problem, Backend, Result
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.dwave.backends import BQMBackend
 try:
@@ -21,7 +21,9 @@ class DwaveSolver(Algorithm):
         self.label: str = 'TBD_TBD'
         super().__init__(**alg_kwargs)
 
-    def run(self, problem: Problem, backend: BQMBackend, formatter: Callable) -> Result:
+    def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
+        if not isinstance(backend, BQMBackend):
+            raise ValueError(f'{backend.__class__} is not supported by DwaveSolver algorithm, use BQMBackend instead')
         self.label = f'{problem.name}_{problem.instance_name}'
 
         bqm: BinaryQuadraticModel = formatter(problem)
