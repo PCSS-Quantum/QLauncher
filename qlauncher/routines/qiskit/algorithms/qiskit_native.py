@@ -6,10 +6,12 @@ import statistics
 import numpy as np
 from scipy.optimize import minimize
 
+from qiskit_algorithms.minimum_eigensolvers.diagonal_estimator import _evaluate_sparsepauli as evaluate_energy
+
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import PauliEvolutionGate, QAOAAnsatz
 
-from qiskit.primitives import PrimitiveResult, SamplerPubResult, BaseSamplerV1, BaseEstimatorV1, BaseSamplerV2
+from qiskit.primitives import PrimitiveResult, SamplerPubResult, BaseSamplerV1, BaseEstimatorV1
 from qiskit.primitives.containers import BitArray
 from qiskit.primitives.base.base_primitive import BasePrimitive
 
@@ -65,32 +67,6 @@ def cvar_cost(probs_values: Iterable[tuple[float, float]], alpha: float):
         acc += p
         cvar += v * min(p, alpha-acc)
     return cvar / alpha
-
-
-#! TODO: THIS IS FROM THE QISKIT QAOA TUTORIAL, WRITE OUR OWN
-_PARITY = np.array(
-    [-1 if bin(i).count("1") % 2 else 1 for i in range(256)],
-    dtype=np.complex128,
-)
-
-
-def evaluate_sparse_pauli(state: int, observable: SparsePauliOp) -> complex:
-    """Utility for the evaluation of the expectation value of a measured state.
-
-    Args:
-        state (int): The measured state.
-        observable (SparsePauliOp): The observable to evaluate the expectation value for.
-
-    Returns:
-        complex: The expectation value of the measured state.
-    """
-    packed_uint8 = np.packbits(observable.paulis.z, axis=1, bitorder="little")
-    state_bytes = np.frombuffer(
-        state.to_bytes(packed_uint8.shape[1], "little"), dtype=np.uint8
-    )
-    reduced = np.bitwise_xor.reduce(packed_uint8 & state_bytes, axis=1)
-    return np.sum(observable.coeffs * _PARITY[reduced])
-################################################################
 
 
 class QAOA(QiskitOptimizationAlgorithm):
@@ -167,7 +143,7 @@ class QAOA(QiskitOptimizationAlgorithm):
             results = job.result()[0].data.meas.get_int_counts()
             shots = sum(results.values())
 
-            probs_with_costs = {state: (count/shots, np.real(evaluate_sparse_pauli(state, hamiltonian)))
+            probs_with_costs = {state: (count/shots, np.real(evaluate_energy(state, hamiltonian)))
                                 for state, count in results.items()}
 
             cost = (sum(prob*cost for prob, cost in probs_with_costs.values())
@@ -215,7 +191,7 @@ class QAOA(QiskitOptimizationAlgorithm):
         results = job.result()[0].data.meas.get_int_counts()
 
         final_energies = {
-            int_to_bitstring(k, circuit.num_qubits): np.real(evaluate_sparse_pauli(k, hamiltonian))
+            int_to_bitstring(k, circuit.num_qubits): np.real(evaluate_energy(k, hamiltonian))
             for k in results.keys()
         }
         final_counts = {int_to_bitstring(k, circuit.num_qubits): v for k, v in results.items()}
