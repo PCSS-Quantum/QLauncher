@@ -15,7 +15,7 @@ dependencies = [
     "pyqubo",
     "scipy",
     "qiskit < 2.0",
-    "qiskit_algorithms",
+    "qiskit_algorithms < 0.4",
     "qiskit_aqt_provider",
     "qiskit_ibm_runtime",
     "qiskit_optimization",
