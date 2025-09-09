@@ -20,12 +20,17 @@ class BBS(Algorithm):
     solves optimization problems by mapping them onto a binary bosonic system. It uses a training process
     to find the optimal solution.
 
-    Attributes:
-    - learning_rate (float): The learning rate for the algorithm.
-    - updates (int): The number of updates to perform during training.
-    - tbi_loops (str): The type of TBI loops to use.
-    - print_frequency (int): The frequency at which to print updates.
-    - logger (Logger): The logger object for logging algorithm information.
+    ### Attributes:
+
+    - algorithm_format ('qubo', 'fn'), optional): If the algorithm input is a function or a qubo matrix. Defaults to 'qubo'.
+    - input_state (list[int] | None, optional): Photonic circuit input state provided to the ORCA computer. If None defaults to [1,0,1,0,1...]. Defaults to None.
+    - n_samples (int, optional): Number of samples. Defaults to 100.
+    - gradient_mode (str, optional): Gradient mode. Defaults to "parameter-shift".
+    - gradient_delta (float, optional): Gradient Delta. Defaults to np.pi/6.
+    - sampling_factor (int, optional): Number of times quantum samples are passed through the classical flipping layer. Defaults to 1.
+    - learning_rate (float, optional): Learning rate of the algorithm. Defaults to 5e-2.
+    - learning_rate_flip (float, optional): Bit flip learning rate. Defaults to 1e-1.
+    - updates (int, optional): Number of epochs. Defaults to 100.
 
     """
     _algorithm_format = 'qubo'
@@ -77,7 +82,7 @@ class BBS(Algorithm):
                                   tbi=tbi,
                                   **self.bbs_params)
 
-        bbs.train(**self.training_params)
+        bbs.solve(**self.training_params)
 
         return self.construct_results(bbs)
 
