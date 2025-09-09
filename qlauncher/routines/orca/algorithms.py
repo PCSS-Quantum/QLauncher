@@ -23,7 +23,7 @@ class BBS(Algorithm):
     ### Attributes:
 
     - algorithm_format ('qubo', 'fn'), optional): If the algorithm input is a function or a qubo matrix. Defaults to 'qubo'.
-    - input_state (list[int] | None, optional): Initial algorithm state. Defaults to None.
+    - input_state (list[int] | None, optional): Photonic circuit input state provided to the ORCA computer. If None defaults to [1,0,1,0,1...]. Defaults to None.
     - n_samples (int, optional): Number of samples. Defaults to 100.
     - gradient_mode (str, optional): Gradient mode. Defaults to "parameter-shift".
     - gradient_delta (float, optional): Gradient Delta. Defaults to np.pi/6.
