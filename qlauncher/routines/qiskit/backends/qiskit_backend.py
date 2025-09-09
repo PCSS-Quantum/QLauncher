@@ -13,7 +13,7 @@ from qiskit.primitives import (
 from qiskit_ibm_runtime import Options
 
 from qlauncher.base import Backend
-from qlauncher.routines.qiskit.v2_wrapper import SamplerV2Adapter
+from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter
 
 from qlauncher.routines.qiskit.backends.utils import (
     set_estimator_auto_run_behavior, set_sampler_auto_run_behavior,
@@ -67,7 +67,7 @@ class QiskitBackend(Backend):
     @property
     def samplerV1(self) -> Sampler:
         if self._samplerV1 is None:
-            self._samplerV1 = SamplerV2Adapter(self.sampler)
+            self._samplerV1 = SamplerV2ToSamplerV1Adapter(self.sampler)
         return self._samplerV1
 
     def _set_primitives_on_backend_name(self):

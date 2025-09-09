@@ -3,9 +3,10 @@ from typing import Literal
 from overrides import override
 
 from qiskit.providers import BackendV1, BackendV2
-from qiskit.primitives import Sampler
+from qiskit.primitives import Sampler, BaseSamplerV2
 from qiskit_ibm_runtime import Options
 
+from qlauncher.routines.qiskit.adapters import SamplerV1ToSamplerV2Adapter
 from qlauncher.routines.qiskit import QiskitBackend
 from qlauncher.exceptions import DependencyError
 
@@ -43,7 +44,7 @@ class AQTBackend(QiskitBackend):
         AQT_TOKEN=valid_token
 
     """
-    sampler: AQTSampler
+    sampler: BaseSamplerV2
     estimator: AQTEstimator
 
     def __init__(
@@ -87,10 +88,7 @@ class AQTBackend(QiskitBackend):
             self.backendv1v2 = self.provider.get_backend(name=self.name)
 
         self.estimator = AQTEstimator(self.backendv1v2)
-        self.sampler = AQTSampler(self.backendv1v2)
+        self._samplerV1 = AQTSampler(self.backendv1v2)
+        self.sampler = SamplerV1ToSamplerV2Adapter(self._samplerV1)
 
         self._configure_auto_behavior()
-
-    @property
-    def samplerV1(self) -> Sampler:
-        return self.sampler

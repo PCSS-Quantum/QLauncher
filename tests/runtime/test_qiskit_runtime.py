@@ -6,7 +6,12 @@ from qiskit.quantum_info import SparsePauliOp
 from qlauncher import QLauncher
 from qlauncher.base import Result
 from qlauncher.routines.qiskit import QAOA, FALQON, QiskitBackend, AQTBackend
+from qlauncher.routines.qiskit.algorithms.qiskit_native import int_to_bitstring
 from qlauncher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
+
+
+def test_int_to_bs():
+    assert int_to_bitstring(5, 8) == "10100000"
 
 
 def test_falqon():
