@@ -425,7 +425,7 @@ class FALQON(QiskitOptimizationAlgorithm):
 
 class VQE(QiskitOptimizationAlgorithm):
     """"""
-    # uv pip install git+https://github.com/qiskit-community/qiskit-nature.git
+    # pip install git+https://github.com/qiskit-community/qiskit-nature.git
     # pyscf
 
     def __init__(self, optimization_method: Literal['COBYLA'] = "COBYLA") -> None:

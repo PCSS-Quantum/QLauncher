@@ -15,13 +15,15 @@ dependencies = [
     "pyqubo",
     "scipy",
     "qiskit < 2.0",
-    "qiskit_algorithms < 0.4",
+    "qiskit_algorithms == 0.4.0",
     "qiskit_aqt_provider",
     "qiskit_ibm_runtime",
     "qiskit_optimization",
     "qiskit_aer",
     "qcg-pilotjob",
     "dill",
+    "qiskit_nature",
+    "pyscf"
 ]
 
 [tool.setuptools.packages.find]
