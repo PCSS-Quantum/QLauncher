@@ -1,6 +1,9 @@
 """ Algorithms for qiskit """
 from .qiskit_native import QAOA, FALQON
-from .qml import TrainQSVCKernel
+try:
+    from .qml import TrainQSVCKernel
+except ImportError:
+    TrainQSVCKernel = None
 try:
     from .educated_guess import EducatedGuess
 except ImportError:

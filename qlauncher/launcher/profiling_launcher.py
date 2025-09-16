@@ -5,13 +5,18 @@ from .qlauncher import QLauncher
 
 
 class ProfilingLauncher(QLauncher):
-    """ Launcher made for debugging purposes of algorithms and other launchers focusing on performance issues """
+    """ Launcher made for debugging purposes of algorithms and other launchers focusing on performance issues 
+
+    Attributes:
+        profiler_path (str) path where to save the profiling results.
+
+    """
 
     def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend, profiler_path: str = 'profiling-results.prof'):
         super().__init__(problem, algorithm, backend)
         self._profiler_path = profiler_path
 
-    def run(self) -> tuple[Result, pstats.Stats]:
+    def run(self) -> Result:
         with cProfile.Profile() as pr:
             result = super().run()
         stats = pstats.Stats(pr)

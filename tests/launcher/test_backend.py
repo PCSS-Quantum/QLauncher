@@ -56,7 +56,8 @@ def test_AQT_backend_backendv1v2_simulator():
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
     assert isinstance(backend.estimator, AQTEstimator)
-    assert isinstance(backend.sampler, AQTSampler)
+    assert isinstance(backend.samplerV1, AQTSampler)
+    assert isinstance(backend.sampler, BaseSamplerV2)
 
     run_backend_qaoa(backend)
 
@@ -67,7 +68,8 @@ def test_AQT_backend_local_simulator():
     assert backend.name == 'offline_simulator_no_noise'
     assert isinstance(backend.backendv1v2, OfflineSimulatorResource)
     assert isinstance(backend.estimator, AQTEstimator)
-    assert isinstance(backend.sampler, AQTSampler)
+    assert isinstance(backend.samplerV1, AQTSampler)
+    assert isinstance(backend.sampler, BaseSamplerV2)
 
     run_backend_qaoa(backend)
 
