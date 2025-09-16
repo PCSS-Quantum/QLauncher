@@ -455,7 +455,7 @@ class VQE(QiskitOptimizationAlgorithm):
 
     def run(self, problem: Problem, backend: Backend, formatter: Callable[..., Any]) -> Result:
         if not isinstance(backend, QiskitBackend):
-            raise ValueError('Backend should be CirqBackend, QiskitBackend or subclass.')
+            raise ValueError('Backend should be QiskitBackend or subclass.')
         if not isinstance(problem, Molecule):
             raise ValueError('The problem for this algorithm should be Molecule problem')
         if not isinstance(problem.operator.num_qubits, int):
