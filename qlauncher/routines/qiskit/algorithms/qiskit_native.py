@@ -20,6 +20,7 @@ from qiskit.primitives.base.base_primitive import BasePrimitive
 from qiskit.quantum_info import SparsePauliOp
 
 from qiskit_nature.second_q.algorithms.ground_state_solvers import GroundStateEigensolver
+from qiskit_nature.second_q.problems import EigenstateResult
 
 from qlauncher.base import Problem, Algorithm, Result
 from qlauncher.base.base import Backend
@@ -424,33 +425,53 @@ class FALQON(QiskitOptimizationAlgorithm):
 
 
 class VQE(QiskitOptimizationAlgorithm):
-    """"""
+    """Variational Quantum EigenSolver - qiskit-algorithm implementation wrapper.
+
+    Args:
+        optimizer (optimizers.Optimizer | None, optional): Optimizer for VQE. Defaults to None.
+        ansatz (QuantumCircuit | None, optional): VQE's ansatz. Defaults to None.
+        with_numpy (bool, optional): Ignores ansatz parameter and backend, and changes solver to Numpy based. Defaults to False.
+    """
     # pip install git+https://github.com/qiskit-community/qiskit-nature.git
     # pyscf
 
-    def __init__(self, optimization_method: Literal['COBYLA'] = "COBYLA") -> None:
-        match optimization_method:
-            case 'COBYLA':
-                self.optimizer = optimizers.COBYLA()
+    def __init__(self, optimizer: optimizers.Optimizer | None = None,
+                 ansatz: QuantumCircuit | None = None, with_numpy: bool = False) -> None:
+        self.optimizer = optimizers.COBYLA() if optimizer is None else optimizer
+        self.ansatz = ansatz
+        self.num_qubits: int = 0
+        self.with_numpy: bool = with_numpy
         super().__init__()
+
+    @property
+    def ansatz(self) -> QuantumCircuit:
+        if self._ansatz is None:
+            return efficient_su2(self.num_qubits)
+        return self._ansatz
+
+    @ansatz.setter
+    def ansatz(self, custom_ansatz):
+        self._ansatz = custom_ansatz
 
     def run(self, problem: Problem, backend: Backend, formatter: Callable[..., Any]) -> Result:
         if not isinstance(backend, QiskitBackend):
             raise ValueError('Backend should be CirqBackend, QiskitBackend or subclass.')
         if not isinstance(problem, Molecule):
             raise ValueError('The problem for this algorithm should be Molecule problem')
-        estimator = backend.estimator
-
         if not isinstance(problem.operator.num_qubits, int):
             raise ValueError('num_qubits from problem operator is expected to be int')
 
-        ansatz = efficient_su2(problem.operator.num_qubits)
-        vqe = qiskit_algorithms.VQE(estimator, ansatz, self.optimizer)
-        vqe_gss = GroundStateEigensolver(problem.mapper, vqe)
+        estimator = backend.estimator
+        self.num_qubits = problem.operator.num_qubits
+        if self.with_numpy:
+            solver = qiskit_algorithms.NumPyMinimumEigensolver()
+        else:
+            solver = qiskit_algorithms.VQE(estimator, self.ansatz, self.optimizer)
+        vqe_gss = GroundStateEigensolver(problem.mapper, solver)
         vqe_results = vqe_gss.solve(problem.problem)
         return self.construct_result(vqe_results)
 
-    def construct_result(self, result: dict) -> Result:
+    def construct_result(self, result: EigenstateResult) -> Result:
         energy = result.total_energies[0]
         # Not the cleanest way
         return Result(
