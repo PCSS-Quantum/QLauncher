@@ -1,7 +1,7 @@
 """  This module contains the Knapsack class."""
 from dataclasses import dataclass
 from collections.abc import Sequence
-from qlauncher.base import Problem, formatter
+from qlauncher.base import Problem
 
 @dataclass(frozen=True)
 class KnapsackInstance:
