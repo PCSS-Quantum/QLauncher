@@ -1,15 +1,17 @@
 """ Algorithms for Qiskit routines """
 from datetime import datetime
 from collections.abc import Callable, Iterable
-from typing import Literal
+from typing import Any, Literal
 import statistics
 import numpy as np
 from scipy.optimize import minimize
 
+import qiskit_algorithms
+from qiskit_algorithms import optimizers
 from qiskit_algorithms.minimum_eigensolvers.diagonal_estimator import _evaluate_sparsepauli as evaluate_energy
 
 from qiskit import QuantumCircuit
-from qiskit.circuit.library import PauliEvolutionGate, QAOAAnsatz
+from qiskit.circuit.library import PauliEvolutionGate, QAOAAnsatz, efficient_su2
 
 from qiskit.primitives import PrimitiveResult, SamplerPubResult, BaseSamplerV1, BaseEstimatorV1
 from qiskit.primitives.containers import BitArray
@@ -17,10 +19,14 @@ from qiskit.primitives.base.base_primitive import BasePrimitive
 
 from qiskit.quantum_info import SparsePauliOp
 
+from qiskit_nature.second_q.algorithms.ground_state_solvers import GroundStateEigensolver
+from qiskit_nature.second_q.problems import EigenstateResult
+
 from qlauncher.base import Problem, Algorithm, Result
 from qlauncher.base.base import Backend
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
+from qlauncher.problems import Molecule
 
 
 class QiskitOptimizationAlgorithm(Algorithm):
@@ -238,7 +244,7 @@ class QAOA(QiskitOptimizationAlgorithm):
 
 
 class FALQON(QiskitOptimizationAlgorithm):
-    """ 
+    """
     Algorithm class with FALQON.
 
     Args:
@@ -373,7 +379,7 @@ class FALQON(QiskitOptimizationAlgorithm):
             backend (QiskitBackend): Backend
 
         Returns:
-            tuple[PrimitiveResult[SamplerPubResult], list[float], list[float], list[int], list[int]]: 
+            tuple[PrimitiveResult[SamplerPubResult], list[float], list[float], list[int], list[int]]:
             Sampler result from best betas, list of betas, list of energies, list of depths, list of cnot counts
         """
 
@@ -416,3 +422,67 @@ class FALQON(QiskitOptimizationAlgorithm):
         best_sample = backend.sampler.run([(sampling_circuit)]).result()
 
         return best_sample, betas, energies, circuit_depths, cnot_counts
+
+
+class VQE(QiskitOptimizationAlgorithm):
+    """Variational Quantum EigenSolver - qiskit-algorithm implementation wrapper.
+
+    Args:
+        optimizer (optimizers.Optimizer | None, optional): Optimizer for VQE. Defaults to None.
+        ansatz (QuantumCircuit | None, optional): VQE's ansatz. Defaults to None.
+        with_numpy (bool, optional): Ignores ansatz parameter and backend, and changes solver to Numpy based. Defaults to False.
+    """
+    # pip install git+https://github.com/qiskit-community/qiskit-nature.git
+    # pyscf
+
+    def __init__(self, optimizer: optimizers.Optimizer | None = None,
+                 ansatz: QuantumCircuit | None = None, with_numpy: bool = False) -> None:
+        self.optimizer = optimizers.COBYLA() if optimizer is None else optimizer
+        self.ansatz = ansatz
+        self.num_qubits: int = 0
+        self.with_numpy: bool = with_numpy
+        super().__init__()
+
+    @property
+    def ansatz(self) -> QuantumCircuit:
+        if self._ansatz is None:
+            return efficient_su2(self.num_qubits)
+        return self._ansatz
+
+    @ansatz.setter
+    def ansatz(self, custom_ansatz):
+        self._ansatz = custom_ansatz
+
+    def run(self, problem: Problem, backend: Backend, formatter: Callable[..., Any]) -> Result:
+        if not isinstance(backend, QiskitBackend):
+            raise ValueError('Backend should be QiskitBackend or subclass.')
+        if not isinstance(problem, Molecule):
+            raise ValueError('The problem for this algorithm should be Molecule problem')
+        if not isinstance(problem.operator.num_qubits, int):
+            raise ValueError('num_qubits from problem operator is expected to be int')
+
+        estimator = backend.estimator
+        self.num_qubits = problem.operator.num_qubits
+        if self.with_numpy:
+            solver = qiskit_algorithms.NumPyMinimumEigensolver()
+        else:
+            solver = qiskit_algorithms.VQE(estimator, self.ansatz, self.optimizer)
+        vqe_gss = GroundStateEigensolver(problem.mapper, solver)
+        vqe_results = vqe_gss.solve(problem.problem)
+        return self.construct_result(vqe_results)
+
+    def construct_result(self, result: EigenstateResult) -> Result:
+        energy = result.total_energies[0]
+        # Not the cleanest way
+        return Result(
+            '',
+            energy,
+            '',
+            energy,
+            {'': 1},
+            {'': energy},
+            1,
+            energy,
+            0,
+            None
+        )

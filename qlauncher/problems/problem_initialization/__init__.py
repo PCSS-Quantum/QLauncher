@@ -6,4 +6,8 @@ from .maxcut import MaxCut
 from .tsp import TSP
 from .graph_coloring import GraphColoring
 from .tabular_ml import TabularML
+from .molecule import Molecule
 from .knapsack import Knapsack
+
+__all__ = ['Raw', 'QATM', 'JSSP', 'EC', 'MaxCut', 'TSP', 'GraphColoring',
+           'TabularML', 'Molecule', 'Knapsack']
