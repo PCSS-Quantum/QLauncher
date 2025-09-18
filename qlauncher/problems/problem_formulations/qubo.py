@@ -208,7 +208,7 @@ def knapsack_qubo(problem: problem.Knapsack, penalty_weight: float = 2.0, value_
     else:
         m = int(np.ceil(np.log2(C + 1)))
     y = Array.create("z_y", shape=m, vartype="BINARY")
-    slack = sum((1 << k) * y[k] for k in range(m))
+    slack = sum((2 ** k) * y[k] for k in range(m))
 
     weight_sum = sum(weights[i] * x[i] for i in range(n))
     penalty = (weight_sum + slack - C) ** 2
