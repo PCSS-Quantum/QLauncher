@@ -74,7 +74,9 @@ def test_graph_coloring():
     assert isinstance(inform, Result)
     solution = inform.best_bitstring
     num_qubits = len(solution)
-    assert num_qubits == gc.instance.number_of_nodes() * num_colors, "error in encoding, solution contains wrong number of qubits"
+    assert num_qubits == gc.instance.number_of_nodes(
+    ) * num_colors, "error in encoding, solution contains wrong number of qubits"
+
 
 def test_knapsack():
     """ Testing function for Knapsack problem """

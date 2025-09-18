@@ -3,11 +3,13 @@ from dataclasses import dataclass
 from collections.abc import Sequence
 from qlauncher.base import Problem
 
+
 @dataclass(frozen=True)
 class KnapsackInstance:
     values: Sequence[int]
     weights: Sequence[int]
     capacity: int
+
 
 class Knapsack(Problem):
     """
@@ -18,30 +20,48 @@ class Knapsack(Problem):
     and can be passed into QLauncher.
     """
 
-    def __init__(self, instance: KnapsackInstance, instance_name: str | None = None):
-        if len(instance.values) != len(instance.weights) or len(instance.values) == 0:
-            raise ValueError("values and weights must have the same positive length")
+    def __init__(self, instance: KnapsackInstance,
+                 instance_name: str | None = None):
+        if len(
+            instance.values) != len(
+            instance.weights) or len(
+                instance.values) == 0:
+            raise ValueError(
+                "values and weights must have the same positive length")
         if instance.capacity < 0:
             raise ValueError("capacity must be non-negative")
         super().__init__(instance, instance_name=instance_name)
 
     @staticmethod
-    def from_lists(values: Sequence[int], weights: Sequence[int], capacity: int, name: str | None = None) -> "Knapsack":
-        return Knapsack(KnapsackInstance(values=list(values), weights=list(weights), capacity=int(capacity)), instance_name=name)
+    def from_lists(
+            values: Sequence[int],
+            weights: Sequence[int],
+            capacity: int,
+            name: str | None = None) -> "Knapsack":
+        return Knapsack(
+            KnapsackInstance(
+                values=list(values),
+                weights=list(weights),
+                capacity=int(capacity)),
+            instance_name=name)
 
     @staticmethod
     def from_preset(instance_name: str) -> "Knapsack":
         values, weights, capacity = None, None, None
         match instance_name:
             case 'default':
-                values  = [9, 6, 7, 5]
+                values = [9, 6, 7, 5]
                 weights = [6, 4, 5, 3]
                 capacity = 9
             case 'small':
                 values = [4, 3, 2]
                 weights = [3, 2, 2]
                 capacity = 4
-        return Knapsack.from_lists(values=values, weights=weights, capacity=capacity, name=instance_name)
+        return Knapsack.from_lists(
+            values=values,
+            weights=weights,
+            capacity=capacity,
+            name=instance_name)
 
     @property
     def n(self) -> int:

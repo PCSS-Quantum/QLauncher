@@ -120,7 +120,7 @@ def test_tsp():
     results = launcher.run()
     assert results is not None
     bitstring = results.best_bitstring
-    assignments = [bitstring[i:i+3] for i in range(0, len(bitstring), 3)]
+    assignments = [bitstring[i:i + 3] for i in range(0, len(bitstring), 3)]
     assert len(assignments) == 3
 
 
@@ -136,7 +136,9 @@ def test_graph_coloring():
     assert isinstance(inform, Result)
     bitstring = inform.best_bitstring
     num_qubits = len(bitstring)
-    assert num_qubits == gc.instance.number_of_nodes() * color_bit_length, "error in encoding, solution contains wrong number of qubits"
+    assert num_qubits == gc.instance.number_of_nodes(
+    ) * color_bit_length, "error in encoding, solution contains wrong number of qubits"
+
 
 def test_knapsack():
     """ Testing function for Knapsack problem """
