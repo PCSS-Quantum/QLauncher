@@ -6,13 +6,17 @@ import math
 import numpy as np
 
 from qiskit import transpile, QuantumCircuit
+from qiskit.primitives.containers import PubResult
 from qiskit.primitives.containers.primitive_result import PrimitiveResult
 from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 from qiskit.result import QuasiDistribution
+from qiskit.primitives import BackendEstimatorV2
 from qiskit.primitives import SamplerResult, BasePrimitiveJob, BitArray, DataBin
-from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2
-from qiskit.primitives.containers.sampler_pub import SamplerPubLike
+from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2, BaseEstimatorV1, BaseEstimatorV2, EstimatorResult
+from qiskit.primitives.containers.sampler_pub import SamplerPubLike, SamplerPub
+from qiskit.primitives.containers.estimator_pub import EstimatorPubLike, EstimatorPub
 from qiskit.primitives.primitive_job import PrimitiveJob
+from qiskit.quantum_info import SparsePauliOp
 
 
 class RuntimeJobV2Adapter(BasePrimitiveJob):
@@ -161,5 +165,45 @@ class SamplerV1ToSamplerV2Adapter(BaseSamplerV2):
         shots: int | None = None
     ) -> BasePrimitiveJob[PrimitiveResult[SamplerPubResult], Any]:
         job = PrimitiveJob(self._run, pubs, shots if shots is not None else 1024)
+        job._submit()
+        return job
+
+
+class EstimatorV1ToEstimatorV2Adapter(BaseEstimatorV2):
+    def __init__(self, estimator: BaseEstimatorV1) -> None:
+        super().__init__()
+        self.estimator = estimator
+
+    def _construct_v2_result(self, values: np.ndarray, meta: dict) -> PubResult:
+        var = meta.get('variance', 0)
+        shots = meta.get('shots', 1)
+        if not isinstance(values, np.ndarray):
+            values = np.array([values])
+        if not isinstance(var, np.ndarray):
+            var = np.array([var])
+        data_bin = DataBin(evs=values, stds=var/np.sqrt(shots), shape=values.shape)
+        return PubResult(
+            data_bin,
+            metadata={
+                "shots": shots,
+            },
+        )
+
+    def _run(self, pubs: Iterable[EstimatorPub]) -> PrimitiveResult[PubResult]:
+        circuits, observables, params = [], [], []
+        for pub in pubs:
+            circuits.append(pub.circuit)
+            observables.append(SparsePauliOp.from_list(pub.observables.tolist().items()))
+            params.append(pub.parameter_values.as_array())
+            pub.precision
+        job: PrimitiveJob = self.estimator.run(circuits, observables, params)
+        res: EstimatorResult = job.result()
+        return PrimitiveResult(
+            [self._construct_v2_result(rv, rm) for rv, rm in zip(res.values, res.metadata, strict=True)], metadata={"version": 2}
+        )
+
+    def run(self, pubs: Iterable[EstimatorPubLike], *, precision: float | None = None) -> BasePrimitiveJob[PrimitiveResult[PubResult], Any]:
+        coerced_pubs = [EstimatorPub.coerce(pub, precision) for pub in pubs]
+        job = PrimitiveJob(self._run, coerced_pubs)
         job._submit()
         return job
