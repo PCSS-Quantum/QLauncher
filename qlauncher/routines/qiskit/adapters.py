@@ -10,10 +10,9 @@ from qiskit.primitives.containers import PubResult
 from qiskit.primitives.containers.primitive_result import PrimitiveResult
 from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 from qiskit.result import QuasiDistribution
-from qiskit.primitives import BackendEstimatorV2
 from qiskit.primitives import SamplerResult, BasePrimitiveJob, BitArray, DataBin
 from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2, BaseEstimatorV1, BaseEstimatorV2, EstimatorResult
-from qiskit.primitives.containers.sampler_pub import SamplerPubLike, SamplerPub
+from qiskit.primitives.containers.sampler_pub import SamplerPubLike
 from qiskit.primitives.containers.estimator_pub import EstimatorPubLike, EstimatorPub
 from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.quantum_info import SparsePauliOp
@@ -174,14 +173,16 @@ class EstimatorV1ToEstimatorV2Adapter(BaseEstimatorV2):
         super().__init__()
         self.estimator = estimator
 
-    def _construct_v2_result(self, values: np.ndarray, meta: dict) -> PubResult:
-        var = meta.get('variance', 0)
-        shots = meta.get('shots', 1)
-        if not isinstance(values, np.ndarray):
-            values = np.array([values])
-        if not isinstance(var, np.ndarray):
-            var = np.array([var])
-        data_bin = DataBin(evs=values, stds=var/np.sqrt(shots), shape=values.shape)
+    def _construct_v2_result(self, estimator_result: EstimatorResult) -> PubResult:
+        var = np.array([meta.get('variance', 0) for meta in estimator_result.metadata])
+        shots = np.array([meta.get('shots', 1)for meta in estimator_result.metadata])
+
+        values = estimator_result.values
+        if len(values) == 1:
+            values = values.item()
+            var = var.item()
+            shots = shots.item()
+        data_bin = DataBin(evs=values, stds=var/np.sqrt(shots), shape=values.shape if isinstance(values, np.ndarray) else tuple())
         return PubResult(
             data_bin,
             metadata={
@@ -190,16 +191,23 @@ class EstimatorV1ToEstimatorV2Adapter(BaseEstimatorV2):
         )
 
     def _run(self, pubs: Iterable[EstimatorPub]) -> PrimitiveResult[PubResult]:
-        circuits, observables, params = [], [], []
+        results = []
         for pub in pubs:
-            circuits.append(pub.circuit)
-            observables.append(SparsePauliOp.from_list(pub.observables.tolist().items()))
-            params.append(pub.parameter_values.as_array())
-            pub.precision
-        job: PrimitiveJob = self.estimator.run(circuits, observables, params)
-        res: EstimatorResult = job.result()
+            obs_list = pub.observables.tolist()
+            if isinstance(obs_list, dict):  # yep
+                obs_list = [obs_list.items()]
+            else:
+                obs_list = [e.items() for e in obs_list]
+
+            res = self.estimator.run(
+                [pub.circuit]*len(obs_list),
+                [SparsePauliOp.from_list(ol) for ol in obs_list],
+                [pub.parameter_values.as_array().flatten()]*len(obs_list)
+            ).result()
+            results.append(res)
+
         return PrimitiveResult(
-            [self._construct_v2_result(rv, rm) for rv, rm in zip(res.values, res.metadata, strict=True)], metadata={"version": 2}
+            [self._construct_v2_result(res) for res in results], metadata={"version": 2}
         )
 
     def run(self, pubs: Iterable[EstimatorPubLike], *, precision: float | None = None) -> BasePrimitiveJob[PrimitiveResult[PubResult], Any]:
