@@ -1,7 +1,7 @@
 from qlauncher import QLauncher
 from qlauncher.base import Result
 from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend, TabuBackend, SteepestDescentBackend
-from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP
+from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP, Knapsack
 from pyqubo import Spin
 TESTING_DIR = 'testing'
 
@@ -37,7 +37,9 @@ def test_ec():
 
 def test_jssp():
     """ Testing function for Job Shop Scheduling Problem """
-    problem = JSSP.from_preset(instance_name='default', optimization_problem=True)
+    problem = JSSP.from_preset(
+        instance_name='default',
+        optimization_problem=True)
     solver = DwaveSolver(1, num_reads=10)
     _test_with_simulated_annealing(problem, solver)
     _test_with_steepest_descent(problem, solver)
@@ -87,3 +89,11 @@ def test_tabu_backend():
     solver = DwaveSolver(1, timeout=0.1, num_restarts=1)
 
     _test_with_tabu(problem, solver)
+
+
+def test_knapsack():
+    """ Testing function for Knapsack problem """
+    problem = Knapsack.from_preset(instance_name='default')
+    solver = DwaveSolver(1, num_reads=10)
+    _test_with_simulated_annealing(problem, solver)
+    _test_with_steepest_descent(problem, solver)

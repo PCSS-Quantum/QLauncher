@@ -8,7 +8,7 @@ from qlauncher.base import Result
 from qlauncher.routines.qiskit import QAOA, FALQON, QiskitBackend, AQTBackend
 from qlauncher.routines.qiskit.algorithms.qiskit_native import int_to_bitstring
 from qlauncher.routines.qiskit.algorithms.qiskit_native import Molecule, VQE
-from qlauncher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring
+from qlauncher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring, Knapsack
 
 
 def test_int_to_bs():
@@ -131,7 +131,7 @@ def test_tsp():
     results = launcher.run()
     assert results is not None
     bitstring = results.best_bitstring
-    assignments = [bitstring[i:i+3] for i in range(0, len(bitstring), 3)]
+    assignments = [bitstring[i:i + 3] for i in range(0, len(bitstring), 3)]
     assert len(assignments) == 3
 
 
@@ -147,4 +147,16 @@ def test_graph_coloring():
     assert isinstance(inform, Result)
     bitstring = inform.best_bitstring
     num_qubits = len(bitstring)
-    assert num_qubits == gc.instance.number_of_nodes() * color_bit_length, "error in encoding, solution contains wrong number of qubits"
+    assert num_qubits == gc.instance.number_of_nodes(
+    ) * color_bit_length, "error in encoding, solution contains wrong number of qubits"
+
+
+def test_knapsack():
+    """ Testing function for Knapsack problem """
+    pr = Knapsack.from_preset("default")
+    qaoa = FALQON(max_reps=1)
+    backend = QiskitBackend("local_simulator")
+    launcher = QLauncher(pr, qaoa, backend)
+
+    results = launcher.run()
+    assert isinstance(results, Result)

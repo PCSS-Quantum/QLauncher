@@ -2,7 +2,7 @@ import numpy as np
 
 from qlauncher import QLauncher
 from qlauncher.routines.orca import BBS, OrcaBackend
-from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP, GraphColoring
+from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP, GraphColoring, Knapsack
 from qlauncher.base import Result
 
 
@@ -74,4 +74,16 @@ def test_graph_coloring():
     assert isinstance(inform, Result)
     solution = inform.best_bitstring
     num_qubits = len(solution)
-    assert num_qubits == gc.instance.number_of_nodes() * num_colors, "error in encoding, solution contains wrong number of qubits"
+    assert num_qubits == gc.instance.number_of_nodes(
+    ) * num_colors, "error in encoding, solution contains wrong number of qubits"
+
+
+def test_knapsack():
+    """ Testing function for Knapsack problem """
+    pr = Knapsack.from_preset(instance_name='default')
+    bbs = BBS(updates=1)
+    backend = OrcaBackend('local_simulator')
+    launcher = QLauncher(pr, bbs, backend)
+
+    inform = launcher.run()
+    assert isinstance(inform, Result)
