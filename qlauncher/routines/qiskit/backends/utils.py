@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import TypeVar, Iterable
 from qiskit import QuantumCircuit, transpile
 from qiskit.providers.backend import BackendV1, BackendV2
 from qiskit.primitives import BackendSamplerV2, BackendEstimatorV2
@@ -25,7 +25,9 @@ def _get_transpiled_estimator_pubs(pubs: list[tuple], backend: BackendV1 | Backe
     for pub in pubs:
         circuit, operator, *args = pub
         transp_circ: QuantumCircuit = transpile(circuit, backend, optimization_level=optimization_level)
-        transp_op = operator.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits)
+        transp_op = (operator.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits)
+                     if not isinstance(operator, Iterable)
+                     else [op.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits) for op in operator])
         pub = (transp_circ, transp_op, *args)
         new_pubs.append(pub)
     return new_pubs
