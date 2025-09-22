@@ -179,9 +179,9 @@ class EstimatorV1ToEstimatorV2Adapter(BaseEstimatorV2):
 
         values = estimator_result.values
         if len(values) == 1:
-            values = values.item()
-            var = var.item()
-            shots = shots.item()
+            values = values.squeeze()
+            var = var.squeeze()
+            shots = shots.squeeze()
         data_bin = DataBin(evs=values, stds=var/np.sqrt(shots), shape=values.shape if isinstance(values, np.ndarray) else tuple())
         return PubResult(
             data_bin,
