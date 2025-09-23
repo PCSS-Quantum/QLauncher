@@ -54,10 +54,11 @@ class AQTBackend(QiskitBackend):
         backendv1v2: BackendV1 | BackendV2 | None = None,
         auto_transpile_level: Literal[0, 1, 2, 3] | None = None,
         token: str | None = None,
+        custom_url: str | None = None,
         dotenv_path: str | None = None,
     ) -> None:
 
-        # TODO: This will probably need to be updated to handle custom backend urls, when we get our own computer
+        self.custom_url = custom_url
         if dotenv_path is None:
             self.provider = AQTProvider(token if token is not None else "DEFAULT_TOKEN", load_dotenv=False)
         else:
@@ -69,7 +70,9 @@ class AQTBackend(QiskitBackend):
         if self.name == 'local_simulator':
             self.name = self.provider.backends(backend_type='offline_simulator', name=r".*no_noise")[0].name
         elif self.name == 'backendv1v2':
-            if self.backendv1v2 is None:
+            if self.backendv1v2 is None and self.custom_url:
+                self.backendv1v2 = self.provider.get_direct_access_backend(self.custom_url)
+            elif self.backendv1v2 is None:
                 raise ValueError("Please indicate a backend when in backendv1v2 mode.")
         elif self.name == 'device':
             available_online_backends = self.provider.backends(backend_type='device')
