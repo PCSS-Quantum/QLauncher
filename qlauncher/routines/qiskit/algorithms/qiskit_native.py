@@ -435,12 +435,17 @@ class VQE(QiskitOptimizationAlgorithm):
     # pip install git+https://github.com/qiskit-community/qiskit-nature.git
     # pyscf
 
-    def __init__(self, optimizer: optimizers.Optimizer | None = None,
-                 ansatz: QuantumCircuit | None = None, with_numpy: bool = False) -> None:
+    def __init__(self,
+                 optimizer: optimizers.Optimizer | None = None,
+                 ansatz: QuantumCircuit | None = None,
+                 with_numpy: bool = False,
+                 callback: Callable[[int, np.ndarray, float, dict[str, Any]], None] | None = None
+                 ) -> None:
         self.optimizer = optimizers.COBYLA() if optimizer is None else optimizer
         self.ansatz = ansatz
         self.num_qubits: int = 0
         self.with_numpy: bool = with_numpy
+        self.callback = callback
         super().__init__()
 
     @property
@@ -466,7 +471,7 @@ class VQE(QiskitOptimizationAlgorithm):
         if self.with_numpy:
             solver = qiskit_algorithms.NumPyMinimumEigensolver()
         else:
-            solver = qiskit_algorithms.VQE(estimator, self.ansatz, self.optimizer)
+            solver = qiskit_algorithms.VQE(estimator, self.ansatz, self.optimizer, callback=self.callback)
         vqe_gss = GroundStateEigensolver(problem.mapper, solver)
         vqe_results = vqe_gss.solve(problem.problem)
         return self.construct_result(vqe_results)
