@@ -477,18 +477,17 @@ class VQE(QiskitOptimizationAlgorithm):
         return self.construct_result(vqe_results)
 
     def construct_result(self, result: EigenstateResult) -> Result:
-        energy = result.total_energies[0]
         # Not the cleanest way
         return Result(
             '',
-            energy,
+            result.groundenergy,
             '',
             None,
             {'': 1},
-            {'total_energy': energy,
+            {'total_energy': result.total_energies[0],
              'groundenergy': result.groundenergy},
             1,
-            energy,
+            None,
             0,
             None
         )
