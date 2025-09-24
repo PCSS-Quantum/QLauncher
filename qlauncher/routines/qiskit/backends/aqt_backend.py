@@ -3,10 +3,10 @@ from typing import Literal
 from overrides import override
 
 from qiskit.providers import BackendV1, BackendV2
-from qiskit.primitives import Sampler, BaseSamplerV2
+from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 from qiskit_ibm_runtime import Options
 
-from qlauncher.routines.qiskit.adapters import SamplerV1ToSamplerV2Adapter
+from qlauncher.routines.qiskit.adapters import SamplerV1ToSamplerV2Adapter, EstimatorV1ToEstimatorV2Adapter
 from qlauncher.routines.qiskit import QiskitBackend
 from qlauncher.exceptions import DependencyError
 
@@ -45,7 +45,7 @@ class AQTBackend(QiskitBackend):
 
     """
     sampler: BaseSamplerV2
-    estimator: AQTEstimator
+    estimator: BaseEstimatorV2
 
     def __init__(
         self,
@@ -87,7 +87,8 @@ class AQTBackend(QiskitBackend):
         if self.backendv1v2 is None:
             self.backendv1v2 = self.provider.get_backend(name=self.name)
 
-        self.estimator = AQTEstimator(self.backendv1v2)
+        self._estimatorv1 = AQTEstimator(self.backendv1v2)
+        self.estimator = EstimatorV1ToEstimatorV2Adapter(self._estimatorv1)
         self._samplerV1 = AQTSampler(self.backendv1v2)
         self.sampler = SamplerV1ToSamplerV2Adapter(self._samplerV1)
 

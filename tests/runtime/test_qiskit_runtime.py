@@ -1,7 +1,5 @@
 import numpy as np
 
-import pytest
-
 from qiskit.quantum_info import SparsePauliOp
 from qlauncher import QLauncher
 from qlauncher.base import Result
@@ -23,17 +21,6 @@ def test_falqon():
 
     results = launcher.run()
     assert isinstance(results, Result)
-
-
-def test_falqon_reject():
-    """Test if FALQON rejects backends with only v1 samplers"""
-    pr = EC.from_preset(instance_name='micro')
-    qaoa = FALQON(max_reps=1)
-    backend = AQTBackend('local_simulator')
-    launcher = QLauncher(pr, qaoa, backend)
-
-    with pytest.raises(ValueError):
-        results = launcher.run()
 
 
 def test_QAOA():

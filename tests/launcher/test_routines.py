@@ -1,11 +1,62 @@
-from qiskit_aer.primitives import Sampler, SamplerV2
+import numpy as np
+
+from qiskit_aer.primitives import Sampler, SamplerV2, Estimator, EstimatorV2
 from qiskit_aer import AerSimulator
 from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 from qiskit import QuantumCircuit, ClassicalRegister, transpile
+from qiskit.circuit import ParameterVector, QuantumRegister, ClassicalRegister
 from qiskit.primitives import SamplerResult
+from qiskit.primitives.containers.estimator_pub import EstimatorPubLike, EstimatorPub
 
-from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter, SamplerV1ToSamplerV2Adapter
+from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter, SamplerV1ToSamplerV2Adapter, EstimatorV1ToEstimatorV2Adapter
 from qlauncher.routines.qiskit import QiskitBackend
+from qlauncher.hampy import Equation
+
+
+def test_v2_estimator_adapter():
+    circ = QuantumCircuit(2)
+    params = ParameterVector('pv', 2)
+
+    circ.rx(params[0], 0)
+    circ.rx(params[1], 1)
+    circ.cx(0, 1)
+
+    obs = Equation(2)
+    obs = obs[0] & obs[1]
+
+    obs2 = Equation(2)
+    obs2 = ~obs2[0] & obs2[1]
+
+    estimator_v1 = Estimator()
+    estimator_v1_adapted = EstimatorV1ToEstimatorV2Adapter(estimator_v1)
+    estimator_v2 = EstimatorV2()
+
+    v2_result = estimator_v2.run([(circ, [obs.hamiltonian, obs2.hamiltonian], [1., 2.])]).result()
+    v1_adapted_result = estimator_v1_adapted.run([(circ, [obs.hamiltonian, obs2.hamiltonian], [1., 2.])]).result()
+
+    assert len(v2_result) == len(v1_adapted_result)
+
+    for r1, r2 in zip(v1_adapted_result, v2_result):
+        assert np.allclose(r1.data.evs, r2.data.evs, atol=0.05)
+        assert np.allclose(r1.data.stds, r2.data.stds, atol=0.05)
+
+    v2_result = estimator_v2.run([(circ, obs2.hamiltonian, [1., 2.])]).result()
+    v1_adapted_result = estimator_v1_adapted.run([(circ, obs2.hamiltonian, [1., 2.])]).result()
+
+    assert len(v2_result) == len(v1_adapted_result)
+
+    for r1, r2 in zip(v1_adapted_result, v2_result):
+        assert np.allclose(r1.data.evs, r2.data.evs, atol=0.05)
+        assert np.allclose(r1.data.stds, r2.data.stds, atol=0.05)
+
+    v2_result = estimator_v2.run([(circ, obs.hamiltonian, [1., 2.]), (circ, obs2.hamiltonian, [1., 2.])]).result()
+    v1_adapted_result = estimator_v1_adapted.run([(circ, obs.hamiltonian, [1., 2.]), (circ, obs2.hamiltonian, [1., 2.])]).result()
+
+    assert len(v2_result) == len(v1_adapted_result)
+
+    for r1, r2 in zip(v1_adapted_result, v2_result):
+        assert np.allclose(r1.data.evs, r2.data.evs, atol=0.05)
+        assert np.allclose(r1.data.stds, r2.data.stds, atol=0.05)
 
 
 def test_v2_sampler_adapter():
