@@ -136,14 +136,13 @@ class SamplerV1ToSamplerV2Adapter(BaseSamplerV2):
         results = []
         for dist in out.quasi_dists:
             vals: list[int] = []
-            max_val = 0
+            max_val = 1
             for k, v in dist.items():
                 vals += [k] * int(round(v*shots, 0))
                 max_val = max(max_val, k)
 
-            required_bits = math.ceil(math.log2(max_val))
+            required_bits = math.ceil(math.log2(max_val+1))
             required_bytes = math.ceil(required_bits/8)
-
             arr = np.array(
                 [
                     np.frombuffer(v.to_bytes(required_bytes), dtype=np.uint8)
