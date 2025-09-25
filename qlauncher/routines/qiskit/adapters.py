@@ -1,3 +1,4 @@
+from collections import defaultdict
 from collections.abc import Sequence
 from typing import Any, Iterable
 
@@ -192,16 +193,23 @@ class EstimatorV1ToEstimatorV2Adapter(BaseEstimatorV2):
     def _run(self, pubs: Iterable[EstimatorPub]) -> PrimitiveResult[PubResult]:
         results = []
         for pub in pubs:
-            obs_list = pub.observables.tolist()
-            if isinstance(obs_list, dict):  # yep
-                obs_list = [obs_list.items()]
-            else:
-                obs_list = [e.items() for e in obs_list]
+            observables = pub.observables
+            parameter_values = pub.parameter_values
+
+            param_shape = parameter_values.shape
+            param_indices = np.fromiter(np.ndindex(param_shape), dtype=object).reshape(param_shape)
+            bc_param_ind, bc_obs = np.broadcast_arrays(param_indices, observables)
+
+            params_final, obs_final = [], []
+            for index in np.ndindex(*bc_param_ind.shape):
+                param_index = bc_param_ind[index]
+                params_final.append(parameter_values[param_index].as_array())
+                obs_final.append(bc_obs[index])
 
             res = self.estimator.run(
-                [pub.circuit]*len(obs_list),
-                [SparsePauliOp.from_list(ol) for ol in obs_list],
-                [pub.parameter_values.as_array().flatten()]*len(obs_list)
+                [pub.circuit]*len(params_final),
+                [SparsePauliOp.from_list(o.items()) for o in obs_final],
+                params_final
             ).result()
             results.append(res)
 

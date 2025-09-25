@@ -31,32 +31,21 @@ def test_v2_estimator_adapter():
     estimator_v1_adapted = EstimatorV1ToEstimatorV2Adapter(estimator_v1)
     estimator_v2 = EstimatorV2()
 
-    v2_result = estimator_v2.run([(circ, [obs.hamiltonian, obs2.hamiltonian], [1., 2.])]).result()
-    v1_adapted_result = estimator_v1_adapted.run([(circ, [obs.hamiltonian, obs2.hamiltonian], [1., 2.])]).result()
+    for inpt in [
+        [(circ, [obs.hamiltonian, obs2.hamiltonian], [1., 2.])],
+        [(circ, obs2.hamiltonian, [1., 2.])],
+        [(circ, obs.hamiltonian, [1., 2.]), (circ, obs2.hamiltonian, [1., 2.])],
+        [(circ, obs.hamiltonian, [[1., 2.], [2., 3.]]), (circ, obs2.hamiltonian, [[1., 2.], [2., 3.]])],
+        [(circ, [obs.hamiltonian, obs2.hamiltonian], [[1., 2.], [2., 3.]])],
+    ]:
+        v2_result = estimator_v2.run(inpt).result()
+        v1_adapted_result = estimator_v1_adapted.run(inpt).result()
 
-    assert len(v2_result) == len(v1_adapted_result)
+        assert len(v2_result) == len(v1_adapted_result)
 
-    for r1, r2 in zip(v1_adapted_result, v2_result):
-        assert np.allclose(r1.data.evs, r2.data.evs, atol=0.05)
-        assert np.allclose(r1.data.stds, r2.data.stds, atol=0.05)
-
-    v2_result = estimator_v2.run([(circ, obs2.hamiltonian, [1., 2.])]).result()
-    v1_adapted_result = estimator_v1_adapted.run([(circ, obs2.hamiltonian, [1., 2.])]).result()
-
-    assert len(v2_result) == len(v1_adapted_result)
-
-    for r1, r2 in zip(v1_adapted_result, v2_result):
-        assert np.allclose(r1.data.evs, r2.data.evs, atol=0.05)
-        assert np.allclose(r1.data.stds, r2.data.stds, atol=0.05)
-
-    v2_result = estimator_v2.run([(circ, obs.hamiltonian, [1., 2.]), (circ, obs2.hamiltonian, [1., 2.])]).result()
-    v1_adapted_result = estimator_v1_adapted.run([(circ, obs.hamiltonian, [1., 2.]), (circ, obs2.hamiltonian, [1., 2.])]).result()
-
-    assert len(v2_result) == len(v1_adapted_result)
-
-    for r1, r2 in zip(v1_adapted_result, v2_result):
-        assert np.allclose(r1.data.evs, r2.data.evs, atol=0.05)
-        assert np.allclose(r1.data.stds, r2.data.stds, atol=0.05)
+        for r1, r2 in zip(v1_adapted_result, v2_result):
+            assert np.allclose(r1.data.evs, r2.data.evs, atol=0.05)
+            assert np.allclose(r1.data.stds, r2.data.stds, atol=0.05)
 
 
 def test_v2_sampler_adapter():
