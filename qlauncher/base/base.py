@@ -35,29 +35,29 @@ class Result:
         return self.most_common_bitstring, self.most_common_bitstring_energy
 
     @staticmethod
-    def from_distributions(bitstring_distribution: dict[str, float], energy_distribution: dict[str, float], result: Any = None) -> "Result":
+    def from_counts_energies(bitstring_counts: dict[str, int], energies: dict[str, float], result: Any = None) -> "Result":
         """
         Constructs the Result object from Dictionary with bitstring to num of occurrences,
         dictionary mapping bitstring to energy and optional result (rest)
         """
-        best_bitstring = min(energy_distribution, key=energy_distribution.get)
-        best_energy = energy_distribution[best_bitstring]
-        most_common_bitstring = max(bitstring_distribution, key=bitstring_distribution.get)
-        most_common_bitstring_energy = energy_distribution[most_common_bitstring]
-        num_of_samples = int(sum(bitstring_distribution.values()))
+        best_bitstring = min(energies, key=energies.get)
+        best_energy = energies[best_bitstring]
+        most_common_bitstring = max(bitstring_counts, key=bitstring_counts.get)
+        most_common_bitstring_energy = energies[most_common_bitstring]
+        num_of_samples = int(sum(bitstring_counts.values()))
 
-        mean_value = sum(energy_distribution[bitstring] * occ for bitstring, occ in bitstring_distribution.items()) / num_of_samples
+        mean_value = sum(energies[bitstring] * occ for bitstring, occ in bitstring_counts.items()) / num_of_samples
         std = 0
-        for bitstring, occ in bitstring_distribution.items():
-            std += occ * ((energy_distribution[bitstring] - mean_value)**2)
+        for bitstring, occ in bitstring_counts.items():
+            std += occ * ((energies[bitstring] - mean_value)**2)
         std = (std/(num_of_samples-1))**0.5
         return Result(
             best_bitstring,
             best_energy,
             most_common_bitstring,
             most_common_bitstring_energy,
-            bitstring_distribution,
-            energy_distribution,
+            {k: v/num_of_samples for k, v in bitstring_counts.items()},
+            energies,
             num_of_samples,
             mean_value,
             std,

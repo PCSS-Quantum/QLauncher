@@ -1,3 +1,6 @@
+import numpy as np
+
+from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import QLauncher
@@ -30,3 +33,11 @@ def test_raw():
     assert results is not None
     bitstring = results.best_bitstring
     assert bitstring in ['00', '01', '10', '11']
+
+
+def test_circuit():
+    qc = QuantumCircuit(1)
+    qc.h(0)
+    qc.measure_all()
+    ql = QLauncher(qc, CirqBackend('local_simulator'))
+    assert np.allclose(ql.run().distribution['0'], 0.5, atol=0.05)

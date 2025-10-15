@@ -27,6 +27,7 @@ from qlauncher.base.base import Backend
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.problems import Molecule
+from qlauncher.utils import int_to_bitstring
 
 
 class QiskitOptimizationAlgorithm(Algorithm):
@@ -56,10 +57,6 @@ class QiskitOptimizationAlgorithm(Algorithm):
 def commutator(op_a: SparsePauliOp, op_b: SparsePauliOp) -> SparsePauliOp:
     """ Commutator """
     return op_a @ op_b - op_b @ op_a
-
-
-def int_to_bitstring(number: int, total_bits: int):
-    return np.binary_repr(number, total_bits)[::-1]
 
 
 def cvar_cost(probs_values: Iterable[tuple[float, float]], alpha: float):
