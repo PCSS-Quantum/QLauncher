@@ -48,7 +48,7 @@ class SamplerV2ToSamplerV1Adapter(BaseSamplerV1):
     def _get_quasi_meta(self, res):
         data = BitArray.concatenate_bits(list(res.data.values()))
         counts = data.get_int_counts()
-        probs = {k: v/data.num_shots for k, v in counts.items()}
+        probs = {measurement: counts/data.num_shots for measurement, counts in counts.items()}
         quasi_dists = QuasiDistribution(probs, shots=data.num_shots)
 
         metadata = res.metadata
@@ -58,14 +58,14 @@ class SamplerV2ToSamplerV1Adapter(BaseSamplerV1):
 
     def _run_v2(self, pubs, **run_options):
         job = self.sampler_v2.run(pubs=pubs, **run_options)
-        res = job.result()
-        qd, metas = [], []
-        for r in res:
-            quasi_dist, metadata = self._get_quasi_meta(r)
-            qd.append(quasi_dist)
+        result = job.result()
+        quasi_dists, metas = [], []
+        for result_single in result:
+            quasi_dist, metadata = self._get_quasi_meta(result_single)
+            quasi_dists.append(quasi_dist)
             metas.append(metadata)
 
-        return SamplerResult(quasi_dists=qd, metadata=metas)
+        return SamplerResult(quasi_dists=quasi_dists, metadata=metas)
 
     def _run(self, circuits, parameter_values=None, **run_options) -> PrimitiveJob:
         circuits = _transpile_circuits(circuits, self.backend)
@@ -99,22 +99,23 @@ class SamplerV1ToSamplerV2Adapter(BaseSamplerV2):
 
         results = []
         for circuit, dist in zip(circuits, out.quasi_dists):
-            vals: list[int] = []
-            for k, v in dist.items():
-                vals += [k] * int(round(v*shots, 0))
+            values: list[int] = []
+            for value, relative_frequency in dist.items():
+                values += [value] * int(round(relative_frequency*shots, 0))
 
             required_bits = circuit.num_qubits
             required_bytes = math.ceil(required_bits/8)
-            arr = np.array(
+            byte_array = np.array(
                 [
-                    np.frombuffer(v.to_bytes(required_bytes), dtype=np.uint8)
-                    for v in vals
+                    np.frombuffer(value.to_bytes(required_bytes), dtype=np.uint8)
+                    for value in values
                 ])
 
             bit_array = BitArray(
-                arr,
+                byte_array,
                 num_bits=required_bits
             )
+
             results.append(SamplerPubResult(data=DataBin(meas=bit_array), metadata={'shots': shots}))
 
         return PrimitiveResult(results, metadata={'version': 2})
@@ -160,23 +161,23 @@ class EstimatorV1ToEstimatorV2Adapter(BaseEstimatorV2):
 
             param_shape = parameter_values.shape
             param_indices = np.fromiter(np.ndindex(param_shape), dtype=object).reshape(param_shape)
-            bc_param_ind, bc_obs = np.broadcast_arrays(param_indices, observables)
+            broadcast_param_indices, broadcast_observables = np.broadcast_arrays(param_indices, observables)
 
-            params_final, obs_final = [], []
-            for index in np.ndindex(*bc_param_ind.shape):
-                param_index = bc_param_ind[index]
+            params_final, final_observables = [], []
+            for index in np.ndindex(*broadcast_param_indices.shape):
+                param_index = broadcast_param_indices[index]
                 params_final.append(parameter_values[param_index].as_array())
-                obs_final.append(bc_obs[index])
+                final_observables.append(broadcast_observables[index])
 
             res = self.estimator.run(
                 [pub.circuit]*len(params_final),
-                [SparsePauliOp.from_list(o.items()) for o in obs_final],
+                [SparsePauliOp.from_list(observable.items()) for observable in final_observables],
                 params_final
             ).result()
             results.append(res)
 
         return PrimitiveResult(
-            [self._construct_v2_result(res) for res in results], metadata={"version": 2}
+            [self._construct_v2_result(result) for result in results], metadata={"version": 2}
         )
 
     def run(self, pubs: Iterable[EstimatorPubLike], *, precision: float | None = None) -> BasePrimitiveJob[PrimitiveResult[PubResult], Any]:

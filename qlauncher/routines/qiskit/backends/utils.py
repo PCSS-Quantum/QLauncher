@@ -25,9 +25,12 @@ def _get_transpiled_estimator_pubs(pubs: list[tuple], backend: BackendV1 | Backe
     for pub in pubs:
         circuit, operator, *args = pub
         transp_circ: QuantumCircuit = transpile(circuit, backend, optimization_level=optimization_level)
-        transp_op = (operator.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits)
-                     if not isinstance(operator, Iterable)
-                     else [op.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits) for op in operator])
+
+        if isinstance(operator, Iterable):
+            transp_op = [op.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits) for op in operator]
+        else:
+            transp_op = operator.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits)
+
         pub = (transp_circ, transp_op, *args)
         new_pubs.append(pub)
     return new_pubs
