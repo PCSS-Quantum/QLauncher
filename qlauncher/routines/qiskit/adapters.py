@@ -1,4 +1,3 @@
-from collections import defaultdict
 from collections.abc import Sequence
 from typing import Any, Iterable
 
@@ -6,74 +5,17 @@ import math
 
 import numpy as np
 
-from qiskit import transpile, QuantumCircuit
+from qiskit import transpile
 from qiskit.primitives.containers import PubResult
 from qiskit.primitives.containers.primitive_result import PrimitiveResult
 from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 from qiskit.result import QuasiDistribution
 from qiskit.primitives import SamplerResult, BasePrimitiveJob, BitArray, DataBin
 from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2, BaseEstimatorV1, BaseEstimatorV2, EstimatorResult
-from qiskit.primitives.containers.sampler_pub import SamplerPubLike
+from qiskit.primitives.containers.sampler_pub import SamplerPubLike, SamplerPub
 from qiskit.primitives.containers.estimator_pub import EstimatorPubLike, EstimatorPub
 from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.quantum_info import SparsePauliOp
-
-
-class RuntimeJobV2Adapter(BasePrimitiveJob):
-    def __init__(self, job, **kwargs):
-        super().__init__(job.job_id(), **kwargs)
-        self.job = job
-
-    def result(self):
-        raise NotImplementedError()
-
-    def cancel(self):
-        return self.job.cancel()
-
-    def status(self):
-        return self.job.status()
-
-    def done(self):
-        return self.job.done()
-
-    def cancelled(self):
-        return self.job.cancelled()
-
-    def running(self):
-        return self.job.running()
-
-    def in_final_state(self):
-        return self.job.in_final_state()
-
-
-class SamplerV2JobAdapter(RuntimeJobV2Adapter):
-    """
-    Dummy data holder, returns a v1 SamplerResult from v2 sampler job.
-    """
-
-    def __init__(self, job, **kwargs):
-        super().__init__(job, **kwargs)
-
-    def _get_quasi_meta(self, res):
-        data = BitArray.concatenate_bits(list(res.data.values()))
-        counts = data.get_int_counts()
-        probs = {k: v/data.num_shots for k, v in counts.items()}
-        quasi_dists = QuasiDistribution(probs, shots=data.num_shots)
-
-        metadata = res.metadata
-        metadata["sampler_version"] = 2  # might be useful for debugging
-
-        return quasi_dists, metadata
-
-    def result(self):
-        res = self.job.result()
-        qd, metas = [], []
-        for r in res:
-            quasi_dist, metadata = self._get_quasi_meta(r)
-            qd.append(quasi_dist)
-            metas.append(metadata)
-
-        return SamplerResult(quasi_dists=qd, metadata=metas)
 
 
 def _transpile_circuits(circuits, backend):
@@ -103,12 +45,35 @@ class SamplerV2ToSamplerV1Adapter(BaseSamplerV1):
         self.backend = backend
         super().__init__()
 
-    def _run(self, circuits, parameter_values=None, **run_options) -> SamplerV2JobAdapter:
+    def _get_quasi_meta(self, res):
+        data = BitArray.concatenate_bits(list(res.data.values()))
+        counts = data.get_int_counts()
+        probs = {k: v/data.num_shots for k, v in counts.items()}
+        quasi_dists = QuasiDistribution(probs, shots=data.num_shots)
+
+        metadata = res.metadata
+        metadata["sampler_version"] = 2  # might be useful for debugging
+
+        return quasi_dists, metadata
+
+    def _run_v2(self, pubs, **run_options):
+        job = self.sampler_v2.run(pubs=pubs, **run_options)
+        res = job.result()
+        qd, metas = [], []
+        for r in res:
+            quasi_dist, metadata = self._get_quasi_meta(r)
+            qd.append(quasi_dist)
+            metas.append(metadata)
+
+        return SamplerResult(quasi_dists=qd, metadata=metas)
+
+    def _run(self, circuits, parameter_values=None, **run_options) -> PrimitiveJob:
         circuits = _transpile_circuits(circuits, self.backend)
         v2_list = list(zip(circuits, parameter_values))
-        job = self.sampler_v2.run(pubs=v2_list, **run_options)
 
-        return SamplerV2JobAdapter(job)
+        job = PrimitiveJob(self._run_v2, v2_list, **run_options)
+        job._submit()
+        return job
 
 
 class SamplerV1ToSamplerV2Adapter(BaseSamplerV2):
@@ -126,29 +91,26 @@ class SamplerV1ToSamplerV2Adapter(BaseSamplerV2):
     def _run(self, pubs: Iterable[SamplerPubLike], shots: int = 1024):
         circuits, params = [], []
         for pub in pubs:
-            if isinstance(pub, QuantumCircuit):
-                circuits.append(pub)
-                params.append([])
-            elif isinstance(pub, tuple):
-                circuits.append(pub[0])
-                params.append(pub[1] if len(pub) == 2 else [])
+            coerced = SamplerPub.coerce(pub)
+            circuits.append(coerced.parameter_values.bind_all(coerced.circuit).item())
+            params.append([])
 
         out = self.samplerv1.run(circuits, params, shots=shots).result()
+
         results = []
-        for dist in out.quasi_dists:
+        for circuit, dist in zip(circuits, out.quasi_dists):
             vals: list[int] = []
-            max_val = 1
             for k, v in dist.items():
                 vals += [k] * int(round(v*shots, 0))
-                max_val = max(max_val, k)
 
-            required_bits = math.ceil(math.log2(max_val+1))
+            required_bits = circuit.num_qubits
             required_bytes = math.ceil(required_bits/8)
             arr = np.array(
                 [
                     np.frombuffer(v.to_bytes(required_bytes), dtype=np.uint8)
                     for v in vals
                 ])
+
             bit_array = BitArray(
                 arr,
                 num_bits=required_bits
