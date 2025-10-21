@@ -1,5 +1,5 @@
-from qlauncher.problems.problem_initialization import TabularML
 from qlauncher.base import formatter
+from qlauncher.problems.problem_initialization import TabularML
 
 
 @formatter(TabularML, 'tabular_ml')

@@ -1,6 +1,6 @@
-"""  This module contains the QATM class."""
-import os
+"""This module contains the QATM class."""
 
+import os
 from typing import Any
 
 import numpy as np
@@ -10,7 +10,7 @@ from qlauncher.base import Problem
 
 
 class QATM(Problem):
-    """ 
+    """
     Class for Quantum Aircraft Traffic Management (QATM) problem.
 
     This class represents Quantum Aircraft Traffic Management (QATM) problem which is a combinatorial optimization problem
@@ -26,27 +26,24 @@ class QATM(Problem):
 
     """
 
-    def __init__(self, onehot: str = 'exact', instance: Any = None, instance_name: str | None = None,
-                 optimization_problem: bool = False) -> None:
-        super().__init__(instance=instance, instance_name=instance_name if instance_name is not None else "QATM")
+    def __init__(
+        self, onehot: str = 'exact', instance: Any = None, instance_name: str | None = None, optimization_problem: bool = False
+    ) -> None:
+        super().__init__(instance=instance, instance_name=instance_name if instance_name is not None else 'QATM')
         self.onehot = onehot
         self.optimization_problem = optimization_problem
 
     @property
     def setup(self) -> dict:
-        return {
-            'onehot': self.onehot,
-            'instance_name': self.instance_name
-        }
+        return {'onehot': self.onehot, 'instance_name': self.instance_name}
 
     def _get_path(self) -> str:
         return f'{self.name}@{self.instance_name.split(".", 1)[0]}'
 
     @classmethod
-    def from_file(cls, path: str, instance_name: str = "QATM"):
+    def from_file(cls, path: str, instance_name: str = 'QATM'):
         cm_path = os.path.join(path, 'CM_' + instance_name)
-        aircrafts_path = os.path.join(
-            path, 'aircrafts_' + instance_name)
+        aircrafts_path = os.path.join(path, 'aircrafts_' + instance_name)
 
         instance = {'cm': np.loadtxt(cm_path), 'aircrafts': pd.read_csv(aircrafts_path, delimiter=' ', names=['manouver', 'aircraft'])}
         return QATM('exact', instance, instance_name)
@@ -62,7 +59,7 @@ class QATM(Problem):
             dict: A dictionary containing collisions, onehot violations, and changes as ndarrays.
         """
         keys = list(result.keys())
-        vectorized_result = (np.fromstring("".join(keys), 'u1') - ord('0')).reshape(len(result), -1)
+        vectorized_result = (np.fromstring(''.join(keys), 'u1') - ord('0')).reshape(len(result), -1)
 
         cm = self.instance['cm'].copy().astype(int)
         np.fill_diagonal(cm, 0)
@@ -79,9 +76,4 @@ class QATM(Problem):
 
         at_least_one = (df.loc[:, df.columns != 'manouver'].groupby('aircraft').sum() > 0).all().to_numpy().astype(int)
 
-        return {
-            'collisions': collisions,
-            'onehot_violations': onehot_violations,
-            'changes': changes,
-            'at_least_one': at_least_one
-        }
+        return {'collisions': collisions, 'onehot_violations': onehot_violations, 'changes': changes, 'at_least_one': at_least_one}

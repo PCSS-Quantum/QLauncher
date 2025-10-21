@@ -1,9 +1,10 @@
-"""  This module contains the EC class."""
+"""This module contains the EC class."""
+
 import ast
 from collections import defaultdict
 
-import networkx as nx
 import matplotlib.pyplot as plt
+import networkx as nx
 
 from qlauncher.base import Problem
 
@@ -29,37 +30,29 @@ class EC(Problem):
 
     @property
     def setup(self) -> dict:
-        return {
-            'instance_name': self.instance_name
-        }
+        return {'instance_name': self.instance_name}
 
     def _get_path(self) -> str:
         return f'{self.name}@{self.instance_name}'
 
     @staticmethod
-    def from_preset(instance_name: str, **kwargs) -> "EC":
+    def from_preset(instance_name: str, **kwargs) -> 'EC':
         match instance_name:
             case 'micro':
-                instance = [{1, 2},
-                            {1}]
+                instance = [{1, 2}, {1}]
             case 'default':
-                instance = [{1, 4, 7},
-                            {1, 4},
-                            {4, 5, 7},
-                            {3, 5, 6},
-                            {2, 3, 6, 7},
-                            {2, 7}]
+                instance = [{1, 4, 7}, {1, 4}, {4, 5, 7}, {3, 5, 6}, {2, 3, 6, 7}, {2, 7}]
         return EC(instance=instance, instance_name=instance_name, **kwargs)
 
     @classmethod
-    def from_file(cls, path: str, **kwargs) -> "EC":
-        with open(path, 'r', encoding='utf-8') as file:
+    def from_file(cls, path: str, **kwargs) -> 'EC':
+        with open(path, encoding='utf-8') as file:
             read_file = file.read()
         instance = ast.literal_eval(read_file)
         return EC(instance, **kwargs)
 
     def read_instance(self, instance_path: str):
-        with open(instance_path, 'r', encoding='utf-8') as file:
+        with open(instance_path, encoding='utf-8') as file:
             read_file = file.read()
         self.instance = ast.literal_eval(read_file)
 
@@ -99,15 +92,14 @@ class EC(Problem):
             else:
                 color_map.append('red')
         pos = nx.bipartite_layout(G, nodes=range(size))
-        nx.draw(G, pos, node_color=color_map, with_labels=True,
-                edge_color=edge_colors)
+        nx.draw(G, pos, node_color=color_map, with_labels=True, edge_color=edge_colors)
         plt.title('Exact Cover Problem Visualization')
         plt.show()
 
     @staticmethod
-    def generate_ec_instance(n: int, m: int, p: float = 0.5, **kwargs) -> "EC":
+    def generate_ec_instance(n: int, m: int, p: float = 0.5, **kwargs) -> 'EC':
         graph = nx.bipartite.random_graph(n, m, p)
-        right_nodes = [n for n, d in graph.nodes(data=True) if d["bipartite"] == 0]
+        right_nodes = [n for n, d in graph.nodes(data=True) if d['bipartite'] == 0]
         instance = [set() for _ in right_nodes]
         for left, right in graph.edges():
             instance[left].add(right)

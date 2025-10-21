@@ -1,16 +1,17 @@
-""" Hamiltonian formulation of problems """
-from itertools import product
-import numpy as np
+"""Hamiltonian formulation of problems"""
 
+from itertools import product
+
+import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_optimization.converters import QuadraticProgramToQubo
 from qiskit_optimization.translators import from_ising
 
+import qlauncher.hampy as hampy
+import qlauncher.problems.problem_initialization as problems
 from qlauncher.base import formatter
 from qlauncher.base.adapter_structure import adapter
-import qlauncher.problems.problem_initialization as problems
-import qlauncher.hampy as hampy
 from qlauncher.hampy import Equation, Variable
 from qlauncher.problems.problem_formulations.hamiltonians.tsp import problem_to_hamiltonian as tsp_to_hamiltonian
 
@@ -23,7 +24,7 @@ def hamiltonian_to_qubo(hamiltonian):
     return qubo.quadratic.to_array(), 0
 
 
-@adapter("qubo", "hamiltonian")
+@adapter('qubo', 'hamiltonian')
 def qubo_to_hamiltonian(qubo: np.ndarray) -> SparsePauliOp:
     q_matrix, offset = qubo
     num_vars = q_matrix.shape[0]
@@ -33,10 +34,12 @@ def qubo_to_hamiltonian(qubo: np.ndarray) -> SparsePauliOp:
             if entry == 0:
                 continue
             if i == j:
-                pauli += SparsePauliOp.from_sparse_list([('I', [0], .5), ('Z', [i], -.5)], num_vars)*entry
+                pauli += SparsePauliOp.from_sparse_list([('I', [0], 0.5), ('Z', [i], -0.5)], num_vars) * entry
             else:
-                pauli += SparsePauliOp.from_sparse_list([('I', [0], .25), ('Z', [i], -.25),
-                                                        ('Z', [j], -.25), ('ZZ', [i, j], .25)], num_vars)*entry
+                pauli += (
+                    SparsePauliOp.from_sparse_list([('I', [0], 0.25), ('Z', [i], -0.25), ('Z', [j], -0.25), ('ZZ', [i, j], 0.25)], num_vars)
+                    * entry
+                )
     pauli += SparsePauliOp.from_sparse_list([('I', [], offset)], num_vars)
     return pauli
 
@@ -46,16 +49,16 @@ def ring_ham(ring: set, n):
     ring = list(ring)
     for index in range(len(ring) - 1):
         sparse_list = []
-        sparse_list.append((("XX", [ring[index], ring[index + 1]], 1)))
-        sparse_list.append((("YY", [ring[index], ring[index + 1]], 1)))
+        sparse_list.append(('XX', [ring[index], ring[index + 1]], 1))
+        sparse_list.append(('YY', [ring[index], ring[index + 1]], 1))
         sp = SparsePauliOp.from_sparse_list(sparse_list, n)
         if total is None:
             total = sp
         else:
             total += sp
     sparse_list = []
-    sparse_list.append((("XX", [ring[-1], ring[0]], 1)))
-    sparse_list.append((("YY", [ring[-1], ring[0]], 1)))
+    sparse_list.append(('XX', [ring[-1], ring[0]], 1))
+    sparse_list.append(('YY', [ring[-1], ring[0]], 1))
     sp = SparsePauliOp.from_sparse_list(sparse_list, n)
     total += sp
     return SparsePauliOp(total)
@@ -64,7 +67,7 @@ def ring_ham(ring: set, n):
 @formatter(problems.EC, 'hamiltonian')
 class ECQiskit:
     def __call__(self, problem: problems.EC, onehot='exact') -> SparsePauliOp:
-        """ generating hamiltonian"""
+        """generating hamiltonian"""
         elements = set().union(*problem.instance)
         onehots = []
         for ele in elements:
@@ -87,7 +90,8 @@ class ECQiskit:
         return hamiltonian.simplify()
 
     def get_mixer_hamiltonian(self, problem: problems.EC, amount_of_rings=None):
-        """ generates mixer hamiltonian """
+        """generates mixer hamiltonian"""
+
         def get_main_set():
             main_set = []
             for element_set in problem.instance:
@@ -113,9 +117,8 @@ class ECQiskit:
             total = None
             for elem in x_gate:
                 sparse_list = []
-                sparse_list.append((("X", [elem], 1)))
-                sp = SparsePauliOp.from_sparse_list(
-                    sparse_list, len(problem.instance))
+                sparse_list.append(('X', [elem], 1))
+                sp = SparsePauliOp.from_sparse_list(sparse_list, len(problem.instance))
                 if total is None:
                     total = sp
                 else:
@@ -137,8 +140,7 @@ class ECQiskit:
         if amount_of_rings is not None:
             max_amount_of_rings, user_rings = len(ring), []
             if amount_of_rings > max_amount_of_rings:
-                raise ValueError(
-                    f"Too many rings. Maximum amount is {max_amount_of_rings}")
+                raise ValueError(f'Too many rings. Maximum amount is {max_amount_of_rings}')
             elif amount_of_rings == 0:
                 ring_qubits = []
             else:
@@ -147,8 +149,7 @@ class ECQiskit:
                     user_rings.append(ring[index])
                     current_qubits = current_qubits.union(ring[index])
                 ring_qubits = current_qubits
-        x_gate.extend(id for id, _ in enumerate(
-            problem.instance) if id not in ring_qubits)
+        x_gate.extend(id for id, _ in enumerate(problem.instance) if id not in ring_qubits)
 
         # connecting all parts of mixer hamiltonian together
         mix_ham = None
@@ -267,12 +268,7 @@ def get_qiskit_hamiltonian(problem: problems.Raw) -> SparsePauliOp:
 
 @formatter(problems.TSP, 'hamiltonian')
 def get_qiskit_hamiltonian(problem: problems.TSP, onehot='exact', constraints_weight=1, costs_weight=1) -> SparsePauliOp:
-    return tsp_to_hamiltonian(
-        problem,
-        onehot=onehot,
-        constraints_weight=constraints_weight,
-        costs_weight=costs_weight
-    )
+    return tsp_to_hamiltonian(problem, onehot=onehot, constraints_weight=constraints_weight, costs_weight=costs_weight)
 
 
 @formatter(problems.GraphColoring, 'hamiltonian')

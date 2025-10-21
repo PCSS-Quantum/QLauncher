@@ -1,9 +1,11 @@
+import warnings
 from collections import defaultdict
 from collections.abc import Callable
-from typing import Any
 from inspect import signature
-import warnings
+from typing import Any
+
 import networkx as nx
+
 from .base import Problem
 
 __QL_ADAPTERS: dict[str, dict[str, Callable]] = defaultdict(lambda: {})  # adapters[to][from]
@@ -49,7 +51,9 @@ class ProblemFormatter:
         unused_count = len(run_params) - len(params_used)
         if unused_count > 0:
             warnings.warn(
-                f"{unused_count} unused parameters. {_get_callable_name(self.formatter)} does not accept {[k for k in run_params if not k in params_used]}", Warning)
+                f'{unused_count} unused parameters. {_get_callable_name(self.formatter)} does not accept {[k for k in run_params if k not in params_used]}',
+                Warning,
+            )
         return self.formatter(*args, **kwargs, **params_used)
 
     def __call__(self, *args, **kwargs):
@@ -60,7 +64,7 @@ class ProblemFormatter:
         common_params = set(curr_run_params.keys()).intersection(set(self.adapter_requirements.keys()))
         if len(common_params) > 0:
             warnings.warn(
-                f"Attempting to reassign parameter values required by one of the adapters: {common_params}, those params will not be set."
+                f'Attempting to reassign parameter values required by one of the adapters: {common_params}, those params will not be set.'
             )
 
         curr_run_params = curr_run_params | self.adapter_requirements
@@ -76,10 +80,10 @@ class ProblemFormatter:
         Returns:
             String representing the conversion process: problem -> formatter -> adapters (if applicable)
         """
-        return " -> ".join(
-            [str(list(self.formatter_sig.parameters.keys())[0])] +
-            [_get_callable_name(self.formatter)] +
-            [_get_callable_name(fn) for fn in self.adapters]
+        return ' -> '.join(
+            [str(list(self.formatter_sig.parameters.keys())[0])]
+            + [_get_callable_name(self.formatter)]
+            + [_get_callable_name(fn) for fn in self.adapters]
         )
 
     def set_run_param(self, param: str, value: Any) -> None:
@@ -114,11 +118,13 @@ def adapter(translates_from: str, translates_to: str, **kwargs) -> Callable:
     Returns:
         Same function
     """
+
     def decorator(func):
         if isinstance(func, type):
             func = func()
         __QL_ADAPTERS[translates_to][translates_from] = {'func': func, 'formatter_requirements': kwargs}
         return func
+
     return decorator
 
 
@@ -133,11 +139,13 @@ def formatter(problem: type[Problem] | None, alg_format: str):
     Returns:
         Same function
     """
+
     def decorator(func):
         if isinstance(func, type):
             func = func()
         __QL_FORMATTERS[problem][alg_format] = func
         return func
+
     return decorator
 
 
@@ -150,7 +158,7 @@ def _find_shortest_adapter_path(problem: type[Problem], alg_format: str) -> list
     """
     G = nx.DiGraph()
     for problem_node in __QL_FORMATTERS[problem]:
-        G.add_edge("__problem__", problem_node)
+        G.add_edge('__problem__', problem_node)
 
     for out_form in __QL_ADAPTERS:
         for in_form in __QL_ADAPTERS[out_form]:
@@ -159,8 +167,8 @@ def _find_shortest_adapter_path(problem: type[Problem], alg_format: str) -> list
     if not G.has_node(alg_format):
         return None
 
-    path = nx.shortest_path(G, "__problem__", alg_format)
-    assert isinstance(path, list) or path is None, "Something went wrong in `nx.shortest_path`"
+    path = nx.shortest_path(G, '__problem__', alg_format)
+    assert isinstance(path, list) or path is None, 'Something went wrong in `nx.shortest_path`'
     return path
 
 
@@ -190,8 +198,8 @@ def get_formatter(problem: type[Problem], alg_format: str) -> ProblemFormatter:
         else:
             formatter = __QL_FORMATTERS[problem][path[1]]
             adapters = []
-            for i in range(1, len(path)-1):
-                adapters.append(__QL_ADAPTERS[path[i+1]][path[i]])
+            for i in range(1, len(path) - 1):
+                adapters.append(__QL_ADAPTERS[path[i + 1]][path[i]])
 
     return ProblemFormatter(formatter, adapters)
 

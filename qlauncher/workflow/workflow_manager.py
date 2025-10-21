@@ -1,6 +1,7 @@
 import concurrent.futures
-from typing import Any, Literal
 from collections.abc import Callable
+from typing import Any, Literal
+
 from qlauncher.base import Algorithm
 
 
@@ -97,7 +98,7 @@ class WorkflowManager:
     def print_dag(self):
         for task in self.tasks:
             dep_names = [dep.func.__name__ for dep in task.dependencies]
-            print(f"{task.func.__name__} -> {dep_names}")
+            print(f'{task.func.__name__} -> {dep_names}')
 
     def input(self, format: str = 'none'):
         self.input_task = Task(func=None)
@@ -121,7 +122,7 @@ def _execute_workflow(tasks: list[Task], executor: concurrent.futures.Executor, 
 
         if len(ready_tasks) < 1:
             if remaining_tasks:
-                raise RuntimeError("Cycle or error in tasks.")
+                raise RuntimeError('Cycle or error in tasks.')
             return
 
         futures = {executor.submit(task.run): task for task in ready_tasks}
@@ -133,5 +134,5 @@ def _execute_workflow(tasks: list[Task], executor: concurrent.futures.Executor, 
             remaining_tasks.remove(t)
 
         if iteration > max_iterations:
-            raise RuntimeError("Processing take too much iterations")
+            raise RuntimeError('Processing take too much iterations')
         iteration += 1

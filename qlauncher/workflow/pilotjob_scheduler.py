@@ -3,8 +3,9 @@ import pickle
 import sys
 
 from qlauncher.base.base import Algorithm, Backend, Problem, Result
-from qlauncher.launcher.qlauncher import QLauncher
 from qlauncher.exceptions import DependencyError
+from qlauncher.launcher.qlauncher import QLauncher
+
 try:
     import dill
     from qcg.pilotjob.api.job import Jobs
@@ -47,12 +48,13 @@ class JobManager:
         """
         if cores is None:
             cores = 1
-        job = self._prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend,
-                                        output=output_path, cores=cores)
+        job = self._prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path, cores=cores)
         job_id = self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
         return job_id
 
-    def submit_many(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores_per_job: int = 1, n_jobs: int | None = None) -> list[str]:
+    def submit_many(
+        self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores_per_job: int = 1, n_jobs: int | None = None
+    ) -> list[str]:
         """
         Submits as many jobs as there are currently available cores.
 
@@ -71,7 +73,7 @@ class JobManager:
         if free_cores == 0:
             return []
         qcg_jobs = Jobs()
-        for _ in range(n_jobs if n_jobs is not None else free_cores//cores_per_job):
+        for _ in range(n_jobs if n_jobs is not None else free_cores // cores_per_job):
             job = self._prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path, cores=cores_per_job)
             qcg_jobs.add(**job.get('qcg_args'))
         return self.manager.submit(qcg_jobs)
@@ -92,7 +94,7 @@ class JobManager:
         """
         if job_id is None:
             if self._count_not_finished() <= 0:
-                raise ValueError("There are no jobs left")
+                raise ValueError('There are no jobs left')
             job_id, state = self.manager.wait4_any_job_finish(timeout)
         elif job_id in self.jobs:
             state = self.manager.wait4(job_id, timeout=timeout)[job_id]
@@ -102,8 +104,7 @@ class JobManager:
         self.jobs[job_id]['finished'] = True
         return job_id, state
 
-    def _prepare_ql_dill_job(self, problem: Problem, algorithm: Algorithm, backend: Backend,
-                             output: str, cores: int = 1) -> dict:
+    def _prepare_ql_dill_job(self, problem: Problem, algorithm: Algorithm, backend: Backend, output: str, cores: int = 1) -> dict:
         job_uid = f'{len(self.jobs):05d}'
         output_file = os.path.abspath(f'{output}output.{job_uid}')
         launcher = QLauncher(problem, algorithm, backend)
@@ -119,7 +120,7 @@ class JobManager:
             'model': 'openmpi',
             'stdout': f'{output}stdout.{job_uid}',
             'stderr': f'{output}stderr.{job_uid}',
-            'numCores': cores
+            'numCores': cores,
         }
         job = {'name': job_uid, 'qcg_args': qcg_args, 'output_file': output_file, 'finished': False}
         self.jobs[job_uid] = job

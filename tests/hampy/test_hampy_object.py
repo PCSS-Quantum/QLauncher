@@ -1,15 +1,15 @@
 from pprint import pprint
 from warnings import filterwarnings
 
-from qiskit.quantum_info import SparsePauliOp
-from qiskit.primitives import Sampler
-from qiskit_algorithms.optimizers import COBYLA
-from qiskit_algorithms.minimum_eigensolvers import QAOA
-
 import pytest
+from qiskit.primitives import Sampler
+from qiskit.quantum_info import SparsePauliOp
+from qiskit_algorithms.minimum_eigensolvers import QAOA
+from qiskit_algorithms.optimizers import COBYLA
 
-from qlauncher.hampy.object import Equation, Variable
 from qlauncher.hampy.equations import one_in_n
+from qlauncher.hampy.object import Equation, Variable
+
 filterwarnings('ignore')
 
 
@@ -29,7 +29,6 @@ def get_hamiltonian():
 
 @pytest.mark.skip('QAOA from qiskit_algorithms in newest version has currently some problems')
 def test_run_qaoa():
-
     hamiltonian = get_hamiltonian()
     sampler, optimizer = Sampler(), COBYLA()
     qaoa = QAOA(sampler, optimizer)
@@ -38,7 +37,6 @@ def test_run_qaoa():
 
 
 def test_or_operation():
-
     eq = Equation(2)
     var0 = eq.get_variable(0)
     var1 = eq.get_variable(1)

@@ -1,17 +1,17 @@
-""" Algorithms for Qiskit routines """
+"""Algorithms for Qiskit routines"""
+
 import math
 import os
-from collections.abc import Callable
-
 import weakref
+from collections.abc import Callable
 
 import numpy as np
 import scipy
 
-from qlauncher.base import Problem, Algorithm, Result
+from qlauncher.base import Algorithm, Problem, Result
+from qlauncher.routines.qiskit.algorithms.qiskit_native import QAOA
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.workflow.pilotjob_scheduler import JobManager
-from qlauncher.routines.qiskit.algorithms.qiskit_native import QAOA
 
 
 class EducatedGuess(Algorithm):
@@ -67,10 +67,9 @@ class EducatedGuess(Algorithm):
         new_job_id = None
         for p in range(self.p_init + 1, self.p_max + 1):
             previous_job_results = self.manager.read_results(previous_job_id).result
-            initial_point = self._interpolate_f(list(previous_job_results['result']['optimal_point']), p-1)
+            initial_point = self._interpolate_f(list(previous_job_results['result']['optimal_point']), p - 1)
 
-            new_job_id = self.manager.submit(problem, QAOA(p=p, initial_point=initial_point),
-                                             backend, output_path=self.output_interpolated)
+            new_job_id = self.manager.submit(problem, QAOA(p=p, initial_point=initial_point), backend, output_path=self.output_interpolated)
             _, state = self.manager.wait_for_a_job(new_job_id)
             if state != 'SUCCEED':
                 self.failed_jobs += 1
@@ -84,8 +83,7 @@ class EducatedGuess(Algorithm):
         self.best_job_id = new_job_id if new_job_id is not None else previous_job_id
         return True
 
-    def _process_job(self, jobid: str, p: int, energy_to_compare: float, compare_factor: float = 1.0) -> tuple[
-            float, bool]:
+    def _process_job(self, jobid: str, p: int, energy_to_compare: float, compare_factor: float = 1.0) -> tuple[float, bool]:
         result = self.manager.read_results(jobid).result
         optimal_point = result['optimal_point']
         has_potential = False
@@ -125,8 +123,10 @@ class EducatedGuess(Algorithm):
 
     def _check_linearity(self, optimal_params: np.ndarray, p: int) -> bool:
         linear = False
-        correlations = (scipy.stats.pearsonr(np.arange(1, p + 1), optimal_params[:p])[0],
-                        scipy.stats.pearsonr(np.arange(1, p + 1), optimal_params[p:])[0])
+        correlations = (
+            scipy.stats.pearsonr(np.arange(1, p + 1), optimal_params[:p])[0],
+            scipy.stats.pearsonr(np.arange(1, p + 1), optimal_params[p:])[0],
+        )
 
         if abs(correlations[0]) > 0.85 and abs(correlations[1]) > 0.85:
             linear = True

@@ -1,4 +1,4 @@
-from qlauncher.base.adapter_structure import get_formatter, default_formatter
+from qlauncher.base.adapter_structure import default_formatter, get_formatter
 from qlauncher.problems.problem_initialization import TSP
 
 

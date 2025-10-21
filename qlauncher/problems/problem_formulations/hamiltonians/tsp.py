@@ -1,13 +1,12 @@
 from typing import Literal
 
-import numpy as np
 import networkx as nx
+import numpy as np
 
-from qlauncher.problems.problem_initialization import TSP
-
-from qlauncher.hampy import Equation
 import qlauncher.hampy as hampy
+from qlauncher.hampy import Equation
 from qlauncher.hampy.utils import shift_affected_qubits
+from qlauncher.problems.problem_initialization import TSP
 
 
 def make_non_collision_hamiltonian(node_count: int, quadratic=False):
@@ -32,22 +31,14 @@ def make_non_collision_hamiltonian(node_count: int, quadratic=False):
     # I'm pretty sure this works as intended...
 
     # Ensure that at each timestep only one node is visited
-    t0_op = hampy.one_in_n(
-        [i for i in range(node_count)],
-        eq.size,
-        quadratic=quadratic
-    )
+    t0_op = hampy.one_in_n([i for i in range(node_count)], eq.size, quadratic=quadratic)
 
     for timestep in range(node_count):
         shift = shift_affected_qubits(t0_op, timestep * node_count)
         eq += shift
 
     # Ensure that each node is visited only once
-    n0_op = hampy.one_in_n(
-        [timestep * node_count for timestep in range(node_count)],
-        eq.size,
-        quadratic=quadratic
-    )
+    n0_op = hampy.one_in_n([timestep * node_count for timestep in range(node_count)], eq.size, quadratic=quadratic)
 
     for node in range(node_count):
         shift = shift_affected_qubits(n0_op, node)
@@ -68,7 +59,7 @@ def make_connection_hamiltonian(edge_costs: np.ndarray, return_to_start: bool = 
     """
     node_count = edge_costs.shape[0]
     if len(edge_costs.shape) != 2 or edge_costs.shape[1] != node_count:
-        raise ValueError("edge_costs must be a square matrix")
+        raise ValueError('edge_costs must be a square matrix')
 
     n = node_count**2
     eq = Equation(n)
@@ -78,10 +69,7 @@ def make_connection_hamiltonian(edge_costs: np.ndarray, return_to_start: bool = 
             for next_node in range(node_count):
                 if node == next_node:
                     continue
-                and_hamiltonian = (
-                    eq[node + timestep * node_count]
-                    & eq[next_node + (timestep + 1) * node_count]
-                )
+                and_hamiltonian = eq[node + timestep * node_count] & eq[next_node + (timestep + 1) * node_count]
                 eq += edge_costs[node, next_node] * and_hamiltonian
 
     if not return_to_start:
@@ -90,15 +78,19 @@ def make_connection_hamiltonian(edge_costs: np.ndarray, return_to_start: bool = 
     # Add cost of returning to the first node
     for node in range(node_count):
         for node2 in range(node_count):
-            and_hamiltonian = (
-                eq[node + (node_count - 1) * node_count] & eq[node2]
-            )
+            and_hamiltonian = eq[node + (node_count - 1) * node_count] & eq[node2]
             eq += edge_costs[node, node2] * and_hamiltonian
 
     return eq.hamiltonian
 
 
-def problem_to_hamiltonian(problem: TSP, constraints_weight: int = 5, costs_weight: int = 1, return_to_start: bool = True, onehot: Literal['exact', 'quadratic'] = 'exact') -> np.ndarray:
+def problem_to_hamiltonian(
+    problem: TSP,
+    constraints_weight: int = 5,
+    costs_weight: int = 1,
+    return_to_start: bool = True,
+    onehot: Literal['exact', 'quadratic'] = 'exact',
+) -> np.ndarray:
     """
     Creates a Hamiltonian for the TSP problem.
 

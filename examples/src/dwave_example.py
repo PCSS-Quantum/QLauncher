@@ -1,11 +1,12 @@
-""" QLauncher for Orca """
+"""QLauncher for Orca"""
+
 from qlauncher import *
 from qlauncher import problems
-from qlauncher.routines.dwave import SimulatedAnnealingBackend, DwaveSolver
+from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend
 
 
 def main():
-    """ main """
+    """main"""
     problem = problems.MaxCut(instance_name='default')
     alg = DwaveSolver(1)
     backend = SimulatedAnnealingBackend('local')

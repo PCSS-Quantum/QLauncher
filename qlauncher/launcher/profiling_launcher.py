@@ -1,11 +1,13 @@
 import cProfile
 import pstats
+
 from qlauncher.base import Algorithm, Backend, Problem, Result
+
 from .qlauncher import QLauncher
 
 
 class ProfilingLauncher(QLauncher):
-    """ Launcher made for debugging purposes of algorithms and other launchers focusing on performance issues 
+    """Launcher made for debugging purposes of algorithms and other launchers focusing on performance issues
 
     Attributes:
         profiler_path (str) path where to save the profiling results.

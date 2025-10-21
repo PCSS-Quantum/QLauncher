@@ -1,4 +1,5 @@
 from typing import overload
+
 from qiskit.quantum_info import SparsePauliOp
 
 
@@ -23,8 +24,8 @@ class Equation:
         else:
             raise TypeError('Wrong arguments!')
 
-    def get_variable(self, index: int) -> "Variable":
-        assert isinstance(index, int), "Index needs to be an integer"
+    def get_variable(self, index: int) -> 'Variable':
+        assert isinstance(index, int), 'Index needs to be an integer'
         obj = Variable(index, self)
         return obj
 
@@ -48,25 +49,25 @@ class Equation:
     def is_quadratic(self) -> bool:
         return all(term.z.sum() <= 2 for term in self.hamiltonian.paulis)
 
-    def __or__(self, other: "Variable | Equation", /) -> "Equation":
+    def __or__(self, other: 'Variable | Equation', /) -> 'Equation':
         if isinstance(other, Variable):
             other = other.to_equation()
 
         return Equation(self.hamiltonian + other.hamiltonian - self.hamiltonian.compose(other.hamiltonian))
 
-    def __and__(self, other: "Variable | Equation", /) -> "Equation":
+    def __and__(self, other: 'Variable | Equation', /) -> 'Equation':
         if isinstance(other, Variable):
             other = other.to_equation()
 
         return Equation(self.hamiltonian.compose(other.hamiltonian))
 
-    def __xor__(self, other: "Variable | Equation", /) -> "Equation":
+    def __xor__(self, other: 'Variable | Equation', /) -> 'Equation':
         if isinstance(other, Variable):
             other = other.to_equation()
 
         return Equation(self.hamiltonian + other.hamiltonian - (2 * self.hamiltonian.compose(other.hamiltonian)))
 
-    def __invert__(self) -> "Equation":
+    def __invert__(self) -> 'Equation':
         I = ('I', [], 1)
         identity = SparsePauliOp.from_sparse_list([I], self.size)
         return Equation(identity - self.hamiltonian)
@@ -74,32 +75,32 @@ class Equation:
     def __getitem__(self, variable_number: int):
         return self.get_variable(variable_number)
 
-    def __eq__(self, other: "Equation") -> bool:
+    def __eq__(self, other: 'Equation') -> bool:
         if isinstance(other, Variable):
             other = other.to_equation()
 
         return self.hamiltonian == other.hamiltonian
 
-    def __add__(self, other: "Variable | Equation") -> "Equation":
+    def __add__(self, other: 'Variable | Equation') -> 'Equation':
         if isinstance(other, Variable):
             other = other.to_equation()
 
         return Equation(self.hamiltonian + other.hamiltonian)
 
-    def __radd__(self, other: "Equation") -> "Equation":
+    def __radd__(self, other: 'Equation') -> 'Equation':
         if isinstance(other, Variable):
             other = other.to_equation()
 
         return Equation(self.hamiltonian + other.hamiltonian)
 
-    def __mul__(self, other: "Equation | float") -> "Equation":
+    def __mul__(self, other: 'Equation | float') -> 'Equation':
         if isinstance(other, Variable):
             other = other.to_equation()
         if isinstance(other, float) or isinstance(other, int):
             return Equation(float(other) * self.hamiltonian)
         return Equation(self.hamiltonian.compose(other.hamiltonian))
 
-    def __rmul__(self, other: "Equation | float") -> "Equation":
+    def __rmul__(self, other: 'Equation | float') -> 'Equation':
         if isinstance(other, Variable):
             other = other.to_equation()
         if isinstance(other, float) or isinstance(other, int):
@@ -112,7 +113,7 @@ class Variable:
         self.index = index
         self.size = parent.size
 
-    def __xor__(self, other: "Equation | float", /) -> Equation:
+    def __xor__(self, other: 'Equation | float', /) -> Equation:
         if isinstance(other, Equation):
             return self.to_equation() ^ other
 
@@ -121,7 +122,7 @@ class Variable:
         eq = Equation(SparsePauliOp.from_sparse_list([I, Z_term], self.size))
         return eq
 
-    def __or__(self, other: "Variable | Equation", /) -> Equation:
+    def __or__(self, other: 'Variable | Equation', /) -> Equation:
         if isinstance(other, Equation):
             return self.to_equation() | other
 
@@ -132,8 +133,7 @@ class Variable:
         eq = Equation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
         return eq
 
-    def __and__(self, other: "Variable | Equation", /) -> Equation:
-
+    def __and__(self, other: 'Variable | Equation', /) -> Equation:
         if isinstance(other, Equation):
             return self.to_equation() & other
 

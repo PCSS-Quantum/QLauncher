@@ -1,6 +1,7 @@
-"""  This module contains the MaxCut class."""
-import networkx as nx
+"""This module contains the MaxCut class."""
+
 import matplotlib.pyplot as plt
+import networkx as nx
 
 from qlauncher.base import Problem
 
@@ -23,17 +24,14 @@ class MaxCut(Problem):
 
     @property
     def setup(self) -> dict:
-        return {
-            'instance_name': self.instance_name
-        }
+        return {'instance_name': self.instance_name}
 
     @staticmethod
-    def from_preset(instance_name: str) -> "MaxCut":
+    def from_preset(instance_name: str) -> 'MaxCut':
         match instance_name:
             case 'default':
                 node_list = list(range(6))
-                edge_list = [(0, 1), (0, 2), (0, 5), (1, 3), (1, 4),
-                             (2, 4), (2, 5), (3, 4), (3, 5)]
+                edge_list = [(0, 1), (0, 2), (0, 5), (1, 3), (1, 4), (2, 4), (2, 5), (3, 4), (3, 5)]
         graph = nx.Graph()
         graph.add_nodes_from(node_list)
         graph.add_edges_from(edge_list)
@@ -49,12 +47,11 @@ class MaxCut(Problem):
             cmap = 'skyblue'
         else:
             cmap = ['crimson' if bit == '1' else 'skyblue' for bit in bitstring]
-        nx.draw(self.instance, pos, with_labels=True, node_color=cmap,
-                node_size=500, edge_color='gray', font_size=10, font_weight='bold')
-        plt.title("Max-Cut Problem Instance Visualization")
+        nx.draw(self.instance, pos, with_labels=True, node_color=cmap, node_size=500, edge_color='gray', font_size=10, font_weight='bold')
+        plt.title('Max-Cut Problem Instance Visualization')
         plt.show()
 
     @staticmethod
-    def generate_maxcut_instance(num_vertices: int, edge_probability: float) -> "MaxCut":
+    def generate_maxcut_instance(num_vertices: int, edge_probability: float) -> 'MaxCut':
         graph = nx.gnp_random_graph(num_vertices, edge_probability)
         return MaxCut(graph, instance_name='Generated')

@@ -1,4 +1,5 @@
-""" Import managing for problem formulations (attempt to import as much as possible). """
+"""Import managing for problem formulations (attempt to import as much as possible)."""
+
 from .bqm import *
 from .qubo import *
 

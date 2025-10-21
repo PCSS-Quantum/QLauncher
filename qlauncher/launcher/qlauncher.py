@@ -1,10 +1,12 @@
-""" File with templates """
-from typing import Literal
+"""File with templates"""
+
 import json
-import pickle
 import logging
-from qlauncher.base.adapter_structure import get_formatter, ProblemFormatter
-from qlauncher.base import Problem, Algorithm, Backend, Result
+import pickle
+from typing import Literal
+
+from qlauncher.base import Algorithm, Backend, Problem, Result
+from qlauncher.base.adapter_structure import ProblemFormatter, get_formatter
 from qlauncher.problems import Raw
 
 
@@ -39,8 +41,9 @@ class QLauncher:
 
     """
 
-    def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend | None = None, logger: logging.Logger | None = None) -> None:
-
+    def __init__(
+        self, problem: Problem, algorithm: Algorithm, backend: Backend | None = None, logger: logging.Logger | None = None
+    ) -> None:
         if not isinstance(problem, Problem):
             problem = Raw(problem)
 
@@ -81,7 +84,7 @@ class QLauncher:
             ValueError: When no result is available or an incorrect save format was chosen
         """
         if self.result is None:
-            raise ValueError("No result to save")
+            raise ValueError('No result to save')
 
         # if not os.path.isfile(path):
         #     path = os.path.join(path, f'result-{datetime.now().isoformat(sep="_").replace(":","_")}.{save_format}')
@@ -97,8 +100,7 @@ class QLauncher:
             with open(path, mode='w', encoding='utf-8') as f:
                 f.write(str(self.result))
         else:
-            raise ValueError(
-                f'format: {save_format} in not supported try: pickle, txt, csv or json')
+            raise ValueError(f'format: {save_format} in not supported try: pickle, txt, csv or json')
 
 
 def fix_json(o: object):
@@ -107,6 +109,5 @@ def fix_json(o: object):
     #     return parsed
     if o.__class__.__name__ == 'complex128':
         return repr(o)
-    print(
-        f'Name of object {o.__class__} not known, returning None as a json encodable')
+    print(f'Name of object {o.__class__} not known, returning None as a json encodable')
     return None

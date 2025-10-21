@@ -1,26 +1,29 @@
-import time
 import functools
-import pytest
+import time
 
 import psutil
+import pytest
+from dimod import SampleSet
 
 from qlauncher.base.base import Result
+from qlauncher.hampy import Equation
 from qlauncher.launcher.aql import AQL, AQLTask
 from qlauncher.problems import EC, TSP
 from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend
 from qlauncher.routines.qiskit import QAOA, QiskitBackend
-from qlauncher.hampy import Equation
-
-from dimod import SampleSet
 
 
 def check_subprocesses_exit(max_timeout=5):
     def wrapper1(func):
         """Verify if test kills all its children :)"""
+
         @functools.wraps(func)
         def wrapper2(*args, **kwargs):
             current_process = psutil.Process()
-            def curr_nc(): return len(current_process.children(recursive=True))
+
+            def curr_nc():
+                return len(current_process.children(recursive=True))
+
             num_children = curr_nc()
 
             func(*args, **kwargs)
@@ -33,7 +36,9 @@ def check_subprocesses_exit(max_timeout=5):
                 if curr_nc() == num_children:
                     return
             assert curr_nc() == num_children
+
         return wrapper2
+
     return wrapper1
 
 
@@ -175,7 +180,7 @@ def test_AQL_session_optimization():
 @check_subprocesses_exit()
 def test_AQL_task_basic():
     t1 = AQLTask(lambda: 2)
-    t2 = AQLTask(lambda prev: prev+2, dependencies=[t1], pipe_dependencies=True)
+    t2 = AQLTask(lambda prev: prev + 2, dependencies=[t1], pipe_dependencies=True)
     t2.start()
     t1.start()
     assert t2.result(timeout=1) == 4
@@ -184,17 +189,17 @@ def test_AQL_task_basic():
 @check_subprocesses_exit()
 def test_AQL_task_result_passing():
     """
-    Test if values from dependencies are passed in the correct order, 
+    Test if values from dependencies are passed in the correct order,
     i.e if dependencies=[dep1,dep2], [res(dep1),res(dep2)] is passed to the task function.
     """
-    t_string = AQLTask(lambda: "Value:")
+    t_string = AQLTask(lambda: 'Value:')
     t_int = AQLTask(lambda: 42)
     t_concat = AQLTask(lambda s, i: s + str(i), dependencies=[t_string, t_int], pipe_dependencies=True)
 
     for t in [t_string, t_concat, t_int]:
         t.start()
 
-    assert t_concat.result(timeout=1) == "Value:42"
+    assert t_concat.result(timeout=1) == 'Value:42'
 
 
 @check_subprocesses_exit()
