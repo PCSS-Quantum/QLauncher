@@ -5,12 +5,15 @@ from qiskit_aqt_provider.primitives import AQTSampler, AQTEstimator
 from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 from qiskit_ibm_runtime import Session
 
+from qiskit_algorithms.optimizers import COBYLA
+
 from qiskit_aqt_provider import AQTProvider
 
 from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 
 from qlauncher import QLauncher
 from qlauncher.problems import EC
+from qlauncher.routines.qiskit.algorithms.qiskit_native import Molecule, VQE
 from qlauncher.routines.qiskit import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA, FALQON
 
 import pytest
@@ -38,6 +41,15 @@ def run_backend_qaoa(backend):
     assert res is not None
 
 
+def run_backend_vqe(backend):
+    pr = Molecule.from_preset('H2')
+    vqe = VQE(optimizer=COBYLA(maxiter=2))
+    launcher = QLauncher(pr, vqe, backend)
+
+    results = launcher.run()
+    assert results is not None
+
+
 def run_backend_falqon(backend):
     problem = EC.from_preset('micro')
     launcher = QLauncher(problem, FALQON(max_reps=1), backend)
@@ -55,7 +67,7 @@ def test_AQT_backend_backendv1v2_simulator():
     assert backend.name == 'backendv1v2'
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
-    assert isinstance(backend.estimator, AQTEstimator)
+    assert isinstance(backend._estimatorv1, AQTEstimator)
     assert isinstance(backend.samplerV1, AQTSampler)
     assert isinstance(backend.sampler, BaseSamplerV2)
 
@@ -67,7 +79,7 @@ def test_AQT_backend_local_simulator():
 
     assert backend.name == 'offline_simulator_no_noise'
     assert isinstance(backend.backendv1v2, OfflineSimulatorResource)
-    assert isinstance(backend.estimator, AQTEstimator)
+    assert isinstance(backend._estimatorv1, AQTEstimator)
     assert isinstance(backend.samplerV1, AQTSampler)
     assert isinstance(backend.sampler, BaseSamplerV2)
 
@@ -122,13 +134,14 @@ def test_Qiskit_local_session():
 
 
 def test_Qiskit_backendv1v2_session():
-    backend = QiskitBackend('backendv1v2', backendv1v2=FakeAlmadenV2(), auto_transpile_level=0)
+    backend = QiskitBackend('backendv1v2', backendv1v2=FakeAlmadenV2(), auto_transpile_level=2)
 
     assert backend.sampler is not None
     assert backend.estimator is not None
 
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
     run_backend_falqon(backend)
+    run_backend_vqe(backend)
 
 
 def test_Aer_backend_local():
