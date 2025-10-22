@@ -1,6 +1,7 @@
-from qlauncher.base.translator import QiskitTranslation, CirqTranslation, Translation
-import qiskit
 import cirq
+import qiskit
+
+from qlauncher.base.translator import CirqTranslation, QiskitTranslation, Translation
 
 
 def test_qiskit_to_cirq_translation():

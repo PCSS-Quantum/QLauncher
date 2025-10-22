@@ -1,6 +1,8 @@
 import ast
+
 import numpy as np
 from pyqubo import Spin
+
 from qlauncher.base import adapter, formatter
 from qlauncher.problems.problem_initialization import Raw
 
@@ -27,8 +29,7 @@ class QUBOMatrix:
         """
         Function to check if matrix is symetric
         """
-        self.symetric = (self.qubo_matrix.transpose()
-                         == self.qubo_matrix).all()
+        self.symetric = (self.qubo_matrix.transpose() == self.qubo_matrix).all()
         if not self.symetric:
             self.qubo_matrix = self._remove_lower_triangle(self.qubo_matrix)
 
@@ -52,16 +53,12 @@ class QUBOMatrix:
         result = {(0,1):1, (0,2):2, (1,0):1, (1,2):3, (2,0):2, (2,1):3}
         Function also return second value which is the number of qubits
         """
-        result = {
-            (x, y): c for y, r in enumerate(matrix) for x, c in enumerate(r) if c != 0
-        }
+        result = {(x, y): c for y, r in enumerate(matrix) for x, c in enumerate(r) if c != 0}
         return result, len(matrix)
 
     def qubo_matrix_into_bqm(self):
-        values_and_qubits, number_of_qubits = self._get_values_and_qubits(
-            self.qubo_matrix
-        )
-        qubits = [Spin(f"x{i}") for i in range(number_of_qubits)]
+        values_and_qubits, number_of_qubits = self._get_values_and_qubits(self.qubo_matrix)
+        qubits = [Spin(f'x{i}') for i in range(number_of_qubits)]
         H = 0
         for (x, y), value in values_and_qubits.items():
             if self.symetric:

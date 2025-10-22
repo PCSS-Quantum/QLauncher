@@ -36,3 +36,18 @@ orca = ["numba==0.60.0", "torch"]
 dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
 cirq = ["cirq>=1.4.1", "ply"]
 dev = ["pytest", "pytest-httpx>=0.35.0"]
+
+
+[tool.ruff]
+line-length = 140
+target-version = "py312"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "C4", "SIM", "W", "TCH", "ANN"]
+ignore = ["COM812", "E203", "W505"]
+extend-ignore = ["ANN401"]

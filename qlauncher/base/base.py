@@ -1,10 +1,9 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-import pickle
-from typing import Any, Literal
-from collections.abc import Callable
 import logging
-
+import pickle
+from abc import ABC, abstractmethod
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any, Literal
 
 AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'bqm', 'none', 'fn', 'tabular_ml']
 
@@ -23,7 +22,7 @@ class Result:
     result: Any
 
     def __str__(self):
-        return f"Result(bitstring={self.best_bitstring}, energy={self.best_energy})"
+        return f'Result(bitstring={self.best_bitstring}, energy={self.best_energy})'
 
     def __repr__(self):
         return str(self)
@@ -35,7 +34,7 @@ class Result:
         return self.most_common_bitstring, self.most_common_bitstring_energy
 
     @staticmethod
-    def from_distributions(bitstring_distribution: dict[str, float], energy_distribution: dict[str, float], result: Any = None) -> "Result":
+    def from_distributions(bitstring_distribution: dict[str, float], energy_distribution: dict[str, float], result: Any = None) -> 'Result':
         """
         Constructs the Result object from Dictionary with bitstring to num of occurrences,
         dictionary mapping bitstring to energy and optional result (rest)
@@ -49,8 +48,8 @@ class Result:
         mean_value = sum(energy_distribution[bitstring] * occ for bitstring, occ in bitstring_distribution.items()) / num_of_samples
         std = 0
         for bitstring, occ in bitstring_distribution.items():
-            std += occ * ((energy_distribution[bitstring] - mean_value)**2)
-        std = (std/(num_of_samples-1))**0.5
+            std += occ * ((energy_distribution[bitstring] - mean_value) ** 2)
+        std = (std / (num_of_samples - 1)) ** 0.5
         return Result(
             best_bitstring,
             best_energy,
@@ -61,7 +60,7 @@ class Result:
             num_of_samples,
             mean_value,
             std,
-            result
+            result,
         )
 
 
@@ -179,6 +178,7 @@ class Algorithm(ABC):
         _get_path(self) -> str: Returns the common path for the algorithm.
         run(self, problem: Problem, backend: Backend): Runs the algorithm on a specific problem using a backend.
     """
+
     _algorithm_format: AVAILABLE_FORMATS = 'none'
 
     def __init__(self, **alg_kwargs) -> None:

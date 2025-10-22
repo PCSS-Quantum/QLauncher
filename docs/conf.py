@@ -7,6 +7,7 @@
 import os
 import sys
 import tomllib
+
 import better_apidoc
 
 conf_path = os.path.dirname(os.path.abspath(__file__))
@@ -18,16 +19,18 @@ sys.path.insert(0, project_path)
 def run_apidoc(app):
     """Generate API documentation"""
     better_apidoc.APP = app
-    better_apidoc.main([
-        'better-apidoc',
-        '-t',
-        os.path.join('.', '_templates'),
-        '--force',
-        '--separate',
-        '-o',
-        os.path.join('.', 'API'),
-        lib_path,  # Generate docs only for qlauncher/
-    ])
+    better_apidoc.main(
+        [
+            'better-apidoc',
+            '-t',
+            os.path.join('.', '_templates'),
+            '--force',
+            '--separate',
+            '-o',
+            os.path.join('.', 'API'),
+            lib_path,  # Generate docs only for qlauncher/
+        ]
+    )
 
 
 # -- Project information -----------------------------------------------------
@@ -51,7 +54,7 @@ release = version
 
 suppress_warnings = [
     'myst.header',  # ipynb linter
-    'docutils'  # rst linter
+    'docutils',  # rst linter
 ]
 
 extensions = [
@@ -64,31 +67,24 @@ extensions = [
 ]
 
 myst_enable_extensions = [
-    "amsmath",
-    "colon_fence",
-    "deflist",
-    "dollarmath",
-    "html_image",
+    'amsmath',
+    'colon_fence',
+    'deflist',
+    'dollarmath',
+    'html_image',
 ]
 
-nb_execution_mode = "off"
+nb_execution_mode = 'off'
 
 viewcode_line_numbers = True
 
-autodoc_typehints = "both"
-autodoc_typehints_description_target = "documented"
+autodoc_typehints = 'both'
+autodoc_typehints_description_target = 'documented'
 
 napoleon_numpy_docstring = False
 
 templates_path = ['_templates']
-exclude_patterns = [
-    '_build',
-    'Thumbs.db',
-    '.DS_Store',
-    'tests/*',
-    '*.md',
-    'API/modules.rst'
-]
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'tests/*', '*.md', 'API/modules.rst']
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -99,7 +95,7 @@ html_css_files = ['css/custom.css']
 
 html_theme = 'sphinx_book_theme'
 html_logo = '_static/logo.svg'
-html_favicon = "_static/logo.svg"
+html_favicon = '_static/logo.svg'
 
 html_show_sourcelink = False  # Disable option to show .rst source
 

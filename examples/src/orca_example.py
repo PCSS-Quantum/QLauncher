@@ -1,11 +1,12 @@
-""" QLauncher for Orca """
+"""QLauncher for Orca"""
+
 from qlauncher import QLauncher
 from qlauncher.problems import MaxCut
-from qlauncher.routines.orca import OrcaBackend, BBS
+from qlauncher.routines.orca import BBS, OrcaBackend
 
 
 def main():
-    """ main """
+    """main"""
     problem = MaxCut.from_preset(instance_name='default')
     alg = BBS()
     backend = OrcaBackend('local')

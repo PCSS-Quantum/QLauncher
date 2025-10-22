@@ -1,4 +1,3 @@
-from __future__ import print_function
 
 from bisect import bisect_right
 
@@ -13,7 +12,6 @@ def get_jss_hamiltonian(job_dict, max_time, onehot):
 
 
 class QiskitScheduler(JobShopScheduler):
-
     def __init__(self, job_dict, max_time=None, onehot='exact'):
         super().__init__(job_dict, max_time)
         self.H_pos_by_label = dict()
@@ -57,7 +55,6 @@ class QiskitScheduler(JobShopScheduler):
 
         head = 0
         while head < len(sorted_tasks):
-
             tail = bisect_right(wrapped_tasks, sorted_tasks[head].machine)
             same_machine_tasks = sorted_tasks[head:tail]
 

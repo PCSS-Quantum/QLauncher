@@ -1,14 +1,12 @@
 import numpy as np
-from qiskit.circuit import QuantumCircuit, Parameter
-
+from qiskit.circuit import Parameter, QuantumCircuit
 from qiskit_machine_learning.kernels import BaseKernel
 
-
 from qlauncher import QLauncher
-from qlauncher.problems import TabularML
-from qlauncher.routines.qiskit import TrainQSVCKernel, QiskitBackend
-from qlauncher.routines.cirq import CirqBackend
 from qlauncher.base import Result
+from qlauncher.problems import TabularML
+from qlauncher.routines.cirq import CirqBackend
+from qlauncher.routines.qiskit import QiskitBackend, TrainQSVCKernel
 
 
 def make_trainable_circ(n_qubits) -> tuple[QuantumCircuit, list[Parameter]]:
@@ -25,15 +23,7 @@ def make_trainable_circ(n_qubits) -> tuple[QuantumCircuit, list[Parameter]]:
     return circ, trainable
 
 
-problem = TabularML(
-    np.array([
-        [5.2,  3.1],
-        [11.3,  2.2]
-    ]),
-    np.array([
-        0,
-        1
-    ]))
+problem = TabularML(np.array([[5.2, 3.1], [11.3, 2.2]]), np.array([0, 1]))
 
 
 def test_run_qiskit():
@@ -62,7 +52,6 @@ def test_run_no_trainable():
 
 
 def test_run_cirq():
-
     alg = TrainQSVCKernel(*make_trainable_circ(2))
     backend = CirqBackend('local_simulator')
 

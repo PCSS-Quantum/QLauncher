@@ -1,6 +1,7 @@
 class Binary:
-    ''' It's not the same as Binary, it just replicate "spin" calculation "Binary" from pyqubo '''
-    def __init__(self, value:str):
+    """It's not the same as Binary, it just replicate "spin" calculation "Binary" from pyqubo"""
+
+    def __init__(self, value: str):
         if isinstance(value, str):
             self.data = {value: 0.5}
             self.data['__free__'] = 0.5
@@ -12,8 +13,8 @@ class Binary:
             self.data = value.data.copy()
         else:
             raise TypeError(f'Unsupported type: {type(value)}')
-        self.variables:list = []
-        
+        self.variables: list = []
+
     def __str__(self):
         return str(self.data)
 
@@ -24,12 +25,7 @@ class Binary:
                 data[other] += 1
             else:
                 data[other] = 1
-        elif isinstance(other, int):
-            if '__free__' in data:
-                data['__free__'] += other
-            else:
-                data['__free__'] = other
-        elif isinstance(other, float):
+        elif isinstance(other, int) or isinstance(other, float):
             if '__free__' in data:
                 data['__free__'] += other
             else:
@@ -49,7 +45,7 @@ class Binary:
         else:
             raise TypeError(f'Unsupported type: {type(other)}')
         return Binary(data)
-    
+
     def __radd__(self, other):
         data = self.data.copy()
         if isinstance(other, str):
@@ -57,12 +53,7 @@ class Binary:
                 data[other] += 1
             else:
                 data[other] = 1
-        elif isinstance(other, int):
-            if '__free__' in data:
-                data['__free__'] += other
-            else:
-                data['__free__'] = other
-        elif isinstance(other, float):
+        elif isinstance(other, int) or isinstance(other, float):
             if '__free__' in data:
                 data['__free__'] += other
             else:
@@ -92,14 +83,7 @@ class Binary:
                     del data[other]
             else:
                 data[other] = -1
-        elif isinstance(other, int):
-            if '__free__' in data:
-                data['__free__'] -= other
-                if data['__free__'] == 0:
-                    del data['__free__']
-            else:
-                data['__free__'] = -other
-        elif isinstance(other, float):
+        elif isinstance(other, int) or isinstance(other, float):
             if '__free__' in data:
                 data['__free__'] -= other
                 if data['__free__'] == 0:
@@ -125,7 +109,7 @@ class Binary:
         else:
             raise TypeError(f'Unsupported type: {type(other)}')
         return Binary(data)
-    
+
     def __rsub__(self, other):
         return Binary(other) - self
 
@@ -146,10 +130,7 @@ class Binary:
                         data['__free__'] = value
                 else:
                     data[key, other] = value
-        elif isinstance(other, int):
-            for key, value in self.data.items():
-                data[key] = value * other
-        elif isinstance(other, float):
+        elif isinstance(other, int) or isinstance(other, float):
             for key, value in self.data.items():
                 data[key] = value * other
         elif isinstance(other, dict):
@@ -181,10 +162,7 @@ class Binary:
                         data['__free__'] = value
                 else:
                     data[key, other] = value
-        elif isinstance(other, int):
-            for key, value in self.data.items():
-                data[key] = value * other
-        elif isinstance(other, float):
+        elif isinstance(other, int) or isinstance(other, float):
             for key, value in self.data.items():
                 data[key] = value * other
         elif isinstance(other, dict):
@@ -224,7 +202,6 @@ class Binary:
         return self * (1 / other)
 
     def calculate(self):
-
         for key, value in self.data.copy().items():
             if isinstance(key, tuple):
                 if key[0] == '__free__':
@@ -256,17 +233,19 @@ class Binary:
                     quadratic_dict[key] = value
             else:
                 raise TypeError(f'Unsupported type: {type(key)}')
-        
+
         # order quadratic
         for key, value in quadratic_dict.copy().items():
             if key[0] > key[1]:
                 quadratic_dict[(key[1], key[0])] = value
                 del quadratic_dict[key]
         self.variables = list(linear_dict.keys())
+
         class spin:
             linear = linear_dict
             quadratic = quadratic_dict
             offset = energy
+
         self.spin = spin
         return linear_dict, quadratic_dict, energy
 

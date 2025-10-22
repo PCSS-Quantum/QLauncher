@@ -1,8 +1,6 @@
-import networkx as nx
-
-import numpy as np
 import matplotlib.pyplot as plt
-
+import networkx as nx
+import numpy as np
 from qiskit_algorithms import SamplingMinimumEigensolverResult
 
 from qlauncher.base import Problem
@@ -13,7 +11,7 @@ class TSP(Problem):
     Traveling Salesman Problem (TSP) definition.
     """
 
-    def __init__(self, instance: nx.Graph, instance_name: str = "unnamed"):
+    def __init__(self, instance: nx.Graph, instance_name: str = 'unnamed'):
         """
         Args:
             instance (nx.Graph): Graph representing the TSP instance.
@@ -24,10 +22,10 @@ class TSP(Problem):
 
     @property
     def setup(self) -> dict:
-        return {"instance_name": self.instance_name}
+        return {'instance_name': self.instance_name}
 
     def _get_path(self) -> str:
-        return f"{self.name}@{self.instance_name}"
+        return f'{self.name}@{self.instance_name}'
 
     def _solution_to_node_chain(self, solution: SamplingMinimumEigensolverResult | str) -> np.ndarray:
         """
@@ -42,13 +40,13 @@ class TSP(Problem):
         if isinstance(solution, str):
             bitstring = solution[::-1]
         else:
-            bitstring = solution.best_measurement["bitstring"][::-1]
+            bitstring = solution.best_measurement['bitstring'][::-1]
 
-        node_count = int(len(bitstring)**0.5)
+        node_count = int(len(bitstring) ** 0.5)
         chain = []
 
         for i in range(0, len(bitstring), node_count):
-            step_string = bitstring[i: i + node_count]
+            step_string = bitstring[i : i + node_count]
             chosen_node = np.argmax([int(x) for x in step_string])
             chain.append(chosen_node)
 
@@ -62,8 +60,8 @@ class TSP(Problem):
             chain = self._solution_to_node_chain(solution)
 
         for i in range(len(chain) - 1):
-            cost += self.instance[chain[i]][chain[i + 1]]["weight"]
-        cost += self.instance[chain[-1]][chain[0]]["weight"]
+            cost += self.instance[chain[i]][chain[i + 1]]['weight']
+        cost += self.instance[chain[-1]][chain[0]]['weight']
         return cost
 
     def _visualize_solution(self, solution: SamplingMinimumEigensolverResult | str | list[int]):
@@ -87,10 +85,10 @@ class TSP(Problem):
 
         path_cost = 0
         for edge in problem_edges:
-            draw_colors.append("limegreen" if set(edge) in marked_edges else "gray")
+            draw_colors.append('limegreen' if set(edge) in marked_edges else 'gray')
             draw_widths.append(2 if set(edge) in marked_edges else 1)
 
-            path_cost += self.instance[edge[0]][edge[1]]["weight"] if set(edge) in marked_edges else 0
+            path_cost += self.instance[edge[0]][edge[1]]['weight'] if set(edge) in marked_edges else 0
 
         plt.figure(figsize=(8, 6))
         nx.draw(
@@ -99,24 +97,24 @@ class TSP(Problem):
             edge_color=draw_colors,
             width=draw_widths,
             with_labels=True,
-            node_color="skyblue",
+            node_color='skyblue',
             node_size=500,
             font_size=10,
-            font_weight="bold",
+            font_weight='bold',
         )
 
-        labels = nx.get_edge_attributes(self.instance, "weight")
+        labels = nx.get_edge_attributes(self.instance, 'weight')
         nx.draw_networkx_edge_labels(
             self.instance,
             pos,
             edge_labels=labels,
             rotate=False,
-            font_weight="bold",
+            font_weight='bold',
             label_pos=0.45,
         )
 
-        plt.title("TSP Solution Visualization")
-        plt.suptitle(f"Path cost:{path_cost}")
+        plt.title('TSP Solution Visualization')
+        plt.suptitle(f'Path cost:{path_cost}')
         plt.show()
 
     def _visualize_problem(self):
@@ -131,25 +129,25 @@ class TSP(Problem):
             self.instance,
             pos,
             with_labels=True,
-            node_color="skyblue",
+            node_color='skyblue',
             node_size=500,
-            edge_color="gray",
+            edge_color='gray',
             font_size=10,
-            font_weight="bold",
+            font_weight='bold',
         )
 
-        labels = nx.get_edge_attributes(self.instance, "weight")
+        labels = nx.get_edge_attributes(self.instance, 'weight')
         nx.draw_networkx_edge_labels(
             self.instance,
             pos,
             edge_labels=labels,
             rotate=False,
-            font_weight="bold",
+            font_weight='bold',
             node_size=500,
             label_pos=0.45,
         )
 
-        plt.title("TSP Instance Visualization")
+        plt.title('TSP Instance Visualization')
         plt.show()
 
     def visualize(self, solution=None):
@@ -159,7 +157,7 @@ class TSP(Problem):
             self._visualize_solution(solution)
 
     @staticmethod
-    def from_preset(instance_name: str = 'default', **kwargs) -> "TSP":
+    def from_preset(instance_name: str = 'default', **kwargs) -> 'TSP':
         """
         Generate TSP instance from a preset name.
 
@@ -172,16 +170,9 @@ class TSP(Problem):
         """
         match instance_name:
             case 'default':
-                edge_costs = np.array(
-                    [
-                        [0, 1, 2, 3],
-                        [1, 0, 4, 5],
-                        [2, 4, 0, 6],
-                        [3, 5, 6, 0]
-                    ]
-                )
+                edge_costs = np.array([[0, 1, 2, 3], [1, 0, 4, 5], [2, 4, 0, 6], [3, 5, 6, 0]])
             case _:
-                raise ValueError("Unknown instance name")
+                raise ValueError('Unknown instance name')
         G = nx.Graph()
         n = edge_costs.shape[0]
         for i in range(n):
@@ -191,7 +182,7 @@ class TSP(Problem):
         return TSP(instance=G, instance_name=instance_name)
 
     @staticmethod
-    def generate_tsp_instance(num_vertices: int, min_distance: float = 1.0, max_distance: float = 10.0, **kwargs) -> "TSP":
+    def generate_tsp_instance(num_vertices: int, min_distance: float = 1.0, max_distance: float = 10.0, **kwargs) -> 'TSP':
         """
         Generate a random TSP instance.
 
@@ -205,15 +196,14 @@ class TSP(Problem):
             TSP: TSP instance
         """
         if num_vertices < 2:
-            raise ValueError("num_vertices must be at least 2")
+            raise ValueError('num_vertices must be at least 2')
 
         if min_distance <= 0:
-            raise ValueError("min_distance must be greater than 0")
+            raise ValueError('min_distance must be greater than 0')
 
         g = nx.Graph()
         for i in range(num_vertices):
             for j in range(i + 1, num_vertices):
-                g.add_edge(i, j, weight=int(
-                    np.random.uniform(min_distance, max_distance)))
+                g.add_edge(i, j, weight=int(np.random.uniform(min_distance, max_distance)))
 
-        return TSP(instance=g, instance_name="generated")
+        return TSP(instance=g, instance_name='generated')

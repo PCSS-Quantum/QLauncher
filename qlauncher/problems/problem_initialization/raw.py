@@ -1,4 +1,5 @@
-""" This module contains the Raw class."""
+"""This module contains the Raw class."""
+
 from typing import Any
 
 import numpy as np
@@ -8,7 +9,8 @@ from qlauncher.base import Problem, formatter
 
 
 class Raw(Problem):
-    """ Meta class for raw problem """
+    """Meta class for raw problem"""
+
     __cached_classes__: dict[str, type] = {}
 
     @staticmethod
@@ -16,7 +18,7 @@ class Raw(Problem):
         if problem_type in Raw.__cached_classes__:
             return Raw.__cached_classes__[problem_type]
 
-        cls = type(problem_type, (Raw, ), {})
+        cls = type(problem_type, (Raw,), {})
         formatter(cls, problem_type)(_raw_formatter)
         Raw.__cached_classes__[problem_type] = cls
         return cls
@@ -33,11 +35,11 @@ class Raw(Problem):
         """
         if isinstance(obj, SparsePauliOp):
             return 'hamiltonian'
-        if isinstance(obj, tuple) and len(obj) == 2 and \
-                isinstance(obj[0], np.ndarray) and isinstance(obj[1], (int, float)):
+        if isinstance(obj, tuple) and len(obj) == 2 and isinstance(obj[0], np.ndarray) and isinstance(obj[1], (int, float)):
             return 'qubo'
         try:
             from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
+
             if isinstance(obj, BinaryQuadraticModel):
                 return 'bqm'
         except ImportError:

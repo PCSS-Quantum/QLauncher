@@ -1,17 +1,18 @@
-""" Test for raw problems """
+"""Test for raw problems"""
+
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import QLauncher, Result
 from qlauncher.problems import Raw
-from qlauncher.routines.qiskit import QiskitBackend, QAOA
+from qlauncher.routines.qiskit import QAOA, QiskitBackend
 
 
 def test_auto_assigning():
-    """ Tests if 2 of the same type raw's have the same class
-    while also different types have different class. """
+    """Tests if 2 of the same type raw's have the same class
+    while also different types have different class."""
     hamiltonian = SparsePauliOp.from_list([('IZ', 2), ('ZI', 2)])
-    hamiltonian2 = SparsePauliOp.from_list([('IZ', 1), ('ZZ', .5)])
+    hamiltonian2 = SparsePauliOp.from_list([('IZ', 1), ('ZZ', 0.5)])
     qubo = (np.array([[0, 1], [0, 1]]), 1)
     raw = Raw(hamiltonian)
     raw2 = Raw(hamiltonian2)
@@ -21,7 +22,7 @@ def test_auto_assigning():
 
 
 def test_auto_formatting_hamiltonian():
-    """ Test if Raw assigning works properly """
+    """Test if Raw assigning works properly"""
     hamiltonian = SparsePauliOp.from_list([('IZ', 2), ('ZI', 2)])
 
     ql = QLauncher(hamiltonian, QAOA(p=1), backend=QiskitBackend('local_simulator'))

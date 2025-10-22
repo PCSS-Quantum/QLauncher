@@ -1,5 +1,5 @@
 def get_label(task, time):
-    return f"{task.job}_{task.position},{time}"
+    return f'{task.job}_{task.position},{time}'
 
 
 class Task:
@@ -10,12 +10,10 @@ class Task:
         self.duration = duration
 
     def __repr__(self):
-        return ("{{job: {job}, position: {position}, machine: {machine}, duration:"
-                " {duration}}}").format(**vars(self))
+        return ('{{job: {job}, position: {position}, machine: {machine}, duration: {duration}}}').format(**vars(self))
 
 
 class KeyList:
-
     def __init__(self, array, key_function):
         self.array = array
         self.key_function = key_function
@@ -84,7 +82,7 @@ class JobShopScheduler:
                 self.absurd_times.add(label)
 
         for task in self.tasks:
-            if task.machine in disable_till.keys():
+            if task.machine in disable_till:
                 for i in range(disable_till[task.machine]):
                     label = get_label(task, i)
                     self.absurd_times.add(label)

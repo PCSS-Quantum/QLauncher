@@ -3,8 +3,11 @@
 
 It's goal is too simplify the creation of more complex problem implementations, by creating them with use of smaller ones.
 """
+
 from copy import copy
+
 from qiskit.quantum_info import SparsePauliOp
+
 from .object import Equation, Variable
 
 

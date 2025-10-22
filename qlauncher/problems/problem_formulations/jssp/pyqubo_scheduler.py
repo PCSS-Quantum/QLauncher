@@ -1,15 +1,21 @@
-from __future__ import print_function
 
 from bisect import bisect_right
 
 # from pyqubo import Binary
 from .Binary import Binary
-
 from .scheduler import JobShopScheduler, KeyList, get_label
 
 
-def get_jss_bqm(job_dict, max_time, disable_till=None, disable_since=None, disabled_variables=None, lagrange_one_hot=3,
-                lagrange_precedence=1, lagrange_share=2):
+def get_jss_bqm(
+    job_dict,
+    max_time,
+    disable_till=None,
+    disable_since=None,
+    disabled_variables=None,
+    lagrange_one_hot=3,
+    lagrange_precedence=1,
+    lagrange_share=2,
+):
     if disable_till is None:
         disable_till = {}
     if disable_since is None:
@@ -18,20 +24,15 @@ def get_jss_bqm(job_dict, max_time, disable_till=None, disable_since=None, disab
         disabled_variables = []
 
     scheduler = DWaveScheduler(job_dict, max_time)
-    return scheduler.get_bqm(disable_till, disable_since, disabled_variables,
-                             lagrange_one_hot,
-                             lagrange_precedence,
-                             lagrange_share)
+    return scheduler.get_bqm(disable_till, disable_since, disabled_variables, lagrange_one_hot, lagrange_precedence, lagrange_share)
 
 
 class DWaveScheduler(JobShopScheduler):
-
     def __init__(self, job_dict, max_time=None):
         super().__init__(job_dict, max_time)
 
     def _add_one_start_constraint(self, lagrange_one_hot=1):
-        """self.csp gets the constraint: A task can start once and only once
-        """
+        """self.csp gets the constraint: A task can start once and only once"""
         for task in self.tasks:
             task_times = {get_label(task, t) for t in range(self.max_time)}
             H_term = 0
@@ -48,7 +49,7 @@ class DWaveScheduler(JobShopScheduler):
 
     def _add_precedence_constraint(self, lagrange_precedence=1):
         """self.csp gets the constraint: Task must follow a particular order.
-         Note: assumes self.tasks are sorted by jobs and then by position
+        Note: assumes self.tasks are sorted by jobs and then by position
         """
         for current_task, next_task in zip(self.tasks, self.tasks[1:]):
             if current_task.job != next_task.job:
@@ -67,7 +68,6 @@ class DWaveScheduler(JobShopScheduler):
                     var1 = self.H_vars[current_label]
 
                 for tt in range(min(t + current_task.duration, self.max_time)):
-
                     next_label = get_label(next_task, tt)
                     if next_label in self.absurd_times:
                         continue
@@ -80,15 +80,13 @@ class DWaveScheduler(JobShopScheduler):
                     self.H += lagrange_precedence * var1 * var2
 
     def _add_share_machine_constraint(self, lagrange_share=1):
-        """self.csp gets the constraint: At most one task per machine per time unit
-        """
+        """self.csp gets the constraint: At most one task per machine per time unit"""
         sorted_tasks = sorted(self.tasks, key=lambda x: x.machine)
         # Key wrapper for bisect function
         wrapped_tasks = KeyList(sorted_tasks, lambda x: x.machine)
 
         head = 0
         while head < len(sorted_tasks):
-
             # Find tasks that share a machine
             tail = bisect_right(wrapped_tasks, sorted_tasks[head].machine)
             same_machine_tasks = sorted_tasks[head:tail]
@@ -129,13 +127,11 @@ class DWaveScheduler(JobShopScheduler):
 
                             self.H += lagrange_share * var1 * var2
 
-    def get_bqm(self, disable_till, disable_since, disabled_variables,
-                lagrange_one_hot, lagrange_precedence, lagrange_share):
-        """Returns a BQM to the Job Shop Scheduling problem.  """
+    def get_bqm(self, disable_till, disable_since, disabled_variables, lagrange_one_hot, lagrange_precedence, lagrange_share):
+        """Returns a BQM to the Job Shop Scheduling problem."""
 
         # Apply constraints to self.csp
-        self._remove_absurd_times(
-            disable_till, disable_since, disabled_variables)
+        self._remove_absurd_times(disable_till, disable_since, disabled_variables)
         self._add_one_start_constraint(lagrange_one_hot)
         self._add_precedence_constraint(lagrange_precedence)
         self._add_share_machine_constraint(lagrange_share)

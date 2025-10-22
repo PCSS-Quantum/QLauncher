@@ -1,16 +1,14 @@
 import numpy as np
-
-from qiskit_aer.primitives import Sampler, SamplerV2, Estimator, EstimatorV2
-from qiskit_aer import AerSimulator
-from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
-from qiskit import QuantumCircuit, ClassicalRegister, transpile
-from qiskit.circuit import ParameterVector, QuantumRegister, ClassicalRegister
+from qiskit import ClassicalRegister, QuantumCircuit, transpile
+from qiskit.circuit import ClassicalRegister, ParameterVector
 from qiskit.primitives import SamplerResult
-from qiskit.primitives.containers.estimator_pub import EstimatorPubLike, EstimatorPub
+from qiskit_aer import AerSimulator
+from qiskit_aer.primitives import Estimator, EstimatorV2, Sampler, SamplerV2
+from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 
-from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter, SamplerV1ToSamplerV2Adapter, EstimatorV1ToEstimatorV2Adapter
-from qlauncher.routines.qiskit import QiskitBackend
 from qlauncher.hampy import Equation
+from qlauncher.routines.qiskit import QiskitBackend
+from qlauncher.routines.qiskit.adapters import EstimatorV1ToEstimatorV2Adapter, SamplerV1ToSamplerV2Adapter, SamplerV2ToSamplerV1Adapter
 
 
 def test_v2_estimator_adapter():
@@ -32,11 +30,11 @@ def test_v2_estimator_adapter():
     estimator_v2 = EstimatorV2()
 
     for inpt in [
-        [(circ, [obs.hamiltonian, obs2.hamiltonian], [1., 2.])],
-        [(circ, obs2.hamiltonian, [1., 2.])],
-        [(circ, obs.hamiltonian, [1., 2.]), (circ, obs2.hamiltonian, [1., 2.])],
-        [(circ, obs.hamiltonian, [[1., 2.], [2., 3.]]), (circ, obs2.hamiltonian, [[1., 2.], [2., 3.]])],
-        [(circ, [obs.hamiltonian, obs2.hamiltonian], [[1., 2.], [2., 3.]])],
+        [(circ, [obs.hamiltonian, obs2.hamiltonian], [1.0, 2.0])],
+        [(circ, obs2.hamiltonian, [1.0, 2.0])],
+        [(circ, obs.hamiltonian, [1.0, 2.0]), (circ, obs2.hamiltonian, [1.0, 2.0])],
+        [(circ, obs.hamiltonian, [[1.0, 2.0], [2.0, 3.0]]), (circ, obs2.hamiltonian, [[1.0, 2.0], [2.0, 3.0]])],
+        [(circ, [obs.hamiltonian, obs2.hamiltonian], [[1.0, 2.0], [2.0, 3.0]])],
     ]:
         v2_result = estimator_v2.run(inpt).result()
         v1_adapted_result = estimator_v1_adapted.run(inpt).result()

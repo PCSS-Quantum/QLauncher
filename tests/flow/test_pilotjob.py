@@ -1,20 +1,23 @@
 import glob
 import shutil
+
 import pytest
-from qlauncher.workflow.pilotjob_scheduler import JobManager
+
 from qlauncher import QLauncher, Result
 from qlauncher.problems import EC
 from qlauncher.routines.qiskit import FALQON, QiskitBackend
 from qlauncher.routines.qiskit.algorithms import EducatedGuess
+from qlauncher.workflow.pilotjob_scheduler import JobManager
+
 # TODO: address event loop problem (To @dsiera: what was the problem?)
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope='function', autouse=True)
 def clean_env():
     yield
-    for path in glob.glob(".qcgpjm-client"):
+    for path in glob.glob('.qcgpjm-client'):
         shutil.rmtree(path)
-    for path in glob.glob(".qcgpjm-service-*"):
+    for path in glob.glob('.qcgpjm-service-*'):
         shutil.rmtree(path)
 
 
@@ -41,7 +44,7 @@ def test_job_manager(tmp_path):
 
 
 def test_educated_guess(tmp_path):
-    """ Testing function for QATM """
+    """Testing function for QATM"""
     pr = EC.from_preset('micro')
     educated_guess = EducatedGuess(2, 2, max_job_batch_size=1)
     educated_guess.output_initial = f'{tmp_path}/'

@@ -1,18 +1,19 @@
-""" AQT backend class for Qiskit routines """
-from typing import Literal
-from overrides import override
+"""AQT backend class for Qiskit routines"""
 
+from typing import Literal
+
+from overrides import override
+from qiskit.primitives import BaseEstimatorV2, BaseSamplerV2
 from qiskit.providers import BackendV1, BackendV2
-from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 from qiskit_ibm_runtime import Options
 
-from qlauncher.routines.qiskit.adapters import SamplerV1ToSamplerV2Adapter, EstimatorV1ToEstimatorV2Adapter
-from qlauncher.routines.qiskit import QiskitBackend
 from qlauncher.exceptions import DependencyError
+from qlauncher.routines.qiskit import QiskitBackend
+from qlauncher.routines.qiskit.adapters import EstimatorV1ToEstimatorV2Adapter, SamplerV1ToSamplerV2Adapter
 
 try:
     from qiskit_aqt_provider import AQTProvider
-    from qiskit_aqt_provider.primitives import AQTSampler, AQTEstimator
+    from qiskit_aqt_provider.primitives import AQTEstimator, AQTSampler
 except ImportError as e:
     raise DependencyError(e, install_hint='aqt') from e
 
@@ -41,9 +42,10 @@ class AQTBackend(QiskitBackend):
 
     ::
 
-        AQT_TOKEN=valid_token
+        AQT_TOKEN = valid_token
 
     """
+
     sampler: BaseSamplerV2
     estimator: BaseEstimatorV2
 
@@ -59,7 +61,7 @@ class AQTBackend(QiskitBackend):
     ) -> None:
         self._direct_access_url = direct_access_url
         if dotenv_path is None:
-            self.provider = AQTProvider(token if token is not None else "DEFAULT_TOKEN", load_dotenv=False)
+            self.provider = AQTProvider(token if token is not None else 'DEFAULT_TOKEN', load_dotenv=False)
         else:
             self.provider = AQTProvider(load_dotenv=True, dotenv_path=dotenv_path)
         super().__init__(name, options=options, backendv1v2=backendv1v2, auto_transpile_level=auto_transpile_level)
@@ -67,23 +69,25 @@ class AQTBackend(QiskitBackend):
     @override
     def _set_primitives_on_backend_name(self) -> None:
         if self.name == 'local_simulator':
-            self.name = self.provider.backends(backend_type='offline_simulator', name=r".*no_noise")[0].name
+            self.name = self.provider.backends(backend_type='offline_simulator', name=r'.*no_noise')[0].name
         elif self.name == 'backendv1v2':
             if self.backendv1v2 is None and self._direct_access_url:
                 self.backendv1v2 = self.provider.get_direct_access_backend(self._direct_access_url)
             elif self.backendv1v2 is None:
-                raise ValueError("Please indicate a backend when in backendv1v2 mode.")
+                raise ValueError('Please indicate a backend when in backendv1v2 mode.')
         elif self.name == 'device':
             available_online_backends = self.provider.backends(backend_type='device')
             if len(available_online_backends) == 0:
-                raise ValueError(f"No online backends available for token {self.provider.access_token[:5]}...")
+                raise ValueError(f'No online backends available for token {self.provider.access_token[:5]}...')
             self.name = available_online_backends[0].name
         else:
             raise ValueError(
-                " ".join([
-                    f"Unsupported mode for this backend:'{self.name}'."
-                    "Please use one of the following: ['local_simulator', 'backendv1v2', 'device']"
-                ])
+                ' '.join(
+                    [
+                        f"Unsupported mode for this backend:'{self.name}'."
+                        "Please use one of the following: ['local_simulator', 'backendv1v2', 'device']"
+                    ]
+                )
             )
 
         if self.backendv1v2 is None:

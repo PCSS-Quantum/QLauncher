@@ -1,7 +1,9 @@
 """
 Utility functions for Hampy objects.
 """
-from qiskit.quantum_info import SparsePauliOp, Pauli
+
+from qiskit.quantum_info import Pauli, SparsePauliOp
+
 from qlauncher.hampy.object import Equation
 
 

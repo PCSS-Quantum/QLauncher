@@ -2,12 +2,13 @@
 
 from collections.abc import Callable
 
-from qlauncher.base import Algorithm, Problem, Backend, Result
+from qlauncher.base import Algorithm, Backend, Problem, Result
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.dwave.backends import BQMBackend
+
 try:
-    from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
     from dimod import SampleSet
+    from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 except ImportError as e:
     raise DependencyError(e, install_hint='dwave') from e
 
@@ -32,14 +33,13 @@ class DwaveSolver(Algorithm):
         return self._construct_result(res)
 
     def _solve_bqm(self, bqm, sampler, **kwargs):
-        res = sampler.sample(
-            bqm, num_reads=self.num_reads, label=self.label, chain_strength=self.chain_strength, **kwargs)
+        res = sampler.sample(bqm, num_reads=self.num_reads, label=self.label, chain_strength=self.chain_strength, **kwargs)
         return res
 
     def _construct_result(self, result: SampleSet) -> Result:
         distribution = {}
         energies = {}
-        for (value, energy, occ) in zip(result.record.sample, result.record.energy, result.record.num_occurrences, strict=True):
+        for value, energy, occ in zip(result.record.sample, result.record.energy, result.record.num_occurrences, strict=True):
             bitstring = ''.join(map(str, value))
             if bitstring in distribution:
                 distribution[bitstring] += occ

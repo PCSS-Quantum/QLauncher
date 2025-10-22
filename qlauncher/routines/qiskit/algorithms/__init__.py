@@ -1,5 +1,7 @@
-""" Algorithms for qiskit """
-from .qiskit_native import QAOA, FALQON
+"""Algorithms for qiskit"""
+
+from .qiskit_native import FALQON, QAOA
+
 try:
     from .qml import TrainQSVCKernel
 except ImportError:

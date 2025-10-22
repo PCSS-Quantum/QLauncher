@@ -1,7 +1,9 @@
-""" Module with functionalities for debugging Hamiltonians and checking their boolean properties """
+"""Module with functionalities for debugging Hamiltonians and checking their boolean properties"""
+
 from itertools import product
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.hampy.object import Equation
@@ -36,18 +38,16 @@ class TruthTable:
 
     def plot_distribution(self) -> None:
         values = list(self.truth_table.values())
-        counts, bins = np.histogram(values, max(values)+1)
+        counts, bins = np.histogram(values, max(values) + 1)
         plt.stairs(counts, bins)
         plt.show()
 
     def _ham_to_truth(self, hamiltonian: SparsePauliOp):
         return {
-            ''.join(reversed(bitstring)): value for bitstring, value in
-            zip(
+            ''.join(reversed(bitstring)): value
+            for bitstring, value in zip(
                 product(('0', '1'), repeat=self.size),
-                map(lambda x: int(x.real), hamiltonian.to_matrix().diagonal())
-                if self.return_int else
-                hamiltonian.to_matrix().diagonal()
+                map(lambda x: int(x.real), hamiltonian.to_matrix().diagonal()) if self.return_int else hamiltonian.to_matrix().diagonal(),
             )
         }
 

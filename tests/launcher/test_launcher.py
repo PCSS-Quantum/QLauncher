@@ -1,10 +1,12 @@
 import os
+import warnings
+
+import pytest
+
 from qlauncher import QLauncher
-from qlauncher.routines.qiskit import FALQON, QiskitBackend
 from qlauncher.base.base import Result
 from qlauncher.problems import TSP
-import warnings
-import pytest
+from qlauncher.routines.qiskit import FALQON, QiskitBackend
 
 
 def prepare_launcher():
@@ -38,13 +40,13 @@ def test_unused_params_raise_warning():
 def test_save(tmp_path):
     launcher = prepare_launcher()
     with pytest.raises(ValueError):
-        launcher.save(os.path.join(tmp_path, "save.pckl"), 'pickle')
+        launcher.save(os.path.join(tmp_path, 'save.pckl'), 'pickle')
     launcher.run()
     with pytest.raises(ValueError):
-        launcher.save(os.path.join(tmp_path, "save.pckl"), 'pickel')
-    launcher.save(os.path.join(tmp_path, "save.pckl"), 'pickle')
-    launcher.save(os.path.join(tmp_path, "save.txt"), 'txt')
-    launcher.save(os.path.join(tmp_path, "save.json"), 'json')
+        launcher.save(os.path.join(tmp_path, 'save.pckl'), 'pickel')
+    launcher.save(os.path.join(tmp_path, 'save.pckl'), 'pickle')
+    launcher.save(os.path.join(tmp_path, 'save.txt'), 'txt')
+    launcher.save(os.path.join(tmp_path, 'save.json'), 'json')
 
 
 @pytest.mark.skip('Currently getting qiskit deprecation warning')

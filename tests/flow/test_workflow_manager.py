@@ -1,7 +1,7 @@
 from qlauncher import QLauncher
-from qlauncher.workflow import WorkflowManager
-from qlauncher.problems import MaxCut
 from qlauncher.base import Algorithm
+from qlauncher.problems import MaxCut
+from qlauncher.workflow import WorkflowManager
 
 
 def task1():
@@ -14,6 +14,7 @@ def task2(result1):
 
 def check_if_qubo(qubo):
     import numpy as np
+
     assert isinstance(qubo[0], np.ndarray)
     return 1
 

@@ -1,11 +1,12 @@
 """Wrapper for QLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
-from collections.abc import Callable
-from typing import Any
-from threading import Event, Thread
+
 import time
 import weakref
-import multiprocess
+from collections.abc import Callable
+from threading import Event, Thread
+from typing import Any
 
+import multiprocess
 from pathos.multiprocessing import _ProcessPool
 
 from qlauncher.base.base import Result
@@ -29,15 +30,15 @@ def get_timeout(max_timeout: int | float | None, start: int | float) -> float | 
 
 class _InnerAQLTask:
     """
-        Task object returned to user, so that dependencies can be created.
+    Task object returned to user, so that dependencies can be created.
 
-        Attributes:
-            task (Callable): function that gets executed asynchronously
-            dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
-            callbacks (list[Callable]): Callbacks ran when the task finishes executing. 
-                                        Task result is inserted as an argument to the function.
-            pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task. 
-                                      Defaults to False.
+    Attributes:
+        task (Callable): function that gets executed asynchronously
+        dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
+        callbacks (list[Callable]): Callbacks ran when the task finishes executing.
+                                    Task result is inserted as an argument to the function.
+        pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task.
+                                  Defaults to False.
     """
 
     def __init__(
@@ -45,9 +46,8 @@ class _InnerAQLTask:
         task: Callable,
         dependencies: list['AQLTask'] | None = None,
         callbacks: list[Callable] | None = None,
-        pipe_dependencies: bool = False
+        pipe_dependencies: bool = False,
     ) -> None:
-
         self.task = task
         self.dependencies = dependencies if dependencies is not None else []
         self.callbacks = callbacks if callbacks is not None else []
@@ -111,7 +111,7 @@ class _InnerAQLTask:
     def start(self):
         """Start task execution."""
         if self._thread is not None or self._cancelled:
-            raise ValueError("Cannot start, task already started or cancelled.")
+            raise ValueError('Cannot start, task already started or cancelled.')
         self._set_thread()
 
     def cancel(self) -> bool:
@@ -156,9 +156,9 @@ class _InnerAQLTask:
         Blocks the thread until task is finished.
 
         Args:
-            timeout (float | int | None, optional): 
+            timeout (float | int | None, optional):
                     The maximum amount to wait for execution to finish.
-                    If None, wait forever. If not None and time runs out, raises TimeoutError. 
+                    If None, wait forever. If not None and time runs out, raises TimeoutError.
                     Defaults to None.
         Returns:
             Result if future returned result or None when cancelled.
@@ -179,15 +179,15 @@ class _InnerAQLTask:
 # this is cursed :/
 class AQLTask:
     """
-        Task object returned to user, so that dependencies can be created.
+    Task object returned to user, so that dependencies can be created.
 
-        Attributes:
-            task (Callable): function that gets executed asynchronously
-            dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
-            callbacks (list[Callable]): Callbacks ran when the task finishes executing. 
-                                        Task result is inserted as an argument to the function.
-            pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task. 
-                                      Defaults to False.
+    Attributes:
+        task (Callable): function that gets executed asynchronously
+        dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
+        callbacks (list[Callable]): Callbacks ran when the task finishes executing.
+                                    Task result is inserted as an argument to the function.
+        pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task.
+                                  Defaults to False.
     """
 
     def __init__(
@@ -195,7 +195,7 @@ class AQLTask:
         task: Callable,
         dependencies: list['AQLTask'] | None = None,
         callbacks: list[Callable] | None = None,
-        pipe_dependencies: bool = False
+        pipe_dependencies: bool = False,
     ) -> None:
         self._inner_task = _InnerAQLTask(task, dependencies, callbacks, pipe_dependencies)
         weakref.finalize(self, self._inner_task.cancel)

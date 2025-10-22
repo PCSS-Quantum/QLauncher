@@ -1,7 +1,6 @@
-from qlauncher.hampy.utils import shift_affected_qubits
-from qlauncher.hampy.object import Equation
+
 from qlauncher.hampy.equations import one_in_n
-from qiskit.quantum_info import Pauli, SparsePauliOp
+from qlauncher.hampy.utils import shift_affected_qubits
 
 
 def check_sparse_same(op1, op2):

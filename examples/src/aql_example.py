@@ -1,13 +1,9 @@
 from qlauncher.launcher.aql import AQLManager
-from qlauncher.problems import MaxCut, EC
+from qlauncher.problems import EC, MaxCut
 from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend
-from qlauncher.routines.qiskit import QAOA, IBMBackend
-from qlauncher.routines.orca import BBS, OrcaBackend
-
 
 with AQLManager() as launcher:
-    launcher.add(backend=SimulatedAnnealingBackend(),
-                 algorithm=DwaveSolver(1), problem=EC('quadratic', instance_name='micro'))
+    launcher.add(backend=SimulatedAnnealingBackend(), algorithm=DwaveSolver(1), problem=EC('quadratic', instance_name='micro'))
     launcher.add_algorithm(DwaveSolver(2), times=2)
     launcher.add_problem(MaxCut(instance_name='default'), times=3)
     result = launcher.result

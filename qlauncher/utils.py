@@ -1,1 +1,1 @@
-""" Utility functions for QLauncher"""
+"""Utility functions for QLauncher"""
