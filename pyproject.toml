@@ -23,7 +23,8 @@ dependencies = [
     "qcg-pilotjob",
     "dill",
     "qiskit_nature",
-    "pyscf"
+    "pyscf",
+    "pybooklid>=1.0.0",
 ]
 
 [tool.setuptools.packages.find]

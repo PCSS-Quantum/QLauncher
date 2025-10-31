@@ -3,7 +3,7 @@ import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.routines.qiskit import QAOA, FALQON, QiskitBackend, AQTBackend
+from qlauncher.routines.qiskit import QAOA, FALQON, QiskitBackend, AQTBackend, LidAngleQAOA
 from qlauncher.routines.qiskit.algorithms.qiskit_native import int_to_bitstring
 from qlauncher.routines.qiskit.algorithms.qiskit_native import Molecule, VQE
 from qlauncher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring, Knapsack
@@ -26,6 +26,15 @@ def test_falqon():
 def test_QAOA():
     pr = EC.from_preset(instance_name='micro')
     qaoa = QAOA(p=1)
+    backend = QiskitBackend('local_simulator')
+    launcher = QLauncher(pr, qaoa, backend)
+
+    results = launcher.run()
+    assert isinstance(results, Result)
+
+def test_LidAngleQAOA():
+    pr = EC.from_preset(instance_name='micro')
+    qaoa = LidAngleQAOA()
     backend = QiskitBackend('local_simulator')
     launcher = QLauncher(pr, qaoa, backend)
 
@@ -147,3 +156,7 @@ def test_knapsack():
 
     results = launcher.run()
     assert isinstance(results, Result)
+ 
+ 
+if __name__ == "__main__":
+    test_LidAngleQAOA()

@@ -27,6 +27,7 @@ from qlauncher.base.base import Backend
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.problems import Molecule
+from pybooklid import read_lid_angle
 
 
 class QiskitOptimizationAlgorithm(Algorithm):
@@ -187,6 +188,7 @@ class QAOA(QiskitOptimizationAlgorithm):
 
         # Cirq translation issues if we use QAOAAnsatz() by itself without appending it to a QuantumCircuit
         circuit = QuantumCircuit(hamiltonian.num_qubits)
+        print(self.p)
         circuit.append(QAOAAnsatz(cost_operator=hamiltonian, reps=self.p).to_instruction(), range(hamiltonian.num_qubits))
 
         circuit.measure_all()
@@ -241,6 +243,56 @@ class QAOA(QiskitOptimizationAlgorithm):
             energy_std=energy_std,
             result=result
         )
+
+class LidAngleQAOA(QAOA):
+    """Algorithm class with QAOA.
+
+    Args:
+        optimizer (Optimizer | None): Optimizer used during algorithm runtime. If set to `None` turns into COBYLA. Defaults to None,
+        alternating_ansatz (bool): Whether to use an alternating ansatz. Defaults to False. If True, it's recommended to provide a mixer_h to alg_kwargs.
+        aux: Auxiliary input for the QAOA algorithm.
+        **alg_kwargs: Additional keyword arguments for the base class.
+
+    Attributes:
+        name (str): The name of the algorithm.
+        aux: Auxiliary input for the QAOA algorithm.
+        p (int): The number of QAOA steps.
+        optimizer (Optimizer): Optimizer used during algorithm runtime.
+        alternating_ansatz (bool): Whether to use an alternating ansatz.
+        parameters (list): List of parameters for the algorithm.
+        mixer_h (SparsePauliOp | None): The mixer Hamiltonian.
+
+    """
+    _algorithm_format = 'hamiltonian'
+
+    def __init__(
+            self,
+            optimization_method: Literal['COBYLA'] = "COBYLA",
+            max_evaluations: int = 100,
+            training_aggregation_method: Literal['mean', 'cvar'] = 'mean',
+            cvar_alpha: float = 1,
+            alternating_ansatz: bool = False,
+            aux=None,
+            **alg_kwargs):
+        super().__init__(**alg_kwargs)
+        self.name: str = 'qaoa'
+        self.aux = aux
+        angle = read_lid_angle()
+        if angle is not None:
+            p = int(np.round(6*angle/135))
+        else:
+            p = 1
+        self.p: int = p
+
+        self.optimization_method = optimization_method
+        self.max_evaluations = max_evaluations
+        self.training_aggregation_method = training_aggregation_method
+        self.cvar_alpha = cvar_alpha
+
+        self.alternating_ansatz: bool = alternating_ansatz
+        self.parameters = ['p']
+        self.mixer_h: SparsePauliOp | None = None
+        self.initial_state: QuantumCircuit | None = None
 
 
 class FALQON(QiskitOptimizationAlgorithm):
