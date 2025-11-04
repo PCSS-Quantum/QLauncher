@@ -221,8 +221,9 @@ class QAOA(QiskitOptimizationAlgorithm):
             betas = [Parameter(f'b{i}') for i in range(hamiltonian.num_qubits - 1)]
             for i in range(hamiltonian.num_qubits - 1):
                 extra_layer.rzz(alphas[i], i, i + 1)
-                for i in range(hamiltonian.num_qubits - 1):
-                    extra_layer.rzz(betas[i], i, i + 1)
+            for i in range(hamiltonian.num_qubits - 1):
+                extra_layer.rx(betas[i], i)
+            circuit.append(extra_layer.to_instruction(), range(hamiltonian.num_qubits))
 
         circuit.measure_all()
 
