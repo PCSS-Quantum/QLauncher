@@ -1,16 +1,26 @@
 import numpy as np
 
+from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
+
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.routines.qiskit import QAOA, FALQON, QiskitBackend, AQTBackend
-from qlauncher.routines.qiskit.algorithms.qiskit_native import int_to_bitstring
+from qlauncher.routines.qiskit import QAOA, FALQON, QiskitBackend  # , AQTBackend
 from qlauncher.routines.qiskit.algorithms.qiskit_native import Molecule, VQE
 from qlauncher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring, Knapsack
+from qlauncher.utils import int_to_bitstring
 
 
 def test_int_to_bs():
     assert int_to_bitstring(5, 8) == "10100000"
+
+
+def test_circuit():
+    qc = QuantumCircuit(1)
+    qc.h(0)
+    qc.measure_all()
+    ql = QLauncher(qc, QiskitBackend('local_simulator'))
+    assert np.allclose(ql.run().distribution['0'], 0.5, atol=0.05)
 
 
 def test_falqon():

@@ -3,7 +3,6 @@ import pickle
 import sys
 
 from qlauncher.base.base import Algorithm, Backend, Problem, Result
-from qlauncher.launcher.qlauncher import QLauncher
 from qlauncher.exceptions import DependencyError
 try:
     import dill
@@ -102,8 +101,16 @@ class JobManager:
         self.jobs[job_id]['finished'] = True
         return job_id, state
 
-    def _prepare_ql_dill_job(self, problem: Problem, algorithm: Algorithm, backend: Backend,
-                             output: str, cores: int = 1) -> dict:
+    def _prepare_ql_dill_job(
+            self,
+            problem: Problem,
+            algorithm: Algorithm,
+            backend: Backend,
+            output: str, cores: int = 1) -> dict:
+
+        # circular import fix
+        from qlauncher.launcher.qlauncher import QLauncher  # pylint:disable = import-outside-toplevel
+
         job_uid = f'{len(self.jobs):05d}'
         output_file = os.path.abspath(f'{output}output.{job_uid}')
         launcher = QLauncher(problem, algorithm, backend)
