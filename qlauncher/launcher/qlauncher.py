@@ -119,7 +119,7 @@ class QLauncher:
 
         if not args_matched:
             raise ValueError(
-                "Incorrect argument set to create a QLauncher instance! Expected either (Problem, Algorithm, Backend) or (Qiskit sampler like, Backend)")
+                "Incorrect argument set to create a QLauncher instance! Expected either (Problem, Algorithm, Backend), (Problem, Algorithm) or (Qiskit sampler pub like [for example Quantum Circuit], Backend)")
 
         self.formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
 
