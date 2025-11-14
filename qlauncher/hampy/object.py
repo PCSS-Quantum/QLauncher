@@ -26,15 +26,14 @@ class Equation:
 
 	def get_variable(self, index: int) -> 'Variable':
 		assert isinstance(index, int), 'Index needs to be an integer'
-		obj = Variable(index, self)
-		return obj
+		return Variable(index, self)
 
 	@property
 	def hamiltonian(self) -> SparsePauliOp:
 		return self._hamiltonian.simplify()
 
 	@hamiltonian.setter
-	def hamiltonian(self, new_hamiltonian: SparsePauliOp):
+	def hamiltonian(self, new_hamiltonian: SparsePauliOp) -> None:
 		self._hamiltonian = new_hamiltonian
 
 	def to_sparse_pauli_op(self) -> SparsePauliOp:
@@ -96,14 +95,14 @@ class Equation:
 	def __mul__(self, other: 'Equation | float') -> 'Equation':
 		if isinstance(other, Variable):
 			other = other.to_equation()
-		if isinstance(other, float) or isinstance(other, int):
+		if isinstance(other, (float, int)):
 			return Equation(float(other) * self.hamiltonian)
 		return Equation(self.hamiltonian.compose(other.hamiltonian))
 
 	def __rmul__(self, other: 'Equation | float') -> 'Equation':
 		if isinstance(other, Variable):
 			other = other.to_equation()
-		if isinstance(other, float) or isinstance(other, int):
+		if isinstance(other, (float, int)):
 			return Equation(float(other) * self.hamiltonian)
 		return Equation(self.hamiltonian.compose(other.hamiltonian))
 
@@ -119,8 +118,7 @@ class Variable:
 
 		I = ('I', [], 0.5)
 		Z_term = ('ZZ', [self.index, other.index], -0.5)
-		eq = Equation(SparsePauliOp.from_sparse_list([I, Z_term], self.size))
-		return eq
+		return Equation(SparsePauliOp.from_sparse_list([I, Z_term], self.size))
 
 	def __or__(self, other: 'Variable | Equation', /) -> Equation:
 		if isinstance(other, Equation):
@@ -130,8 +128,7 @@ class Variable:
 		Z1_term = ('Z', [self.index], -0.25)
 		Z2_term = ('Z', [other.index], -0.25)
 		ZZ_term = ('ZZ', [self.index, other.index], -0.25)
-		eq = Equation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
-		return eq
+		return Equation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
 
 	def __and__(self, other: 'Variable | Equation', /) -> Equation:
 		if isinstance(other, Equation):
@@ -141,8 +138,7 @@ class Variable:
 		Z1_term = ('Z', [self.index], -0.25)
 		Z2_term = ('Z', [other.index], -0.25)
 		ZZ_term = ('ZZ', [self.index, other.index], 0.25)
-		eq = Equation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
-		return eq
+		return Equation([I_term, Z1_term, Z2_term, ZZ_term], self.size)
 
 	def __invert__(self) -> Equation:
 		I_term = ('I', [], 0.5)

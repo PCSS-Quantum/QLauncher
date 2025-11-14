@@ -59,12 +59,8 @@ def cirq_result_to_probabilities(result: cirq.Result, integer_keys: bool = False
 	counts = cirq_result_to_counts(result)
 
 	total_shots = sum(counts.values())
-	if integer_keys:
-		prob_dict = {int(k, 2): v / total_shots for k, v in counts.items()}
-	else:
-		prob_dict = {k: v / total_shots for k, v in counts.items()}
+	return {int(k, 2): v / total_shots for k, v in counts.items()} if integer_keys else {k: v / total_shots for k, v in counts.items()}
 
-	return prob_dict
 
 
 class _CirqRunner:

@@ -48,8 +48,7 @@ class JobManager:
 		if cores is None:
 			cores = 1
 		job = self._prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path, cores=cores)
-		job_id = self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
-		return job_id
+		return self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
 
 	def submit_many(
 		self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores_per_job: int = 1, n_jobs: int | None = None
@@ -140,10 +139,9 @@ class JobManager:
 		"""
 		output_path = self.jobs[job_id]['output_file']
 		with open(output_path, 'rb') as rt:
-			results = pickle.load(rt)
-		return results
+			return pickle.load(rt)
 
-	def clean_up(self):
+	def clean_up(self) -> None:
 		"""
 		Removes all output files generated in the process and calls self.manager.cleanup().
 		"""
@@ -152,7 +150,7 @@ class JobManager:
 		if isinstance(self.manager, LocalManager):
 			self.manager.cleanup()
 
-	def stop(self):
+	def stop(self) -> None:
 		"""
 		Stops the manager process.
 		"""

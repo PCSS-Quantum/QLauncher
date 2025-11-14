@@ -31,7 +31,7 @@ def parse_arguments() -> tuple[QLauncher, str]:
 		backend = BACKEND_DICT[sys.argv[3]]
 		kwargs = json.loads(sys.argv[4])
 		launcher = QLauncher(
-			problem(**kwargs.get('problem', dict())), algorithm(**kwargs.get('algorithm', dict())), backend(**kwargs.get('backend', dict()))
+			problem(**kwargs.get('problem', {})), algorithm(**kwargs.get('algorithm', {})), backend(**kwargs.get('backend', {}))
 		)
 		output_path = sys.argv[5]
 	else:
@@ -40,7 +40,7 @@ def parse_arguments() -> tuple[QLauncher, str]:
 	return launcher, output_path
 
 
-def main():
+def main() -> None:
 	launcher, output_path = parse_arguments()
 
 	launcher.run()

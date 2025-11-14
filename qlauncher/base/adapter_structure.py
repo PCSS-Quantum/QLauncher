@@ -52,7 +52,7 @@ class ProblemFormatter:
 		if unused_count > 0:
 			warnings.warn(
 				f'{unused_count} unused parameters. {_get_callable_name(self.formatter)} does not accept {[k for k in run_params if k not in params_used]}',
-				Warning,
+				Warning, stacklevel=2,
 			)
 		return self.formatter(*args, **kwargs, **params_used)
 
@@ -64,7 +64,7 @@ class ProblemFormatter:
 		common_params = set(curr_run_params.keys()).intersection(set(self.adapter_requirements.keys()))
 		if len(common_params) > 0:
 			warnings.warn(
-				f'Attempting to reassign parameter values required by one of the adapters: {common_params}, those params will not be set.'
+				f'Attempting to reassign parameter values required by one of the adapters: {common_params}, those params will not be set.', stacklevel=2
 			)
 
 		curr_run_params = curr_run_params | self.adapter_requirements

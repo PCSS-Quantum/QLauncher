@@ -40,13 +40,10 @@ class MaxCut(Problem):
 	def _get_path(self) -> str:
 		return f'{self.name}@{self.instance_name}'
 
-	def visualize(self, bitstring: str | None = None):
+	def visualize(self, bitstring: str | None = None) -> None:
 		pos = nx.spring_layout(self.instance, seed=42)  # set seed for same node graphs in plt
 		plt.figure(figsize=(8, 6))
-		if bitstring is None:
-			cmap = 'skyblue'
-		else:
-			cmap = ['crimson' if bit == '1' else 'skyblue' for bit in bitstring]
+		cmap = 'skyblue' if bitstring is None else ['crimson' if bit == '1' else 'skyblue' for bit in bitstring]
 		nx.draw(self.instance, pos, with_labels=True, node_color=cmap, node_size=500, edge_color='gray', font_size=10, font_weight='bold')
 		plt.title('Max-Cut Problem Instance Visualization')
 		plt.show()

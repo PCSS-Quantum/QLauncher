@@ -51,12 +51,12 @@ class EC(Problem):
 		instance = ast.literal_eval(read_file)
 		return EC(instance, **kwargs)
 
-	def read_instance(self, instance_path: str):
+	def read_instance(self, instance_path: str) -> None:
 		with open(instance_path, encoding='utf-8') as file:
 			read_file = file.read()
 		self.instance = ast.literal_eval(read_file)
 
-	def visualize(self, marked: str | None = None):
+	def visualize(self, marked: str | None = None) -> None:
 		G = nx.Graph()
 		size = len(self.instance)
 		ec = list(map(lambda x: set(map(str, x)), self.instance))

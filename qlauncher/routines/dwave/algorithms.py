@@ -33,8 +33,7 @@ class DwaveSolver(Algorithm):
 		return self._construct_result(res)
 
 	def _solve_bqm(self, bqm, sampler, **kwargs):
-		res = sampler.sample(bqm, num_reads=self.num_reads, label=self.label, chain_strength=self.chain_strength, **kwargs)
-		return res
+		return sampler.sample(bqm, num_reads=self.num_reads, label=self.label, chain_strength=self.chain_strength, **kwargs)
 
 	def _construct_result(self, result: SampleSet) -> Result:
 		distribution = {}

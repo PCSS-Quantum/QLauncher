@@ -25,7 +25,7 @@ class Binary:
 				data[other] += 1
 			else:
 				data[other] = 1
-		elif isinstance(other, int) or isinstance(other, float):
+		elif isinstance(other, (int, float)):
 			if '__free__' in data:
 				data['__free__'] += other
 			else:
@@ -53,7 +53,7 @@ class Binary:
 				data[other] += 1
 			else:
 				data[other] = 1
-		elif isinstance(other, int) or isinstance(other, float):
+		elif isinstance(other, (int, float)):
 			if '__free__' in data:
 				data['__free__'] += other
 			else:
@@ -83,7 +83,7 @@ class Binary:
 					del data[other]
 			else:
 				data[other] = -1
-		elif isinstance(other, int) or isinstance(other, float):
+		elif isinstance(other, (int, float)):
 			if '__free__' in data:
 				data['__free__'] -= other
 				if data['__free__'] == 0:
@@ -130,7 +130,7 @@ class Binary:
 						data['__free__'] = value
 				else:
 					data[key, other] = value
-		elif isinstance(other, int) or isinstance(other, float):
+		elif isinstance(other, (int, float)):
 			for key, value in self.data.items():
 				data[key] = value * other
 		elif isinstance(other, dict):
@@ -162,7 +162,7 @@ class Binary:
 						data['__free__'] = value
 				else:
 					data[key, other] = value
-		elif isinstance(other, int) or isinstance(other, float):
+		elif isinstance(other, (int, float)):
 			for key, value in self.data.items():
 				data[key] = value * other
 		elif isinstance(other, dict):
@@ -185,7 +185,6 @@ class Binary:
 
 	def __pow__(self, other):
 		data = self.data.copy()
-		new_data = {}
 		if isinstance(other, int) and other >= 0:
 			if other == 0:
 				return Binary({'__free__': 1})

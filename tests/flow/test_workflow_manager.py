@@ -4,7 +4,7 @@ from qlauncher.problems import MaxCut
 from qlauncher.workflow import WorkflowManager
 
 
-def task1():
+def task1() -> int:
 	return 10
 
 
@@ -12,14 +12,14 @@ def task2(result1):
 	return result1 * 3
 
 
-def check_if_qubo(qubo):
+def check_if_qubo(qubo) -> int:
 	import numpy as np
 
 	assert isinstance(qubo[0], np.ndarray)
 	return 1
 
 
-def test_task_addition():
+def test_task_addition() -> None:
 	with WorkflowManager() as wm:
 		data = wm.task(task1)
 		result = wm.task(task2, (data,))
@@ -27,7 +27,7 @@ def test_task_addition():
 	assert result.result == 30
 
 
-def test_running():
+def test_running() -> None:
 	with WorkflowManager() as wm:
 		data = wm.input()
 		result = wm.task(task2, (data,))
@@ -36,7 +36,7 @@ def test_running():
 	assert wm(4) == 12
 
 
-def test_workflow():
+def test_workflow() -> None:
 	with WorkflowManager() as wm:
 		data = wm.input(format='qubo')
 		result = wm.task(task2, (data,))
@@ -49,7 +49,7 @@ def test_workflow():
 	assert result == 60
 
 
-def test_workflow_format():
+def test_workflow_format() -> None:
 	with WorkflowManager() as wm:
 		data = wm.input(format='qubo')
 		result = wm.task(check_if_qubo, (data,))

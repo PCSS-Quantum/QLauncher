@@ -66,7 +66,7 @@ class AQL:
 		"""
 		return sum(1 for t in self.tasks if t.running())
 
-	def cancel_running_tasks(self):
+	def cancel_running_tasks(self) -> None:
 		"""Cancel all running tasks assigned to this AQL instance."""
 		for t in self._classical_tasks + self._quantum_tasks:
 			t.cancel()
@@ -156,7 +156,7 @@ class AQL:
 
 		return t_quant
 
-	def start(self):
+	def start(self) -> None:
 		"""Start tasks execution."""
 		for t in self._classical_tasks + self._quantum_tasks:
 			if t.cancelled() or t.done() or t.running():
@@ -164,7 +164,7 @@ class AQL:
 
 		self._run_async()
 
-	def _run_async(self):
+	def _run_async(self) -> None:
 		quantum_dependencies = set()
 		dependency_queue = self._quantum_tasks.copy()
 		while dependency_queue:

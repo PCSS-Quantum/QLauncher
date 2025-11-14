@@ -1,9 +1,9 @@
 """Import managing for problem formulations (attempt to import as much as possible)."""
 
+import contextlib
+
 from .bqm import *
 from .qubo import *
 
-try:
+with contextlib.suppress(ImportError):
 	from .hamiltonian import *
-except ImportError:
-	pass

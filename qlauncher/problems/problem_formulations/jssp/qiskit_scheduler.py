@@ -14,11 +14,11 @@ def get_jss_hamiltonian(job_dict, max_time, onehot):
 class QiskitScheduler(JobShopScheduler):
 	def __init__(self, job_dict, max_time=None, onehot='exact'):
 		super().__init__(job_dict, max_time)
-		self.H_pos_by_label = dict()
-		self.H_label_by_pos = dict()
+		self.H_pos_by_label = {}
+		self.H_label_by_pos = {}
 		self.onehot = onehot
 
-	def _add_one_start_constraint(self, lagrange_one_hot=1):
+	def _add_one_start_constraint(self, lagrange_one_hot=1) -> None:
 		for task in self.tasks:
 			task_times = {get_label(task, t) for t in range(self.max_time)}
 			onehot_tasks = set()
@@ -31,7 +31,7 @@ class QiskitScheduler(JobShopScheduler):
 			elif self.onehot == 'quadratic':
 				self.H += hampy.one_in_n(onehot_tasks, self.n, quadratic=True).hamiltonian
 
-	def _add_precedence_constraint(self, lagrange_precedence=1):
+	def _add_precedence_constraint(self, lagrange_precedence=1) -> None:
 		for current_task, next_task in zip(self.tasks, self.tasks[1:]):
 			if current_task.job != next_task.job:
 				continue
@@ -48,7 +48,7 @@ class QiskitScheduler(JobShopScheduler):
 					equation = hampy.Equation(self.n)
 					self.H += (equation[var1] & equation[var2]).hamiltonian
 
-	def _add_share_machine_constraint(self, lagrange_share=1):
+	def _add_share_machine_constraint(self, lagrange_share=1) -> None:
 		sorted_tasks = sorted(self.tasks, key=lambda x: x.machine)
 		wrapped_tasks = KeyList(sorted_tasks, lambda x: x.machine)
 
@@ -82,7 +82,7 @@ class QiskitScheduler(JobShopScheduler):
 							equation = hampy.Equation(self.n)
 							self.H += (equation[var1] & equation[var2]).hamiltonian
 
-	def _build_variable_dict(self):
+	def _build_variable_dict(self) -> None:
 		for task in self.tasks:
 			task_times = {get_label(task, t) for t in range(self.max_time)}
 			for label in task_times:

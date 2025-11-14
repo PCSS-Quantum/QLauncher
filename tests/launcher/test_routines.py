@@ -11,7 +11,7 @@ from qlauncher.routines.qiskit import QiskitBackend
 from qlauncher.routines.qiskit.adapters import EstimatorV1ToEstimatorV2Adapter, SamplerV1ToSamplerV2Adapter, SamplerV2ToSamplerV1Adapter
 
 
-def test_v2_estimator_adapter():
+def test_v2_estimator_adapter() -> None:
 	circ = QuantumCircuit(2)
 	params = ParameterVector('pv', 2)
 
@@ -41,12 +41,12 @@ def test_v2_estimator_adapter():
 
 		assert len(v2_result) == len(v1_adapted_result)
 
-		for r1, r2 in zip(v1_adapted_result, v2_result):
+		for r1, r2 in zip(v1_adapted_result, v2_result, strict=False):
 			assert np.allclose(r1.data.evs, r2.data.evs, atol=0.05)
 			assert np.allclose(r1.data.stds, r2.data.stds, atol=0.05)
 
 
-def test_v2_sampler_adapter():
+def test_v2_sampler_adapter() -> None:
 	circ = QuantumCircuit(4)
 	circ.h(list(range(4)))
 	circ.measure_all()
@@ -61,11 +61,11 @@ def test_v2_sampler_adapter():
 
 	assert len(v1_result.quasi_dists) == len(adapted_result.quasi_dists)
 
-	for d1, d2 in zip(v1_result.quasi_dists, adapted_result.quasi_dists):
+	for d1, d2 in zip(v1_result.quasi_dists, adapted_result.quasi_dists, strict=False):
 		assert len(d1) == len(d2)
 
 
-def test_v1_sampler_adapter():
+def test_v1_sampler_adapter() -> None:
 	circ = QuantumCircuit(4)
 	circ.h(list(range(4)))
 	circ.measure_all()
@@ -85,7 +85,7 @@ def test_v1_sampler_adapter():
 		assert len(d1.data.meas.get_int_counts()) == len(d2.data.meas.get_int_counts())
 
 
-def test_v2_sampler_adapter_unnamed_measurements():
+def test_v2_sampler_adapter_unnamed_measurements() -> None:
 	"""
 	Test whether SamplerV2Adapter correctly outputs results for circuits with unnamed cl_registers.
 	"""
@@ -102,7 +102,7 @@ def test_v2_sampler_adapter_unnamed_measurements():
 	assert isinstance(res, SamplerResult)
 
 
-def test_v2_sampler_adapter_multiname():
+def test_v2_sampler_adapter_multiname() -> None:
 	circ = QuantumCircuit(4)
 	circ.add_register(ClassicalRegister(2, 'name1'))
 	circ.add_register(ClassicalRegister(2, 'name2'))

@@ -5,7 +5,7 @@ from qlauncher.problems import MaxCut
 from qlauncher.routines.orca import BBS, OrcaBackend
 
 
-def main():
+def main() -> None:
 	"""main"""
 	problem = MaxCut.from_preset(instance_name='default')
 	alg = BBS()

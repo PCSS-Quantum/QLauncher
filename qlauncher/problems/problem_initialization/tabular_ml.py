@@ -36,7 +36,7 @@ class TabularML(Problem):
 				)
 		raise ValueError()
 
-	def visualize(self):
+	def visualize(self) -> None:
 		X, y = self.instance
 		print(f"Tabular ML problem '{self.name}'")
 		print(X[:10])

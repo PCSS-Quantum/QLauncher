@@ -28,8 +28,7 @@ class Molecule(Problem):
 
 	def _get_problem(self, molecule) -> ElectronicStructureProblem:
 		driver = PySCFDriver.from_molecule(molecule, basis=self.basis_set)
-		problem = driver.run()
-		return problem
+		return driver.run()
 
 	def _get_operator(self, problem) -> SparsePauliOp:
 		self.mapper.num_particles = problem.num_particles

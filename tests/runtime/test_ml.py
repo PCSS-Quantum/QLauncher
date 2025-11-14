@@ -26,7 +26,7 @@ def make_trainable_circ(n_qubits) -> tuple[QuantumCircuit, list[Parameter]]:
 problem = TabularML(np.array([[5.2, 3.1], [11.3, 2.2]]), np.array([0, 1]))
 
 
-def test_run_qiskit():
+def test_run_qiskit() -> None:
 	alg = TrainQSVCKernel(*make_trainable_circ(2))
 	backend = QiskitBackend('local_simulator')
 
@@ -36,7 +36,7 @@ def test_run_qiskit():
 	assert isinstance(r.result, BaseKernel)
 
 
-def test_run_no_trainable():
+def test_run_no_trainable() -> None:
 	circ = QuantumCircuit(2)
 
 	for i in range(2):
@@ -51,7 +51,7 @@ def test_run_no_trainable():
 	assert isinstance(r.result, BaseKernel)
 
 
-def test_run_cirq():
+def test_run_cirq() -> None:
 	alg = TrainQSVCKernel(*make_trainable_circ(2))
 	backend = CirqBackend('local_simulator')
 

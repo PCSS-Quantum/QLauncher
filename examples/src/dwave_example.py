@@ -5,7 +5,7 @@ from qlauncher import problems
 from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend
 
 
-def main():
+def main() -> None:
 	"""main"""
 	problem = problems.MaxCut(instance_name='default')
 	alg = DwaveSolver(1)

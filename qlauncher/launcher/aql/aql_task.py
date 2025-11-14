@@ -61,7 +61,7 @@ class _InnerAQLTask:
 		self._result = None
 		self._done = False
 
-	def _shutdown_subprocess(self):
+	def _shutdown_subprocess(self) -> None:
 		self._pool.close()
 		self._pool.terminate()
 		self._pool.join()
@@ -97,18 +97,18 @@ class _InnerAQLTask:
 		self._done = True
 		return
 
-	def _target_task(self):
+	def _target_task(self) -> None:
 		# Main task + callbacks launch
 		self._async_task()
 		for cb in self.callbacks:
 			cb(self._result)
 
-	def _set_thread(self):
+	def _set_thread(self) -> None:
 		self._thread = Thread(target=weakref.proxy(self)._target_task, daemon=True)  # set daemon so that thread quits as main process quits
 		self._thread.start()
 		self._thread_made.set()
 
-	def start(self):
+	def start(self) -> None:
 		"""Start task execution."""
 		if self._thread is not None or self._cancelled:
 			raise ValueError('Cannot start, task already started or cancelled.')

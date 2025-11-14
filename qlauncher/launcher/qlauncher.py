@@ -133,12 +133,12 @@ class QLauncher:
 
 		self.result: Result | None = None
 
-	def _build_from_circuit(self, parsed: dict):
+	def _build_from_circuit(self, parsed: dict) -> None:
 		self.problem = _Circuit(parsed['circuit'], parsed.get('shots', 1024))
 		self.algorithm = _CircuitRunner()
 		self.backend: Backend = parsed['backend']
 
-	def _build_from_PAB(self, parsed: dict):
+	def _build_from_PAB(self, parsed: dict) -> None:
 		if not isinstance(parsed['problem'], Problem):
 			self.problem = Raw(parsed['problem'])
 		else:
@@ -161,7 +161,7 @@ class QLauncher:
 		self.logger.info('Algorithm ended successfully!')
 		return self.result
 
-	def save(self, path: str, save_format: Literal['pickle', 'txt', 'json'] = 'pickle'):
+	def save(self, path: str, save_format: Literal['pickle', 'txt', 'json'] = 'pickle') -> None:
 		"""
 		Save last run result to file
 

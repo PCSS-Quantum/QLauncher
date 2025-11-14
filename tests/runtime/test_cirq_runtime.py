@@ -9,7 +9,7 @@ from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit import QAOA
 
 
-def test_cirq():
+def test_cirq() -> None:
 	problem = MaxCut.from_preset('default')
 	algorithm = QAOA(p=2)
 	backend = CirqBackend()
@@ -19,7 +19,7 @@ def test_cirq():
 	assert isinstance(results, Result)
 
 
-def test_raw():
+def test_raw() -> None:
 	"""Testing function for Raw"""
 	hamiltonian = SparsePauliOp.from_list([('ZZ', -1), ('ZI', 2), ('IZ', 2), ('II', -1)])
 	pr = Raw(hamiltonian)
@@ -33,7 +33,7 @@ def test_raw():
 	assert bitstring in ['00', '01', '10', '11']
 
 
-def test_circuit():
+def test_circuit() -> None:
 	qc = QuantumCircuit(1)
 	qc.h(0)
 	qc.measure_all()

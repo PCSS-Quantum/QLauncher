@@ -28,7 +28,7 @@ def get_hamiltonian():
 
 
 @pytest.mark.skip('QAOA from qiskit_algorithms in newest version has currently some problems')
-def test_run_qaoa():
+def test_run_qaoa() -> None:
 	hamiltonian = get_hamiltonian()
 	sampler, optimizer = Sampler(), COBYLA()
 	qaoa = QAOA(sampler, optimizer)
@@ -36,7 +36,7 @@ def test_run_qaoa():
 	pprint(result.best_measurement)
 
 
-def test_or_operation():
+def test_or_operation() -> None:
 	eq = Equation(2)
 	var0 = eq.get_variable(0)
 	var1 = eq.get_variable(1)
@@ -45,7 +45,7 @@ def test_or_operation():
 
 
 @pytest.mark.skip('QAOA from qiskit_algorithms in newest version has currently some problems')
-def test_one_in_n():
+def test_one_in_n() -> None:
 	equation = ~one_in_n([0, 1, 2, 3, 4], 5)
 	sampler, optimizer = Sampler(), COBYLA()
 	qaoa = QAOA(sampler, optimizer)
@@ -55,7 +55,7 @@ def test_one_in_n():
 
 
 @pytest.mark.skip('QAOA from qiskit_algorithms in newest version has currently some problems')
-def test_new_equation():
+def test_new_equation() -> None:
 	equation = Equation(5)
 	equation = (equation[0] & ~equation[1] & (~equation[3] & equation[4])) | (equation[2] & equation[1])
 	hamiltonian = (~equation).hamiltonian

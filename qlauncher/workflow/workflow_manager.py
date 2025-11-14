@@ -21,7 +21,7 @@ class Task:
 		self.num_output = num_output
 		self.subtasks: list[SubTask] = []
 
-	def run(self):
+	def run(self) -> None:
 		binded_args = [arg.result if isinstance(arg, Task) else arg for arg in self.args]
 		binded_kwargs = {key: (value.result if isinstance(value, Task) else value) for key, value in self.kwargs.items()}
 		self.result = self.func(*binded_args, **binded_kwargs)
@@ -95,7 +95,7 @@ class WorkflowManager:
 		if self.output_task:
 			return self.output_task.result
 
-	def print_dag(self):
+	def print_dag(self) -> None:
 		for task in self.tasks:
 			dep_names = [dep.func.__name__ for dep in task.dependencies]
 			print(f'{task.func.__name__} -> {dep_names}')
@@ -106,14 +106,14 @@ class WorkflowManager:
 		self.input_task_format = format
 		return self.input_task
 
-	def output(self, task: Task):
+	def output(self, task: Task) -> None:
 		self.output_task = task
 
 	def to_workflow(self) -> Workflow:
 		return Workflow(self.tasks, self.input_task, self.output_task, input_format=self.input_task_format)
 
 
-def _execute_workflow(tasks: list[Task], executor: concurrent.futures.Executor, max_iterations: int | None = None):
+def _execute_workflow(tasks: list[Task], executor: concurrent.futures.Executor, max_iterations: int | None = None) -> None:
 	remaining_tasks = set(tasks)
 	max_iterations: int = max_iterations or len(remaining_tasks)
 	iteration = 0

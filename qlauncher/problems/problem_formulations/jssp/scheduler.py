@@ -1,4 +1,4 @@
-def get_label(task, time):
+def get_label(task, time) -> str:
 	return f'{task.job}_{task.position},{time}'
 
 
@@ -23,8 +23,7 @@ class KeyList:
 
 	def __getitem__(self, index):
 		item = self.array[index]
-		key = self.key_function(item)
-		return key
+		return self.key_function(item)
 
 
 class JobShopScheduler:
@@ -37,7 +36,7 @@ class JobShopScheduler:
 		self.absurd_times = set()
 		self._process_data(job_dict)
 
-	def _process_data(self, jobs):
+	def _process_data(self, jobs) -> None:
 		tasks = []
 		last_task_indices = [-1]
 		total_time = 0
@@ -55,7 +54,7 @@ class JobShopScheduler:
 		if self.max_time is None:
 			self.max_time = total_time
 
-	def _remove_absurd_times(self, disable_till: dict, disable_since, disabled_variables):
+	def _remove_absurd_times(self, disable_till: dict, disable_since, disabled_variables) -> None:
 		predecessor_time = 0
 		current_job = self.tasks[0].job
 		for task in self.tasks:

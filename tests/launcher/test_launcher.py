@@ -15,12 +15,11 @@ def prepare_launcher():
 	algorithm = FALQON()
 	backend = QiskitBackend('local_simulator')
 
-	launcher = QLauncher(problem, algorithm, backend)
-
-	return launcher
+	return QLauncher(problem, algorithm, backend)
 
 
-def test_params_are_bound():
+
+def test_params_are_bound() -> None:
 	launcher = prepare_launcher()
 
 	inform = launcher.run()
@@ -28,7 +27,7 @@ def test_params_are_bound():
 	assert isinstance(inform, Result)
 
 
-def test_unused_params_raise_warning():
+def test_unused_params_raise_warning() -> None:
 	launcher = prepare_launcher()
 
 	with pytest.warns(Warning):
@@ -37,7 +36,7 @@ def test_unused_params_raise_warning():
 	assert isinstance(inform, Result)
 
 
-def test_save(tmp_path):
+def test_save(tmp_path) -> None:
 	launcher = prepare_launcher()
 	with pytest.raises(ValueError):
 		launcher.save(os.path.join(tmp_path, 'save.pckl'), 'pickle')
@@ -50,7 +49,7 @@ def test_save(tmp_path):
 
 
 @pytest.mark.skip('Currently getting qiskit deprecation warning')
-def test_override_params_raise_warning():
+def test_override_params_raise_warning() -> None:
 	launcher = prepare_launcher()
 
 	# overriding onehot='quadratic' required by hamiltonian_to_qubo

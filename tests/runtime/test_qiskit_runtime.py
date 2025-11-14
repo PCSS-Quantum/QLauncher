@@ -10,11 +10,11 @@ from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
 from qlauncher.utils import int_to_bitstring
 
 
-def test_int_to_bs():
+def test_int_to_bs() -> None:
 	assert int_to_bitstring(5, 8) == '10100000'
 
 
-def test_circuit():
+def test_circuit() -> None:
 	qc = QuantumCircuit(1)
 	qc.h(0)
 	qc.measure_all()
@@ -22,7 +22,7 @@ def test_circuit():
 	assert np.allclose(ql.run().distribution['0'], 0.5, atol=0.05)
 
 
-def test_falqon():
+def test_falqon() -> None:
 	pr = EC.from_preset(instance_name='micro')
 	qaoa = FALQON(max_reps=1)
 	backend = QiskitBackend('local_simulator')
@@ -32,7 +32,7 @@ def test_falqon():
 	assert isinstance(results, Result)
 
 
-def test_QAOA():
+def test_QAOA() -> None:
 	pr = EC.from_preset(instance_name='micro')
 	qaoa = QAOA(p=1)
 	backend = QiskitBackend('local_simulator')
@@ -42,7 +42,7 @@ def test_QAOA():
 	assert isinstance(results, Result)
 
 
-def test_VQE():
+def test_VQE() -> None:
 	pr = Molecule.from_preset('H2')
 	vqe = VQE()
 	backend = QiskitBackend('local_simulator')
@@ -55,7 +55,7 @@ def test_VQE():
 #! We use FALQON for problem tests as it is very fast to execute
 
 
-def test_ec():
+def test_ec() -> None:
 	"""Testing function for Exact Cover"""
 	pr = EC.from_preset(instance_name='micro')
 	qaoa = FALQON(max_reps=1)
@@ -67,7 +67,7 @@ def test_ec():
 	assert isinstance(results, Result)
 
 
-def test_qatm():
+def test_qatm() -> None:
 	"""Testing function for QATM"""
 	pr = QATM.from_file(path='data/qatm/', instance_name='RCP_3.txt')
 	qaoa = FALQON(max_reps=1)
@@ -79,7 +79,7 @@ def test_qatm():
 	assert isinstance(results, Result)
 
 
-def test_jssp():
+def test_jssp() -> None:
 	"""Testing function for Job Shop Shedueling Problem"""
 	pr = JSSP.from_preset('default', optimization_problem=True)
 	qaoa = FALQON(max_reps=1)
@@ -91,7 +91,7 @@ def test_jssp():
 	assert isinstance(results, Result)
 
 
-def test_maxcut():
+def test_maxcut() -> None:
 	"""Testing function for Max Cut"""
 	pr = MaxCut.from_preset(instance_name='default')
 	qaoa = FALQON(max_reps=1)
@@ -103,7 +103,7 @@ def test_maxcut():
 	assert isinstance(results, Result)
 
 
-def test_raw():
+def test_raw() -> None:
 	"""Testing function for Raw"""
 	hamiltonian = SparsePauliOp.from_list([('ZZ', -1), ('ZI', 2), ('IZ', 2), ('II', -1)])
 	pr = Raw(hamiltonian)
@@ -117,7 +117,7 @@ def test_raw():
 	assert bitstring in ['00', '01', '10', '11']
 
 
-def test_tsp():
+def test_tsp() -> None:
 	"""Testing function for TSP"""
 	pr = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
 	qaoa = FALQON(max_reps=1)
@@ -131,7 +131,7 @@ def test_tsp():
 	assert len(assignments) == 3
 
 
-def test_graph_coloring():
+def test_graph_coloring() -> None:
 	"""Testing function for Graph Coloring"""
 	gc = GraphColoring.from_preset('small')
 	num_colors = gc.num_colors
@@ -146,7 +146,7 @@ def test_graph_coloring():
 	assert num_qubits == gc.instance.number_of_nodes() * color_bit_length, 'error in encoding, solution contains wrong number of qubits'
 
 
-def test_knapsack():
+def test_knapsack() -> None:
 	"""Testing function for Knapsack problem"""
 	pr = Knapsack.from_preset('default')
 	qaoa = FALQON(max_reps=1)

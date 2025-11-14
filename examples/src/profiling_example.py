@@ -3,7 +3,7 @@ from qlauncher.launcher.profiling_launcher import ProfilingLauncher
 from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend
 
 
-def main():
+def main() -> None:
 	alg = DwaveSolver()
 	backend = SimulatedAnnealingBackend()
 	pr = problems.MaxCut(instance_name='default')

@@ -25,7 +25,7 @@ class QUBOMatrix:
 		self.symetric = True
 		self._check_if_symetric()
 
-	def _check_if_symetric(self):
+	def _check_if_symetric(self) -> None:
 		"""
 		Function to check if matrix is symetric
 		"""
@@ -62,7 +62,7 @@ class QUBOMatrix:
 		H = 0
 		for (x, y), value in values_and_qubits.items():
 			if self.symetric:
-				H += value / len(set((x, y))) * qubits[x] * qubits[y]
+				H += value / len({x, y}) * qubits[x] * qubits[y]
 			else:
 				H += value * qubits[x] * qubits[y]
 		model = H.compile()

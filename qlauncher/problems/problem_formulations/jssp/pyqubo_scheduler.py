@@ -31,7 +31,7 @@ class DWaveScheduler(JobShopScheduler):
 	def __init__(self, job_dict, max_time=None):
 		super().__init__(job_dict, max_time)
 
-	def _add_one_start_constraint(self, lagrange_one_hot=1):
+	def _add_one_start_constraint(self, lagrange_one_hot=1) -> None:
 		"""self.csp gets the constraint: A task can start once and only once"""
 		for task in self.tasks:
 			task_times = {get_label(task, t) for t in range(self.max_time)}
@@ -47,7 +47,7 @@ class DWaveScheduler(JobShopScheduler):
 				H_term += var
 			self.H += lagrange_one_hot * ((1 - H_term) ** 2)
 
-	def _add_precedence_constraint(self, lagrange_precedence=1):
+	def _add_precedence_constraint(self, lagrange_precedence=1) -> None:
 		"""self.csp gets the constraint: Task must follow a particular order.
 		Note: assumes self.tasks are sorted by jobs and then by position
 		"""
@@ -79,7 +79,7 @@ class DWaveScheduler(JobShopScheduler):
 
 					self.H += lagrange_precedence * var1 * var2
 
-	def _add_share_machine_constraint(self, lagrange_share=1):
+	def _add_share_machine_constraint(self, lagrange_share=1) -> None:
 		"""self.csp gets the constraint: At most one task per machine per time unit"""
 		sorted_tasks = sorted(self.tasks, key=lambda x: x.machine)
 		# Key wrapper for bisect function
@@ -201,5 +201,4 @@ class DWaveScheduler(JobShopScheduler):
 
 		# Get BQM
 		self.model = self.H.compile()
-		bqm = self.model.to_bqm()
-		return bqm
+		return self.model.to_bqm()

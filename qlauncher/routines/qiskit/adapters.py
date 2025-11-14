@@ -20,10 +20,7 @@ def _transpile_circuits(circuits, backend):
 	# Transpile qaoa circuit to backend instruction set, if backend is provided
 	# ? I pass a backend into SamplerV2 as *mode* but here sampler_v2.mode returns None, why?
 	if backend is not None:
-		if isinstance(circuits, Sequence):
-			circuits = [transpile(circuit) for circuit in circuits]
-		else:
-			circuits = transpile(circuits)
+		circuits = [transpile(circuit) for circuit in circuits] if isinstance(circuits, Sequence) else transpile(circuits)
 
 	return circuits
 

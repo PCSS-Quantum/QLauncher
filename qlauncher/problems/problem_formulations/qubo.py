@@ -48,12 +48,12 @@ class ECOrca:
 		return s / 2
 
 	def calculate_jrr_hr(self, problem: problem.EC):
-		Jrr_dict = dict()
+		Jrr_dict = {}
 		indices = np.triu_indices(len(problem.instance), 1)
-		for i1, i2 in zip(indices[0], indices[1]):
+		for i1, i2 in zip(indices[0], indices[1], strict=False):
 			Jrr_dict[(i1, i2)] = self.Jrr(problem.instance[i1], problem.instance[i2])
 
-		hr_dict = dict()
+		hr_dict = {}
 		for i in range(len(problem.instance)):
 			hr_dict[i] = self.hr(problem.instance[i], problem.instance)
 
@@ -66,7 +66,7 @@ class ECOrca:
 		return tab
 
 	def calculate_num_elements(self, problem: problem.EC):
-		d = dict()
+		d = {}
 		for route in problem.instance:
 			for el in route:
 				d[el] = 1
@@ -139,10 +139,9 @@ class JSSPOrca:
 			lagrange_precedence=self.lagrange_precedence,
 			lagrange_share=self.lagrange_share,
 		)
-		result = [variables[i] for i in range(len(variables)) if binary_vector[i] == 1]
-		return result
+		return [variables[i] for i in range(len(variables)) if binary_vector[i] == 1]
 
-	def _set_config(self):
+	def _set_config(self) -> None:
 		self.config = {}
 		self.config['parameters'] = {}
 		self.config['parameters']['job_shop_scheduler'] = {}
@@ -218,10 +217,7 @@ def knapsack_qubo(problem: problem.Knapsack, penalty_weight: float = 2.0, value_
 
 	x = Array.create('a_x', shape=n, vartype='BINARY')
 
-	if C == 0:
-		m = 1
-	else:
-		m = int(np.ceil(np.log2(C + 1)))
+	m = 1 if C == 0 else int(np.ceil(np.log2(C + 1)))
 	y = Array.create('z_y', shape=m, vartype='BINARY')
 	slack = sum((2**k) * y[k] for k in range(m))
 

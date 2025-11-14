@@ -53,14 +53,14 @@ class GraphColoring(Problem):
 			graph, num_colors = pickle.load(f)
 		return GraphColoring(graph, instance_name=path, num_colors=num_colors)
 
-	def to_file(self, path: str):
+	def to_file(self, path: str) -> None:
 		with open(path, 'wb') as f:
 			pickle.dump((self.instance, self.num_colors), f, pickle.HIGHEST_PROTOCOL)
 
 	def _get_path(self) -> str:
 		return f'{self.name}@{self.instance_name}'
 
-	def visualize(self, solution: list[int] | None = None):
+	def visualize(self, solution: list[int] | None = None) -> None:
 		if self.pos is None:
 			self.pos = nx.spring_layout(self.instance, seed=42)  # set seed for same node graphs in plt
 		plt.figure(figsize=(8, 6))

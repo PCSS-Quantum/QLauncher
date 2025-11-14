@@ -29,7 +29,7 @@ class AerBackend(QiskitBackend):
 		self.device = simulation_device
 		super().__init__(name, options, backendv1v2, auto_transpile_level)
 
-	def _set_primitives_on_backend_name(self):
+	def _set_primitives_on_backend_name(self) -> None:
 		if self.name == 'local_simulator':
 			self.simulator = AerSimulator(method=self.method, device=self.device)
 		elif self.name == 'backendv1v2':
@@ -47,6 +47,6 @@ class AerBackend(QiskitBackend):
 
 		self._configure_auto_behavior()
 
-	def set_options(self, **fields):
+	def set_options(self, **fields) -> None:
 		"""Set additional options for the instance AerSimulator"""
 		self.simulator.set_options(**fields)

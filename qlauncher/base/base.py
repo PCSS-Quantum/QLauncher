@@ -3,7 +3,7 @@ import pickle
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, Never
 
 AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'bqm', 'none', 'fn', 'tabular_ml']
 
@@ -82,10 +82,10 @@ class Backend:
 		self.parameters = parameters if parameters is not None else []
 		self.logger: logging.Logger | None = None
 
-	def set_logger(self, logger: logging.Logger):
+	def set_logger(self, logger: logging.Logger) -> None:
 		self.logger = logger
 
-	def _get_path(self):
+	def _get_path(self) -> str:
 		return f'{self.name}'
 
 
@@ -128,7 +128,7 @@ class Problem(ABC):
 		return cls(instance)
 
 	@staticmethod
-	def from_preset(instance_name: str, **kwargs):
+	def from_preset(instance_name: str, **kwargs) -> Never:
 		raise NotImplementedError()
 
 	def __init_subclass__(cls) -> None:
@@ -149,8 +149,7 @@ class Problem(ABC):
 		"""
 		exp += exp  # ?: this is perplexing
 		with open(log_path, 'rb') as file:
-			res = pickle.load(file)
-		return res
+			return pickle.load(file)
 
 	def analyze_result(self, result) -> Any:
 		"""

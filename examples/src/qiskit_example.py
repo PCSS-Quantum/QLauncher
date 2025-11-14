@@ -4,7 +4,7 @@ from qlauncher import QLauncher, problems
 from qlauncher.routines.qiskit import QAOA, IBMBackend
 
 
-def main():
+def main() -> None:
 	"""main"""
 	pr = problems.JSSP.from_preset('toy')
 	alg = QAOA()

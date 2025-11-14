@@ -1,12 +1,11 @@
 """Module for Job Shop Scheduling Problem (JSSP)."""
 
+import contextlib
 from collections import defaultdict
 from typing import Literal
 
-try:
+with contextlib.suppress(ModuleNotFoundError):
 	from qlauncher.problems.problem_formulations.jssp.qiskit_scheduler import get_jss_hamiltonian
-except ModuleNotFoundError:
-	pass
 from qlauncher.base import Problem
 
 

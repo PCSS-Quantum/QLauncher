@@ -99,7 +99,7 @@ class EducatedGuess(Algorithm):
 			has_potential = True
 		return has_potential, energy
 
-	def _create_directories_if_not_existing(self):
+	def _create_directories_if_not_existing(self) -> None:
 		if not os.path.exists(self.output_initial):
 			os.makedirs(self.output_initial)
 		if not os.path.exists(self.output_interpolated):
@@ -111,8 +111,7 @@ class EducatedGuess(Algorithm):
 		arr1 = np.append([0], params)
 		arr2 = np.append(params, [0])
 		weights = np.arange(len(arr1)) / len(params)
-		res = arr1 * weights + arr2 * weights[::-1]
-		return res
+		return arr1 * weights + arr2 * weights[::-1]
 
 	def _interpolate_f(self, params: np.ndarray, p: int) -> np.ndarray:
 		betas = params[:p]

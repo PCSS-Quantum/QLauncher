@@ -3,7 +3,7 @@ import pytest
 from qlauncher.exceptions import DependencyError
 
 
-def test_import_error():
+def test_import_error() -> None:
 	"""Checks if base usage of dependency error (after import error) is raised properly"""
 	with pytest.raises(DependencyError):
 		try:
@@ -12,7 +12,7 @@ def test_import_error():
 			raise DependencyError(e, 'hint') from e
 
 
-def test_import_message():
+def test_import_message() -> None:
 	"""Test whether error message contains information about the library"""
 	try:
 		try:

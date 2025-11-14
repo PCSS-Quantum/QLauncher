@@ -31,7 +31,7 @@ def make_non_collision_hamiltonian(node_count: int, quadratic=False):
 	# I'm pretty sure this works as intended...
 
 	# Ensure that at each timestep only one node is visited
-	t0_op = hampy.one_in_n([i for i in range(node_count)], eq.size, quadratic=quadratic)
+	t0_op = hampy.one_in_n(list(range(node_count)), eq.size, quadratic=quadratic)
 
 	for timestep in range(node_count):
 		shift = shift_affected_qubits(t0_op, timestep * node_count)

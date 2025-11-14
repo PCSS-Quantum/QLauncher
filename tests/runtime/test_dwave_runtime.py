@@ -29,7 +29,7 @@ def _test_with_tabu(problem, solver):
 
 
 # Repeated code for verboseness of errors
-def test_ec():
+def test_ec() -> None:
 	"""Testing function for Exact Cover"""
 	problem = EC.from_preset(instance_name='micro')
 	solver = DwaveSolver(1, num_reads=10)
@@ -37,7 +37,7 @@ def test_ec():
 	_test_with_steepest_descent(problem, solver)
 
 
-def test_jssp():
+def test_jssp() -> None:
 	"""Testing function for Job Shop Scheduling Problem"""
 	problem = JSSP.from_preset(instance_name='default', optimization_problem=True)
 	solver = DwaveSolver(1, num_reads=10)
@@ -45,7 +45,7 @@ def test_jssp():
 	_test_with_steepest_descent(problem, solver)
 
 
-def test_maxcut():
+def test_maxcut() -> None:
 	"""Testing function for Max Cut"""
 	problem = MaxCut.from_preset(instance_name='default')
 	solver = DwaveSolver(1, num_reads=10)
@@ -53,7 +53,7 @@ def test_maxcut():
 	_test_with_steepest_descent(problem, solver)
 
 
-def test_raw():
+def test_raw() -> None:
 	"""Testing function for Raw"""
 	qubits = [Spin(f'x{i}') for i in range(2)]
 	H = 0
@@ -69,7 +69,7 @@ def test_raw():
 		assert bitstring in ['00', '01', '10', '11']
 
 
-def test_tsp():
+def test_tsp() -> None:
 	"""Testing function for TSP"""
 	problem = TSP.generate_tsp_instance(3)  # Smaller sample size for testing
 	solver = DwaveSolver(1, num_reads=10)
@@ -77,7 +77,7 @@ def test_tsp():
 	_test_with_steepest_descent(problem, solver)
 
 
-def test_tabu_backend():
+def test_tabu_backend() -> None:
 	qubits = [Spin(f'x{i}') for i in range(1)]
 	H = 0
 	H += -3 * qubits[0]
@@ -88,7 +88,7 @@ def test_tabu_backend():
 	_test_with_tabu(problem, solver)
 
 
-def test_knapsack():
+def test_knapsack() -> None:
 	"""Testing function for Knapsack problem"""
 	problem = Knapsack.from_preset(instance_name='default')
 	solver = DwaveSolver(1, num_reads=10)

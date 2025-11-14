@@ -4,7 +4,7 @@ import qiskit
 from qlauncher.base.translator import CirqTranslation, QiskitTranslation, Translation
 
 
-def test_qiskit_to_cirq_translation():
+def test_qiskit_to_cirq_translation() -> None:
 	circuit = qiskit.QuantumCircuit(2)
 	circuit.h(0)
 	circuit.cx(0, 1)
@@ -21,7 +21,7 @@ def test_qiskit_to_cirq_translation():
 	assert circuit.decompose(reps=5) == qiskit_circuit.decompose(reps=5)
 
 
-def test_auto_translation():
+def test_auto_translation() -> None:
 	circuit = qiskit.QuantumCircuit(2)
 	circuit.h(0)
 	circuit.cx(0, 1)

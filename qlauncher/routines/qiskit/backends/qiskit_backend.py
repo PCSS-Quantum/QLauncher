@@ -65,7 +65,7 @@ class QiskitBackend(Backend):
 			self._samplerV1 = SamplerV2ToSamplerV1Adapter(self.sampler)
 		return self._samplerV1
 
-	def _set_primitives_on_backend_name(self):
+	def _set_primitives_on_backend_name(self) -> None:
 		if self.name == 'local_simulator':
 			self.estimator = StatevectorEstimator()
 			self.sampler = StatevectorSampler()
@@ -80,13 +80,13 @@ class QiskitBackend(Backend):
 
 		self._configure_auto_behavior()
 
-	def _configure_auto_behavior(self):
+	def _configure_auto_behavior(self) -> None:
 		"""
 		Set auto transpilation and/or auto assignment if turned on, on estimator and sampler if compatible.
 		"""
 		do_transpile, level = (
-			self._auto_transpile_level != None,
-			int(self._auto_transpile_level if self._auto_transpile_level != None else 0),
+			self._auto_transpile_level is not None,
+			int(self._auto_transpile_level if self._auto_transpile_level is not None else 0),
 		)
 		if isinstance(self.estimator, AUTO_TRANSPILE_ESTIMATOR_TYPE.__constraints__):
 			self.estimator = set_estimator_auto_run_behavior(

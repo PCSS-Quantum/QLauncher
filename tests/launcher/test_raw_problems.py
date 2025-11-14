@@ -8,7 +8,7 @@ from qlauncher.problems import Raw
 from qlauncher.routines.qiskit import QAOA, QiskitBackend
 
 
-def test_auto_assigning():
+def test_auto_assigning() -> None:
 	"""Tests if 2 of the same type raw's have the same class
 	while also different types have different class."""
 	hamiltonian = SparsePauliOp.from_list([('IZ', 2), ('ZI', 2)])
@@ -21,7 +21,7 @@ def test_auto_assigning():
 	assert raw.__class__ is not raw_qubo.__class__
 
 
-def test_auto_formatting_hamiltonian():
+def test_auto_formatting_hamiltonian() -> None:
 	"""Test if Raw assigning works properly"""
 	hamiltonian = SparsePauliOp.from_list([('IZ', 2), ('ZI', 2)])
 

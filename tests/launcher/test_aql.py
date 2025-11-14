@@ -54,7 +54,7 @@ def prepare_AQL(mode='default') -> AQL:
 
 
 @check_subprocesses_exit()
-def test_AQL_cancels_tasks():
+def test_AQL_cancels_tasks() -> None:
 	aql = prepare_AQL()
 
 	aql.start()
@@ -71,7 +71,7 @@ def test_AQL_cancels_tasks():
 
 
 @check_subprocesses_exit()
-def test_AQL_cancels_tasks_in_opt_mode():
+def test_AQL_cancels_tasks_in_opt_mode() -> None:
 	aql = prepare_AQL('optimize_session')
 	aql.start()
 	time.sleep(0.5)
@@ -87,7 +87,7 @@ def test_AQL_cancels_tasks_in_opt_mode():
 
 
 @check_subprocesses_exit()
-def test_AQL_cancels_tasks_after_timeout():
+def test_AQL_cancels_tasks_after_timeout() -> None:
 	aql = prepare_AQL()
 
 	aql.start()
@@ -100,7 +100,7 @@ def test_AQL_cancels_tasks_after_timeout():
 
 
 @check_subprocesses_exit()
-def test_AQL_individual_tasks():
+def test_AQL_individual_tasks() -> None:
 	aql = AQL()
 
 	aql.add_task((EC.from_preset('micro'), QAOA(), QiskitBackend('local_simulator')))
@@ -117,7 +117,7 @@ def test_AQL_individual_tasks():
 
 
 @check_subprocesses_exit()
-def test_AQL_context_manager():
+def test_AQL_context_manager() -> None:
 	tasks: list[AQLTask] = []
 	with AQL() as aql:
 		t1 = aql.add_task((EC.from_preset('default'), QAOA(), QiskitBackend('local_simulator')))
@@ -131,7 +131,7 @@ def test_AQL_context_manager():
 
 
 @check_subprocesses_exit()
-def test_AQL_binds_params():
+def test_AQL_binds_params() -> None:
 	aql = AQL('optimize_session')
 	be = QiskitBackend('local_simulator')
 	be.is_device = True
@@ -147,7 +147,7 @@ def test_AQL_binds_params():
 
 
 @check_subprocesses_exit()
-def test_AQL_session_optimization():
+def test_AQL_session_optimization() -> None:
 	classical_backend = QiskitBackend('local_simulator')
 	totally_real_backend = QiskitBackend('local_simulator')
 	totally_real_backend.is_device = True
@@ -178,7 +178,7 @@ def test_AQL_session_optimization():
 
 
 @check_subprocesses_exit()
-def test_AQL_task_basic():
+def test_AQL_task_basic() -> None:
 	t1 = AQLTask(lambda: 2)
 	t2 = AQLTask(lambda prev: prev + 2, dependencies=[t1], pipe_dependencies=True)
 	t2.start()
@@ -187,7 +187,7 @@ def test_AQL_task_basic():
 
 
 @check_subprocesses_exit()
-def test_AQL_task_result_passing():
+def test_AQL_task_result_passing() -> None:
 	"""
 	Test if values from dependencies are passed in the correct order,
 	i.e if dependencies=[dep1,dep2], [res(dep1),res(dep2)] is passed to the task function.
@@ -203,7 +203,7 @@ def test_AQL_task_result_passing():
 
 
 @check_subprocesses_exit()
-def test_AQL_task_raises_error_from_target_fn():
+def test_AQL_task_raises_error_from_target_fn() -> None:
 	def err():
 		raise ValueError
 
@@ -215,7 +215,7 @@ def test_AQL_task_raises_error_from_target_fn():
 
 
 @check_subprocesses_exit()
-def test_task_dies_after_timeout_error():
+def test_task_dies_after_timeout_error() -> None:
 	t = AQLTask(lambda: time.sleep(20))
 	t.start()
 
@@ -224,6 +224,6 @@ def test_task_dies_after_timeout_error():
 
 
 @check_subprocesses_exit()
-def test_task_dies_after_going_out_of_scope():
+def test_task_dies_after_going_out_of_scope() -> None:
 	t = AQLTask(lambda: time.sleep(20))
 	t.start()

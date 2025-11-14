@@ -29,7 +29,7 @@ class DummyAQTProvider(AQTProvider):
 		return offline_no_noise
 
 
-def run_backend_qaoa(backend):
+def run_backend_qaoa(backend) -> None:
 	problem = EC.from_preset('micro')
 	launcher = QLauncher(problem, QAOA(p=1), backend)
 
@@ -37,7 +37,7 @@ def run_backend_qaoa(backend):
 	assert res is not None
 
 
-def run_backend_vqe(backend):
+def run_backend_vqe(backend) -> None:
 	pr = Molecule.from_preset('H2')
 	vqe = VQE(optimizer=COBYLA(maxiter=2))
 	launcher = QLauncher(pr, vqe, backend)
@@ -46,7 +46,7 @@ def run_backend_vqe(backend):
 	assert results is not None
 
 
-def run_backend_falqon(backend):
+def run_backend_falqon(backend) -> None:
 	problem = EC.from_preset('micro')
 	launcher = QLauncher(problem, FALQON(max_reps=1), backend)
 
@@ -54,7 +54,7 @@ def run_backend_falqon(backend):
 	assert res is not None
 
 
-def test_AQT_backend_backendv1v2_simulator():
+def test_AQT_backend_backendv1v2_simulator() -> None:
 	with pytest.raises(ValueError):
 		backend = AQTBackend(token='test_token', name='backendv1v2')
 
@@ -70,7 +70,7 @@ def test_AQT_backend_backendv1v2_simulator():
 	run_backend_qaoa(backend)
 
 
-def test_AQT_backend_local_simulator():
+def test_AQT_backend_local_simulator() -> None:
 	backend = AQTBackend(token='test_token', name='local_simulator')
 
 	assert backend.name == 'offline_simulator_no_noise'
@@ -82,7 +82,7 @@ def test_AQT_backend_local_simulator():
 	run_backend_qaoa(backend)
 
 
-def test_AQT_backend_online_device():
+def test_AQT_backend_online_device() -> None:
 	# Test if backend rejects invalid token for online backend
 	with pytest.raises(ValueError):
 		backend = AQTBackend(token='test_token', name='device')
@@ -98,7 +98,7 @@ def test_AQT_backend_online_device():
 	run_backend_qaoa(backend)
 
 
-def test_AQT_backend_loads_env(tmp_path):
+def test_AQT_backend_loads_env(tmp_path) -> None:
 	env_path = os.path.join(tmp_path, '.env')
 	with open(env_path, 'w+') as f:
 		f.write('AQT_TOKEN=test')
@@ -111,7 +111,7 @@ def test_AQT_backend_loads_env(tmp_path):
 #! We use FALQON for backend tests (except AQT) as it is very fast to execute
 
 
-def test_IBM_session():
+def test_IBM_session() -> None:
 	backend = FakeAlmadenV2()
 
 	with Session(backend=backend) as session:
@@ -122,7 +122,7 @@ def test_IBM_session():
 		run_backend_falqon(ql_backend)
 
 
-def test_Qiskit_local_session():
+def test_Qiskit_local_session() -> None:
 	backend = QiskitBackend('local_simulator')
 
 	assert backend.sampler is not None
@@ -130,7 +130,7 @@ def test_Qiskit_local_session():
 	run_backend_falqon(backend)
 
 
-def test_Qiskit_backendv1v2_session():
+def test_Qiskit_backendv1v2_session() -> None:
 	backend = QiskitBackend('backendv1v2', backendv1v2=FakeAlmadenV2(), auto_transpile_level=2)
 
 	assert backend.sampler is not None
@@ -141,14 +141,14 @@ def test_Qiskit_backendv1v2_session():
 	run_backend_vqe(backend)
 
 
-def test_Aer_backend_local():
+def test_Aer_backend_local() -> None:
 	backend = AerBackend('local_simulator', auto_transpile_level=0)
 	assert isinstance(backend.sampler, BaseSamplerV2)
 	assert isinstance(backend.estimator, BaseEstimatorV2)
 	run_backend_falqon(backend)
 
 
-def test_Aer_backend_backendv1v2():
+def test_Aer_backend_backendv1v2() -> None:
 	backend = AerBackend('backendv1v2', backendv1v2=FakeAlmadenV2(), auto_transpile_level=0)
 	assert isinstance(backend.sampler, BaseSamplerV2)
 	assert isinstance(backend.estimator, BaseEstimatorV2)

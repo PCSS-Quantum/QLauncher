@@ -37,10 +37,7 @@ class TSP(Problem):
 		Returns:
 		    np.ndarray: Solution chain of nodes to visit
 		"""
-		if isinstance(solution, str):
-			bitstring = solution[::-1]
-		else:
-			bitstring = solution.best_measurement['bitstring'][::-1]
+		bitstring = solution[::-1] if isinstance(solution, str) else solution.best_measurement['bitstring'][::-1]
 
 		node_count = int(len(bitstring) ** 0.5)
 		chain = []
@@ -54,21 +51,15 @@ class TSP(Problem):
 
 	def _calculate_solution_cost(self, solution: SamplingMinimumEigensolverResult | str | list[int]) -> float:
 		cost = 0
-		if isinstance(solution, list):
-			chain = solution
-		else:
-			chain = self._solution_to_node_chain(solution)
+		chain = solution if isinstance(solution, list) else self._solution_to_node_chain(solution)
 
 		for i in range(len(chain) - 1):
 			cost += self.instance[chain[i]][chain[i + 1]]['weight']
 		cost += self.instance[chain[-1]][chain[0]]['weight']
 		return cost
 
-	def _visualize_solution(self, solution: SamplingMinimumEigensolverResult | str | list[int]):
-		if isinstance(solution, list):
-			chain = solution
-		else:
-			chain = self._solution_to_node_chain(solution)
+	def _visualize_solution(self, solution: SamplingMinimumEigensolverResult | str | list[int]) -> None:
+		chain = solution if isinstance(solution, list) else self._solution_to_node_chain(solution)
 
 		import matplotlib.pyplot as plt
 
@@ -77,8 +68,8 @@ class TSP(Problem):
 
 		marked_edges = []
 		for i in range(len(chain) - 1):
-			marked_edges.append(set((chain[i], chain[i + 1])))
-		marked_edges.append(set((chain[-1], chain[0])))
+			marked_edges.append({chain[i], chain[i + 1]})
+		marked_edges.append({chain[-1], chain[0]})
 
 		draw_colors = []  # Limegreen for marked edges, gray for unmarked
 		draw_widths = []  # Draw marked edges thicker
@@ -117,7 +108,7 @@ class TSP(Problem):
 		plt.suptitle(f'Path cost:{path_cost}')
 		plt.show()
 
-	def _visualize_problem(self):
+	def _visualize_problem(self) -> None:
 		"""
 		Show plot of the TSP instance.
 		"""
@@ -150,7 +141,7 @@ class TSP(Problem):
 		plt.title('TSP Instance Visualization')
 		plt.show()
 
-	def visualize(self, solution=None):
+	def visualize(self, solution=None) -> None:
 		if solution is None:
 			self._visualize_problem()
 		else:

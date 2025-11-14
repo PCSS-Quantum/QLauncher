@@ -11,7 +11,6 @@ from qiskit import QuantumCircuit
 from qiskit.circuit.library import PauliEvolutionGate, QAOAAnsatz, efficient_su2
 from qiskit.primitives import BaseEstimatorV1, BaseSamplerV1, PrimitiveResult, SamplerPubResult
 from qiskit.primitives.base.base_primitive import BasePrimitive
-from qiskit.primitives.containers import BitArray
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_algorithms import optimizers
 from qiskit_algorithms.minimum_eigensolvers.diagonal_estimator import _evaluate_sparsepauli as evaluate_energy
@@ -26,12 +25,13 @@ from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.utils import int_to_bitstring
 
+from qiskit.primitives.containers import BitArray
 
 class QiskitOptimizationAlgorithm(Algorithm):
 	"""Abstract class for Qiskit optimization algorithms"""
 
 	def make_tag(self, problem: Problem, backend: QiskitBackend) -> str:
-		tag = (
+		return (
 			problem.__class__.__name__
 			+ '-'
 			+ backend.__class__.__name__
@@ -40,7 +40,6 @@ class QiskitOptimizationAlgorithm(Algorithm):
 			+ '-'
 			+ datetime.today().strftime('%Y-%m-%d')
 		)
-		return tag
 
 	def get_processing_times(self, tag: str, primitive: BasePrimitive) -> None | tuple[list, list, int]:
 		timestamps = []
@@ -170,7 +169,7 @@ class QAOA(QiskitOptimizationAlgorithm):
 	def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
 		"""Runs the QAOA algorithm"""
 
-		if not (isinstance(backend, QiskitBackend) or isinstance(backend, CirqBackend)):
+		if not (isinstance(backend, (QiskitBackend, CirqBackend))):
 			raise ValueError('Backend should be CirqBackend, QiskitBackend or subclass.')
 
 		hamiltonian: SparsePauliOp = formatter(problem)
@@ -196,10 +195,7 @@ class QAOA(QiskitOptimizationAlgorithm):
 		final_counts = {int_to_bitstring(k, circuit.num_qubits): v for k, v in results.items()}
 
 		depth = circuit.decompose(reps=10).depth()
-		if 'cx' in circuit.decompose(reps=10).count_ops():
-			cx_count = circuit.decompose(reps=10).count_ops()['cx']
-		else:
-			cx_count = 0
+		cx_count = circuit.decompose(reps=10).count_ops().get('cx', 0)
 
 		return self.construct_result(
 			{
@@ -435,7 +431,7 @@ class VQE(QiskitOptimizationAlgorithm):
 		return self._ansatz
 
 	@ansatz.setter
-	def ansatz(self, custom_ansatz):
+	def ansatz(self, custom_ansatz) -> None:
 		self._ansatz = custom_ansatz
 
 	def run(self, problem: Problem, backend: Backend, formatter: Callable[..., Any]) -> Result:

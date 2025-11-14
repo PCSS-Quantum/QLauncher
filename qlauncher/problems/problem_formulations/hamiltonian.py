@@ -284,10 +284,7 @@ def get_qiskit_hamiltonian(problem: problems.GraphColoring, constraints_weight=1
 			for i in range(color_bit_length):
 				qubit1 = eq[node1 * color_bit_length + i]
 				qubit2 = eq[node2 * color_bit_length + i]
-				if comb[i]:
-					exp = qubit1 & qubit2
-				else:
-					exp = ~qubit1 & ~qubit2
+				exp = qubit1 & qubit2 if comb[i] else ~qubit1 & ~qubit2
 				if eq2 is None:
 					eq2 = exp
 				else:

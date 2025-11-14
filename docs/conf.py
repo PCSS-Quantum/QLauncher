@@ -16,7 +16,7 @@ lib_path = os.path.join(project_path, 'qlauncher')
 sys.path.insert(0, project_path)
 
 
-def run_apidoc(app):
+def run_apidoc(app) -> None:
 	"""Generate API documentation"""
 	better_apidoc.APP = app
 	better_apidoc.main(
@@ -100,6 +100,6 @@ html_favicon = '_static/logo.svg'
 html_show_sourcelink = False  # Disable option to show .rst source
 
 
-def setup(app):
+def setup(app) -> None:
 	app.connect('builder-inited', run_apidoc)
 	app.add_css_file('css/custom.css')

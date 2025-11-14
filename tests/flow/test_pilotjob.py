@@ -21,7 +21,7 @@ def clean_env():
 		shutil.rmtree(path)
 
 
-def test_job_manager(tmp_path):
+def test_job_manager(tmp_path) -> None:
 	manager = JobManager()
 	assert isinstance(manager, JobManager)
 
@@ -43,7 +43,7 @@ def test_job_manager(tmp_path):
 	manager.clean_up()
 
 
-def test_educated_guess(tmp_path):
+def test_educated_guess(tmp_path) -> None:
 	"""Testing function for QATM"""
 	pr = EC.from_preset('micro')
 	educated_guess = EducatedGuess(2, 2, max_job_batch_size=1)
