@@ -3,6 +3,6 @@ from qlauncher.problems.problem_initialization import TSP
 
 
 def test_unreachable_returns_default():
-    formatter = get_formatter(TSP, 'unknown')
+	formatter = get_formatter(TSP, 'unknown')
 
-    assert formatter.formatter == default_formatter
+	assert formatter.formatter == default_formatter

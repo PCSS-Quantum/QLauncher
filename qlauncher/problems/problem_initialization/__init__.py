@@ -10,5 +10,4 @@ from .molecule import Molecule
 from .knapsack import Knapsack
 from .circuit import _Circuit
 
-__all__ = ['Raw', 'QATM', 'JSSP', 'EC', 'MaxCut', 'TSP', 'GraphColoring',
-           'TabularML', 'Molecule', 'Knapsack', '_Circuit']
+__all__ = ['Raw', 'QATM', 'JSSP', 'EC', 'MaxCut', 'TSP', 'GraphColoring', 'TabularML', 'Molecule', 'Knapsack', '_Circuit']

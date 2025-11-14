@@ -16,18 +16,20 @@ sys.path.insert(0, project_path)
 
 
 def run_apidoc(app):
-    """Generate API documentation"""
-    better_apidoc.APP = app
-    better_apidoc.main([
-        'better-apidoc',
-        '-t',
-        os.path.join('.', '_templates'),
-        '--force',
-        '--separate',
-        '-o',
-        os.path.join('.', 'API'),
-        lib_path,  # Generate docs only for qlauncher/
-    ])
+	"""Generate API documentation"""
+	better_apidoc.APP = app
+	better_apidoc.main(
+		[
+			'better-apidoc',
+			'-t',
+			os.path.join('.', '_templates'),
+			'--force',
+			'--separate',
+			'-o',
+			os.path.join('.', 'API'),
+			lib_path,  # Generate docs only for qlauncher/
+		]
+	)
 
 
 # -- Project information -----------------------------------------------------
@@ -36,7 +38,7 @@ def run_apidoc(app):
 # Grab info from pyproject.toml
 
 with open(os.path.join(project_path, 'pyproject.toml'), 'rb') as f:
-    parsed_pyproject = tomllib.load(f)
+	parsed_pyproject = tomllib.load(f)
 
 name = parsed_pyproject['project']['name'].replace('_', ' ').title()
 version = parsed_pyproject['project']['version']
@@ -50,45 +52,38 @@ release = version
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 suppress_warnings = [
-    'myst.header',  # ipynb linter
-    'docutils'  # rst linter
+	'myst.header',  # ipynb linter
+	'docutils',  # rst linter
 ]
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.viewcode',
-    'sphinx_copybutton',
-    'myst_nb',
+	'sphinx.ext.autodoc',
+	'sphinx.ext.napoleon',
+	'sphinx.ext.autosummary',
+	'sphinx.ext.viewcode',
+	'sphinx_copybutton',
+	'myst_nb',
 ]
 
 myst_enable_extensions = [
-    "amsmath",
-    "colon_fence",
-    "deflist",
-    "dollarmath",
-    "html_image",
+	'amsmath',
+	'colon_fence',
+	'deflist',
+	'dollarmath',
+	'html_image',
 ]
 
-nb_execution_mode = "off"
+nb_execution_mode = 'off'
 
 viewcode_line_numbers = True
 
-autodoc_typehints = "both"
-autodoc_typehints_description_target = "documented"
+autodoc_typehints = 'both'
+autodoc_typehints_description_target = 'documented'
 
 napoleon_numpy_docstring = False
 
 templates_path = ['_templates']
-exclude_patterns = [
-    '_build',
-    'Thumbs.db',
-    '.DS_Store',
-    'tests/*',
-    '*.md',
-    'API/modules.rst'
-]
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'tests/*', '*.md', 'API/modules.rst']
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -99,11 +94,11 @@ html_css_files = ['css/custom.css']
 
 html_theme = 'sphinx_book_theme'
 html_logo = '_static/logo.svg'
-html_favicon = "_static/logo.svg"
+html_favicon = '_static/logo.svg'
 
 html_show_sourcelink = False  # Disable option to show .rst source
 
 
 def setup(app):
-    app.connect('builder-inited', run_apidoc)
-    app.add_css_file('css/custom.css')
+	app.connect('builder-inited', run_apidoc)
+	app.add_css_file('css/custom.css')

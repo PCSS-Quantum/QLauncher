@@ -36,3 +36,34 @@ orca = ["numba==0.60.0", "torch"]
 dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
 cirq = ["cirq>=1.4.1", "ply"]
 dev = ["pytest", "pytest-httpx>=0.35.0"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "tab"
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["E", # pycodestyle errors
+          "W", # pycodestyle warnings
+          "F", # pyflakes
+          "I", # isort
+          "B", # flake8-bugbear
+          "UP", # pyupgrade
+          "C4", # flake8-comprehensions
+          "SIM", # flake8-simplify
+          "ANN", # flake8-annotations
+          "FA", # flake8-future-annotations
+          "ISC", # flake8-implicit-str-concat
+          "ICN", # flake8-import-conventions
+          "RET", # flake8-return
+          "TID", # flake8-tidy-imports
+          "TC", # flake8-type-checking
+          "PTH", # flake8-use-pathlib
+          "TD", # flake8-todos
+          "NPY", # NumPy-specific rules
+]
+ignore = ["W191", "E111", "E114", "E117", "E501", "D206", "D300", "ISC002", "ANN003", "ANN204"]

@@ -1,13 +1,15 @@
-""" Algorithms for qiskit """
+"""Algorithms for qiskit"""
+
 from .qiskit_native import QAOA, FALQON
 from .wrapper import _CircuitRunner
+
 try:
-    from .qml import TrainQSVCKernel
+	from .qml import TrainQSVCKernel
 except ImportError:
-    TrainQSVCKernel = None
+	TrainQSVCKernel = None
 try:
-    from .educated_guess import EducatedGuess
+	from .educated_guess import EducatedGuess
 except ImportError:
-    EducatedGuess = None
+	EducatedGuess = None
 
 __all__ = ['QAOA', 'FALQON', 'EducatedGuess', 'TrainQSVCKernel', '_CircuitRunner']
