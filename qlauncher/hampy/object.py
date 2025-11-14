@@ -1,4 +1,5 @@
 from typing import overload
+
 from qiskit.quantum_info import SparsePauliOp
 
 

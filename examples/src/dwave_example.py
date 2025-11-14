@@ -2,7 +2,7 @@
 
 from qlauncher import *
 from qlauncher import problems
-from qlauncher.routines.dwave import SimulatedAnnealingBackend, DwaveSolver
+from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend
 
 
 def main():

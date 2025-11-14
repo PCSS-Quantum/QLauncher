@@ -1,19 +1,18 @@
 from collections.abc import Callable, Sequence
 from typing import Any
 
-from qiskit.circuit import QuantumCircuit, Parameter
-from qiskit.primitives import BaseSampler, BaseSamplerV1, BaseSamplerV2
-from qiskit.transpiler.passmanager import PassManager
-from qiskit.providers import Options
 import numpy as np
-
+from qiskit.circuit import Parameter, QuantumCircuit
+from qiskit.primitives import BaseSampler, BaseSamplerV1, BaseSamplerV2
+from qiskit.providers import Options
+from qiskit.transpiler.passmanager import PassManager
+from qiskit_machine_learning.kernels import FidelityQuantumKernel, TrainableFidelityQuantumKernel
 from qiskit_machine_learning.kernels.algorithms import QuantumKernelTrainer
-from qiskit_machine_learning.kernels import TrainableFidelityQuantumKernel, FidelityQuantumKernel
-from qiskit_machine_learning.state_fidelities import ComputeUncompute, BaseStateFidelity
+from qiskit_machine_learning.state_fidelities import BaseStateFidelity, ComputeUncompute
 
-from qlauncher.base.base import Backend, Problem, Algorithm, Result
-from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
+from qlauncher.base.base import Algorithm, Backend, Problem, Result
 from qlauncher.routines.cirq import CirqBackend
+from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
 class ComputeUncomputeCustom(ComputeUncompute):

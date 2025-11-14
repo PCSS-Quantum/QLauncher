@@ -1,10 +1,12 @@
 import json
 import os
 import sys
-from qlauncher import QLauncher
-from qlauncher.routines.qiskit import QAOA, QiskitBackend
-from qlauncher.problems import MaxCut, EC, JSSP, QATM, Problem
+
 import dill
+
+from qlauncher import QLauncher
+from qlauncher.problems import EC, JSSP, QATM, MaxCut, Problem
+from qlauncher.routines.qiskit import QAOA, QiskitBackend
 
 PROBLEM_DICT: dict[str, type[Problem]] = {'MaxCut': MaxCut, 'EC': EC, 'JSSP': JSSP, 'QATM': QATM}
 

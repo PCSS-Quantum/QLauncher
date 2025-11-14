@@ -25,12 +25,7 @@ class Binary:
 				data[other] += 1
 			else:
 				data[other] = 1
-		elif isinstance(other, int):
-			if '__free__' in data:
-				data['__free__'] += other
-			else:
-				data['__free__'] = other
-		elif isinstance(other, float):
+		elif isinstance(other, int) or isinstance(other, float):
 			if '__free__' in data:
 				data['__free__'] += other
 			else:
@@ -58,12 +53,7 @@ class Binary:
 				data[other] += 1
 			else:
 				data[other] = 1
-		elif isinstance(other, int):
-			if '__free__' in data:
-				data['__free__'] += other
-			else:
-				data['__free__'] = other
-		elif isinstance(other, float):
+		elif isinstance(other, int) or isinstance(other, float):
 			if '__free__' in data:
 				data['__free__'] += other
 			else:
@@ -93,14 +83,7 @@ class Binary:
 					del data[other]
 			else:
 				data[other] = -1
-		elif isinstance(other, int):
-			if '__free__' in data:
-				data['__free__'] -= other
-				if data['__free__'] == 0:
-					del data['__free__']
-			else:
-				data['__free__'] = -other
-		elif isinstance(other, float):
+		elif isinstance(other, int) or isinstance(other, float):
 			if '__free__' in data:
 				data['__free__'] -= other
 				if data['__free__'] == 0:
@@ -147,10 +130,7 @@ class Binary:
 						data['__free__'] = value
 				else:
 					data[key, other] = value
-		elif isinstance(other, int):
-			for key, value in self.data.items():
-				data[key] = value * other
-		elif isinstance(other, float):
+		elif isinstance(other, int) or isinstance(other, float):
 			for key, value in self.data.items():
 				data[key] = value * other
 		elif isinstance(other, dict):
@@ -182,10 +162,7 @@ class Binary:
 						data['__free__'] = value
 				else:
 					data[key, other] = value
-		elif isinstance(other, int):
-			for key, value in self.data.items():
-				data[key] = value * other
-		elif isinstance(other, float):
+		elif isinstance(other, int) or isinstance(other, float):
 			for key, value in self.data.items():
 				data[key] = value * other
 		elif isinstance(other, dict):
@@ -212,9 +189,9 @@ class Binary:
 		if isinstance(other, int) and other >= 0:
 			if other == 0:
 				return Binary({'__free__': 1})
-			elif other == 1:
+			if other == 1:
 				return Binary(data)
-			elif other == 2:
+			if other == 2:
 				return Binary(data) * Binary(data)
 
 		else:

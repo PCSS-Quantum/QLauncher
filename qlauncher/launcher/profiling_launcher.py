@@ -1,6 +1,8 @@
 import cProfile
 import pstats
+
 from qlauncher.base import Algorithm, Backend, Problem, Result
+
 from .qlauncher import QLauncher
 
 

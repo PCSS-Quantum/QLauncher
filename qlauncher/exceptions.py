@@ -8,8 +8,8 @@ class DependencyError(ImportError):
 		if private:
 			message = (
 				f"""Module "{e.name}" is required but not installed. """
-				+ """The module needs to be installed but it's private. """
-				+ """To get access to module contact the library developers."""
+				 """The module needs to be installed but it's private. """
+				 """To get access to module contact the library developers."""
 			)
 		else:
 			message = f"""Module "{e.name}" is required but not installed. Install it with: pip install "qlauncher[{install_hint}]"."""

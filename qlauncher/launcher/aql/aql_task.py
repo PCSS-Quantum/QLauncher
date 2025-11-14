@@ -1,12 +1,12 @@
 """Wrapper for QLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
 
-from collections.abc import Callable
-from typing import Any
-from threading import Event, Thread
 import time
 import weakref
-import multiprocess
+from collections.abc import Callable
+from threading import Event, Thread
+from typing import Any
 
+import multiprocess
 from pathos.multiprocessing import _ProcessPool
 
 from qlauncher.base.base import Result

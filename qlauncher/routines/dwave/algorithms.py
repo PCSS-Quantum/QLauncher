@@ -2,13 +2,13 @@
 
 from collections.abc import Callable
 
-from qlauncher.base import Algorithm, Problem, Backend, Result
+from qlauncher.base import Algorithm, Backend, Problem, Result
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.dwave.backends import BQMBackend
 
 try:
-	from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 	from dimod import SampleSet
+	from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 except ImportError as e:
 	raise DependencyError(e, install_hint='dwave') from e
 

@@ -1,4 +1,3 @@
-from __future__ import print_function
 
 from bisect import bisect_right
 
@@ -26,8 +25,7 @@ class QiskitScheduler(JobShopScheduler):
 			for label in task_times:
 				if label in self.absurd_times:
 					continue
-				else:
-					onehot_tasks.add(self.H_pos_by_label[label])
+				onehot_tasks.add(self.H_pos_by_label[label])
 			if self.onehot == 'exact':
 				self.H += (~hampy.one_in_n(onehot_tasks, self.n)).hamiltonian
 			elif self.onehot == 'quadratic':
@@ -90,9 +88,8 @@ class QiskitScheduler(JobShopScheduler):
 			for label in task_times:
 				if label in self.absurd_times:
 					continue
-				else:
-					self.H_pos_by_label[label] = len(self.H_pos_by_label)
-					self.H_label_by_pos[len(self.H_label_by_pos)] = label
+				self.H_pos_by_label[label] = len(self.H_pos_by_label)
+				self.H_label_by_pos[len(self.H_label_by_pos)] = label
 		self.n = len(self.H_pos_by_label)
 
 	def get_hamiltonian(self):

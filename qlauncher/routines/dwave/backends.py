@@ -1,15 +1,14 @@
 """DWave backends"""
 
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
+
 from qlauncher.base import Backend
-
-
 from qlauncher.exceptions import DependencyError
 
 try:
 	from dimod import Sampler
+	from dwave.samplers import SimulatedAnnealingSampler, SteepestDescentSampler, TabuSampler
 	from dwave.system import DWaveSampler, EmbeddingComposite
-	from dwave.samplers import SimulatedAnnealingSampler, TabuSampler, SteepestDescentSampler
 except ImportError as e:
 	raise DependencyError(e, install_hint='dwave') from e
 

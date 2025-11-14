@@ -1,9 +1,11 @@
+import warnings
 from collections import defaultdict
 from collections.abc import Callable
-from typing import Any
 from inspect import signature
-import warnings
+from typing import Any
+
 import networkx as nx
+
 from .base import Problem
 
 __QL_ADAPTERS: dict[str, dict[str, Callable]] = defaultdict(lambda: {})  # adapters[to][from]
@@ -49,7 +51,7 @@ class ProblemFormatter:
 		unused_count = len(run_params) - len(params_used)
 		if unused_count > 0:
 			warnings.warn(
-				f'{unused_count} unused parameters. {_get_callable_name(self.formatter)} does not accept {[k for k in run_params if not k in params_used]}',
+				f'{unused_count} unused parameters. {_get_callable_name(self.formatter)} does not accept {[k for k in run_params if k not in params_used]}',
 				Warning,
 			)
 		return self.formatter(*args, **kwargs, **params_used)

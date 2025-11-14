@@ -3,8 +3,7 @@
 from typing import Literal
 
 from qiskit.providers import BackendV1, BackendV2
-from qiskit_ibm_runtime import EstimatorV2, SamplerV2
-from qiskit_ibm_runtime import Session, Options
+from qiskit_ibm_runtime import EstimatorV2, Options, SamplerV2, Session
 
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
@@ -46,9 +45,8 @@ class IBMBackend(QiskitBackend):
 		elif self.name == 'session':
 			if self.session is None:
 				raise AttributeError('Please indicate a session when in session mode.')
-			else:
-				self.estimator = EstimatorV2(mode=self.session, options=self.options)
-				self.sampler = SamplerV2(mode=self.session, options=self.options)
+			self.estimator = EstimatorV2(mode=self.session, options=self.options)
+			self.sampler = SamplerV2(mode=self.session, options=self.options)
 		else:
 			raise ValueError(
 				' '.join(

@@ -1,7 +1,7 @@
 from qlauncher import QLauncher
-from qlauncher.workflow import WorkflowManager
-from qlauncher.problems import MaxCut
 from qlauncher.base import Algorithm
+from qlauncher.problems import MaxCut
+from qlauncher.workflow import WorkflowManager
 
 
 def task1():

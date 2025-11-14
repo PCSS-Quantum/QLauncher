@@ -1,7 +1,6 @@
 from qiskit.quantum_info import SparsePauliOp
-
-from qiskit_nature.second_q.formats.molecule_info import MoleculeInfo
 from qiskit_nature.second_q.drivers import PySCFDriver
+from qiskit_nature.second_q.formats.molecule_info import MoleculeInfo
 from qiskit_nature.second_q.mappers import ParityMapper, QubitMapper
 from qiskit_nature.second_q.problems import ElectronicStructureProblem
 

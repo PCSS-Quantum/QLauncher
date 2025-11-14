@@ -1,6 +1,7 @@
 import concurrent.futures
-from typing import Any, Literal
 from collections.abc import Callable
+from typing import Any, Literal
+
 from qlauncher.base import Algorithm
 
 

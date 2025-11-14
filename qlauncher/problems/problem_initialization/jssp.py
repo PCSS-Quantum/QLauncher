@@ -81,7 +81,7 @@ class JSSP(Problem):
 	@classmethod
 	def from_file(cls, path: str, **kwargs) -> 'JSSP':
 		job_dict = defaultdict(list)
-		with open(path, 'r', encoding='utf-8') as file_:
+		with open(path, encoding='utf-8') as file_:
 			file_.readline()
 			for i, line in enumerate(file_):
 				lint = list(map(int, line.split()))

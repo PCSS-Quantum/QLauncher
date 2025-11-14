@@ -1,7 +1,6 @@
 """This module contains the QATM class."""
 
 import os
-
 from typing import Any
 
 import numpy as np

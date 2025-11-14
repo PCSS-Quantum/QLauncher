@@ -1,6 +1,7 @@
 """Wrapper problem for simple circuit running"""
 
 from qiskit.primitives.containers.sampler_pub import SamplerPubLike
+
 from qlauncher.base.base import Problem
 
 

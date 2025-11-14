@@ -3,8 +3,8 @@
 import ast
 from collections import defaultdict
 
-import networkx as nx
 import matplotlib.pyplot as plt
+import networkx as nx
 
 from qlauncher.base import Problem
 
@@ -46,13 +46,13 @@ class EC(Problem):
 
 	@classmethod
 	def from_file(cls, path: str, **kwargs) -> 'EC':
-		with open(path, 'r', encoding='utf-8') as file:
+		with open(path, encoding='utf-8') as file:
 			read_file = file.read()
 		instance = ast.literal_eval(read_file)
 		return EC(instance, **kwargs)
 
 	def read_instance(self, instance_path: str):
-		with open(instance_path, 'r', encoding='utf-8') as file:
+		with open(instance_path, encoding='utf-8') as file:
 			read_file = file.read()
 		self.instance = ast.literal_eval(read_file)
 

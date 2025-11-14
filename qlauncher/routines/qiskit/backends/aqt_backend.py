@@ -1,19 +1,19 @@
 """AQT backend class for Qiskit routines"""
 
 from typing import Literal
-from overrides import override
 
+from overrides import override
+from qiskit.primitives import BaseEstimatorV2, BaseSamplerV2
 from qiskit.providers import BackendV1, BackendV2
-from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
 from qiskit_ibm_runtime import Options
 
-from qlauncher.routines.qiskit.adapters import SamplerV1ToSamplerV2Adapter, EstimatorV1ToEstimatorV2Adapter
-from qlauncher.routines.qiskit import QiskitBackend
 from qlauncher.exceptions import DependencyError
+from qlauncher.routines.qiskit import QiskitBackend
+from qlauncher.routines.qiskit.adapters import EstimatorV1ToEstimatorV2Adapter, SamplerV1ToSamplerV2Adapter
 
 try:
 	from qiskit_aqt_provider import AQTProvider
-	from qiskit_aqt_provider.primitives import AQTSampler, AQTEstimator
+	from qiskit_aqt_provider.primitives import AQTEstimator, AQTSampler
 except ImportError as e:
 	raise DependencyError(e, install_hint='aqt') from e
 

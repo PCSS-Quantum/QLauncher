@@ -1,15 +1,14 @@
 from pprint import pprint
 from warnings import filterwarnings
 
-from qiskit.quantum_info import SparsePauliOp
-from qiskit.primitives import Sampler
-from qiskit_algorithms.optimizers import COBYLA
-from qiskit_algorithms.minimum_eigensolvers import QAOA
-
 import pytest
+from qiskit.primitives import Sampler
+from qiskit.quantum_info import SparsePauliOp
+from qiskit_algorithms.minimum_eigensolvers import QAOA
+from qiskit_algorithms.optimizers import COBYLA
 
-from qlauncher.hampy.object import Equation, Variable
 from qlauncher.hampy.equations import one_in_n
+from qlauncher.hampy.object import Equation, Variable
 
 filterwarnings('ignore')
 

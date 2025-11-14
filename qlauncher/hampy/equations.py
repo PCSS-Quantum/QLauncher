@@ -5,7 +5,9 @@ It's goal is too simplify the creation of more complex problem implementations, 
 """
 
 from copy import copy
+
 from qiskit.quantum_info import SparsePauliOp
+
 from .object import Equation, Variable
 
 

@@ -2,7 +2,7 @@
 
 from qlauncher import QLauncher
 from qlauncher.problems import MaxCut
-from qlauncher.routines.orca import OrcaBackend, BBS
+from qlauncher.routines.orca import BBS, OrcaBackend
 
 
 def main():

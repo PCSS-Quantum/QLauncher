@@ -1,8 +1,9 @@
+from pyqubo import Spin
+
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend, TabuBackend, SteepestDescentBackend
-from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP, Knapsack
-from pyqubo import Spin
+from qlauncher.problems import EC, JSSP, TSP, Knapsack, MaxCut, Raw
+from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend, SteepestDescentBackend, TabuBackend
 
 TESTING_DIR = 'testing'
 

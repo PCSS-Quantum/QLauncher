@@ -1,10 +1,8 @@
-from __future__ import print_function
 
 from bisect import bisect_right
 
 # from pyqubo import Binary
 from .Binary import Binary
-
 from .scheduler import JobShopScheduler, KeyList, get_label
 
 

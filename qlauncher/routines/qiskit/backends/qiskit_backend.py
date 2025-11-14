@@ -2,19 +2,17 @@
 
 from typing import Literal
 
+from qiskit.primitives import BackendEstimatorV2, BackendSamplerV2, Sampler, StatevectorEstimator, StatevectorSampler
 from qiskit.providers import BackendV1, BackendV2
-from qiskit.primitives import BackendSamplerV2, BackendEstimatorV2, StatevectorEstimator, StatevectorSampler, Sampler
-
 from qiskit_ibm_runtime import Options
 
 from qlauncher.base import Backend
 from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter
-
 from qlauncher.routines.qiskit.backends.utils import (
-	set_estimator_auto_run_behavior,
-	set_sampler_auto_run_behavior,
 	AUTO_TRANSPILE_ESTIMATOR_TYPE,
 	AUTO_TRANSPILE_SAMPLER_TYPE,
+	set_estimator_auto_run_behavior,
+	set_sampler_auto_run_behavior,
 )
 
 

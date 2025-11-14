@@ -1,11 +1,12 @@
 from collections.abc import Callable
-from qiskit.primitives import BitArray
 
+from qiskit.primitives import BitArray
 from qiskit.primitives.containers.sampler_pub import SamplerPub
+
 from qlauncher.base.base import Algorithm, Backend, Problem, Result
 from qlauncher.problems.problem_initialization.circuit import _Circuit
-from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.routines.cirq import CirqBackend
+from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.utils import int_to_bitstring
 
 
@@ -32,6 +33,6 @@ class _CircuitRunner(Algorithm):
 		counts = data.get_int_counts()
 		counts = {int_to_bitstring(k, total_bits=num_bits): v for k, v in counts.items()}
 
-		energy_fake_distribution = {k: 1.0 for k in counts.keys()}  # No energy calculations in sampling
+		energy_fake_distribution = dict.fromkeys(counts.keys(), 1.0)  # No energy calculations in sampling
 
 		return Result.from_counts_energies(counts, energy_fake_distribution)

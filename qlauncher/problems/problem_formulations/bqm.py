@@ -1,6 +1,8 @@
 import ast
+
 import numpy as np
 from pyqubo import Spin
+
 from qlauncher.base import adapter, formatter
 from qlauncher.problems.problem_initialization import Raw
 

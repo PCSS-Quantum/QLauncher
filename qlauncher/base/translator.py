@@ -1,7 +1,7 @@
 """Module providing Translation between different universal quantum computers"""
 
-from typing import Any
 from abc import ABC, abstractmethod
+from typing import Any
 
 import qiskit
 from qiskit import qasm2

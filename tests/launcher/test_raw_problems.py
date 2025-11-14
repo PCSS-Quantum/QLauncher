@@ -5,7 +5,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import QLauncher, Result
 from qlauncher.problems import Raw
-from qlauncher.routines.qiskit import QiskitBackend, QAOA
+from qlauncher.routines.qiskit import QAOA, QiskitBackend
 
 
 def test_auto_assigning():

@@ -2,17 +2,16 @@
 
 import math
 import os
-from collections.abc import Callable
-
 import weakref
+from collections.abc import Callable
 
 import numpy as np
 import scipy
 
-from qlauncher.base import Problem, Algorithm, Result
+from qlauncher.base import Algorithm, Problem, Result
+from qlauncher.routines.qiskit.algorithms.qiskit_native import QAOA
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.workflow.pilotjob_scheduler import JobManager
-from qlauncher.routines.qiskit.algorithms.qiskit_native import QAOA
 
 
 class EducatedGuess(Algorithm):

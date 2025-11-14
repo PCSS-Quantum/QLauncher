@@ -1,4 +1,5 @@
 import pytest
+
 from qlauncher.exceptions import DependencyError
 
 

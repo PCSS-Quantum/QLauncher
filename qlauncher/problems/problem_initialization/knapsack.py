@@ -1,7 +1,8 @@
 """This module contains the Knapsack class."""
 
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
+
 from qlauncher.base import Problem
 
 

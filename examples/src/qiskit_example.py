@@ -1,7 +1,7 @@
 """Example of how QLauncher works"""
 
 from qlauncher import QLauncher, problems
-from qlauncher.routines.qiskit import IBMBackend, QAOA
+from qlauncher.routines.qiskit import QAOA, IBMBackend
 
 
 def main():

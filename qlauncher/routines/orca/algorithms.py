@@ -1,8 +1,9 @@
-from typing import Literal
 from collections.abc import Callable
+from typing import Literal
+
 import numpy as np
 
-from qlauncher.base import Problem, Algorithm, Backend, Result
+from qlauncher.base import Algorithm, Backend, Problem, Result
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.orca.backends import OrcaBackend
 

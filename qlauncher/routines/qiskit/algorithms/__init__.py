@@ -1,6 +1,6 @@
 """Algorithms for qiskit"""
 
-from .qiskit_native import QAOA, FALQON
+from .qiskit_native import FALQON, QAOA
 from .wrapper import _CircuitRunner
 
 try:

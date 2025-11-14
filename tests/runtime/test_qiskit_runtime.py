@@ -1,13 +1,12 @@
 import numpy as np
-
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.routines.qiskit import QAOA, FALQON, QiskitBackend  # , AQTBackend
-from qlauncher.routines.qiskit.algorithms.qiskit_native import Molecule, VQE
-from qlauncher.problems import EC, JSSP, MaxCut, QATM, Raw, TSP, GraphColoring, Knapsack
+from qlauncher.problems import EC, JSSP, QATM, TSP, GraphColoring, Knapsack, MaxCut, Raw
+from qlauncher.routines.qiskit import FALQON, QAOA, QiskitBackend  # , AQTBackend
+from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
 from qlauncher.utils import int_to_bitstring
 
 

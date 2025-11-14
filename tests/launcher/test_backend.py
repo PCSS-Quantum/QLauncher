@@ -1,22 +1,18 @@
 import os
 
-from qiskit_aqt_provider.aqt_resource import OfflineSimulatorResource
-from qiskit_aqt_provider.primitives import AQTSampler, AQTEstimator
-from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
-from qiskit_ibm_runtime import Session
-
+import pytest
+from qiskit.primitives import BaseEstimatorV2, BaseSamplerV2
 from qiskit_algorithms.optimizers import COBYLA
-
 from qiskit_aqt_provider import AQTProvider
-
-from qiskit.primitives import BaseSamplerV2, BaseEstimatorV2
+from qiskit_aqt_provider.aqt_resource import OfflineSimulatorResource
+from qiskit_aqt_provider.primitives import AQTEstimator, AQTSampler
+from qiskit_ibm_runtime import Session
+from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 
 from qlauncher import QLauncher
 from qlauncher.problems import EC
-from qlauncher.routines.qiskit.algorithms.qiskit_native import Molecule, VQE
-from qlauncher.routines.qiskit import QiskitBackend, AQTBackend, IBMBackend, AerBackend, QAOA, FALQON
-
-import pytest
+from qlauncher.routines.qiskit import FALQON, QAOA, AerBackend, AQTBackend, IBMBackend, QiskitBackend
+from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
 
 
 class DummyAQTProvider(AQTProvider):

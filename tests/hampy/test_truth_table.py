@@ -1,6 +1,7 @@
-from qlauncher.hampy.object import Equation
-from qlauncher.hampy.debug import TruthTable
 from qiskit.quantum_info import SparsePauliOp
+
+from qlauncher.hampy.debug import TruthTable
+from qlauncher.hampy.object import Equation
 
 
 def test_with_sparse_pauli():

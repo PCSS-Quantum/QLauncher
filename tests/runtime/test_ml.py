@@ -1,14 +1,12 @@
 import numpy as np
-from qiskit.circuit import QuantumCircuit, Parameter
-
+from qiskit.circuit import Parameter, QuantumCircuit
 from qiskit_machine_learning.kernels import BaseKernel
 
-
 from qlauncher import QLauncher
-from qlauncher.problems import TabularML
-from qlauncher.routines.qiskit import TrainQSVCKernel, QiskitBackend
-from qlauncher.routines.cirq import CirqBackend
 from qlauncher.base import Result
+from qlauncher.problems import TabularML
+from qlauncher.routines.cirq import CirqBackend
+from qlauncher.routines.qiskit import QiskitBackend, TrainQSVCKernel
 
 
 def make_trainable_circ(n_qubits) -> tuple[QuantumCircuit, list[Parameter]]:

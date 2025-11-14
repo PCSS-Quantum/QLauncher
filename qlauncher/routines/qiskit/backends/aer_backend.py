@@ -2,11 +2,11 @@
 
 from typing import Literal
 
+from qiskit.primitives import BackendEstimatorV2, BackendSamplerV2
 from qiskit.providers import BackendV1, BackendV2
-from qiskit.primitives import BackendSamplerV2, BackendEstimatorV2
-from qiskit_ibm_runtime import Options
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel
+from qiskit_ibm_runtime import Options
 
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 

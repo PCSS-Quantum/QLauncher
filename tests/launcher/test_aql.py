@@ -1,17 +1,16 @@
-import time
 import functools
-import pytest
+import time
 
 import psutil
+import pytest
+from dimod import SampleSet
 
 from qlauncher.base.base import Result
+from qlauncher.hampy import Equation
 from qlauncher.launcher.aql import AQL, AQLTask
 from qlauncher.problems import EC, TSP
 from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend
 from qlauncher.routines.qiskit import QAOA, QiskitBackend
-from qlauncher.hampy import Equation
-
-from dimod import SampleSet
 
 
 def check_subprocesses_exit(max_timeout=5):

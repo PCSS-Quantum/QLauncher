@@ -2,10 +2,10 @@
 
 import numpy as np
 from pyqubo import Array
-from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
-import qlauncher.problems.problem_initialization as problem
 
-from qlauncher.base import formatter, adapter
+import qlauncher.problems.problem_initialization as problem
+from qlauncher.base import adapter, formatter
+from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
 
 
 @adapter('qubo', 'qubo_fn')

@@ -1,9 +1,9 @@
 import numpy as np
 
 from qlauncher import QLauncher
-from qlauncher.routines.orca import BBS, OrcaBackend
-from qlauncher.problems import EC, JSSP, MaxCut, Raw, TSP, GraphColoring, Knapsack
 from qlauncher.base import Result
+from qlauncher.problems import EC, JSSP, TSP, GraphColoring, Knapsack, MaxCut, Raw
+from qlauncher.routines.orca import BBS, OrcaBackend
 
 
 def test_ec():

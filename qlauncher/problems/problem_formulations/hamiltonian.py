@@ -1,17 +1,17 @@
 """Hamiltonian formulation of problems"""
 
 from itertools import product
-import numpy as np
 
+import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_optimization.converters import QuadraticProgramToQubo
 from qiskit_optimization.translators import from_ising
 
+import qlauncher.hampy as hampy
+import qlauncher.problems.problem_initialization as problems
 from qlauncher.base import formatter
 from qlauncher.base.adapter_structure import adapter
-import qlauncher.problems.problem_initialization as problems
-import qlauncher.hampy as hampy
 from qlauncher.hampy import Equation, Variable
 from qlauncher.problems.problem_formulations.hamiltonians.tsp import problem_to_hamiltonian as tsp_to_hamiltonian
 
@@ -49,16 +49,16 @@ def ring_ham(ring: set, n):
 	ring = list(ring)
 	for index in range(len(ring) - 1):
 		sparse_list = []
-		sparse_list.append((('XX', [ring[index], ring[index + 1]], 1)))
-		sparse_list.append((('YY', [ring[index], ring[index + 1]], 1)))
+		sparse_list.append(('XX', [ring[index], ring[index + 1]], 1))
+		sparse_list.append(('YY', [ring[index], ring[index + 1]], 1))
 		sp = SparsePauliOp.from_sparse_list(sparse_list, n)
 		if total is None:
 			total = sp
 		else:
 			total += sp
 	sparse_list = []
-	sparse_list.append((('XX', [ring[-1], ring[0]], 1)))
-	sparse_list.append((('YY', [ring[-1], ring[0]], 1)))
+	sparse_list.append(('XX', [ring[-1], ring[0]], 1))
+	sparse_list.append(('YY', [ring[-1], ring[0]], 1))
 	sp = SparsePauliOp.from_sparse_list(sparse_list, n)
 	total += sp
 	return SparsePauliOp(total)
@@ -117,7 +117,7 @@ class ECQiskit:
 			total = None
 			for elem in x_gate:
 				sparse_list = []
-				sparse_list.append((('X', [elem], 1)))
+				sparse_list.append(('X', [elem], 1))
 				sp = SparsePauliOp.from_sparse_list(sparse_list, len(problem.instance))
 				if total is None:
 					total = sp
@@ -141,7 +141,7 @@ class ECQiskit:
 			max_amount_of_rings, user_rings = len(ring), []
 			if amount_of_rings > max_amount_of_rings:
 				raise ValueError(f'Too many rings. Maximum amount is {max_amount_of_rings}')
-			elif amount_of_rings == 0:
+			if amount_of_rings == 0:
 				ring_qubits = []
 			else:
 				current_qubits = ring[0]
@@ -171,8 +171,7 @@ class ECQiskit:
 def get_qiskit_hamiltonian(problem: problems.JSSP) -> SparsePauliOp:
 	if problem.optimization_problem:
 		return problem.h_o
-	else:
-		return problem.h_d
+	return problem.h_d
 
 
 @formatter(problems.MaxCut, 'hamiltonian')

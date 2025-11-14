@@ -1,8 +1,6 @@
-import networkx as nx
-
-import numpy as np
 import matplotlib.pyplot as plt
-
+import networkx as nx
+import numpy as np
 from qiskit_algorithms import SamplingMinimumEigensolverResult
 
 from qlauncher.base import Problem

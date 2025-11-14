@@ -1,14 +1,14 @@
 """File with templates"""
 
-from typing import Literal, overload
 import json
-import pickle
 import logging
+import pickle
+from typing import Literal, overload
 
 from qiskit.primitives.containers import SamplerPubLike
 
-from qlauncher.base.adapter_structure import get_formatter, ProblemFormatter
-from qlauncher.base import Problem, Algorithm, Backend, Result
+from qlauncher.base import Algorithm, Backend, Problem, Result
+from qlauncher.base.adapter_structure import ProblemFormatter, get_formatter
 from qlauncher.problems import Raw, _Circuit
 from qlauncher.routines.qiskit.algorithms.wrapper import _CircuitRunner
 
@@ -18,7 +18,7 @@ def _extract_args(argtypes: list[tuple[str, type]], args, kwargs) -> dict[str, o
 		return {}
 	as_kwargs = []
 	for name, _ in argtypes[len(args) :]:
-		if not name in kwargs:
+		if name not in kwargs:
 			return {}
 		as_kwargs.append(kwargs[name])
 
@@ -125,7 +125,7 @@ class QLauncher:
 
 		self.formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
 
-		logger = kwargs.get('logger', None)
+		logger = kwargs.get('logger')
 
 		if logger is None:
 			logger = logging.getLogger('QLauncher')

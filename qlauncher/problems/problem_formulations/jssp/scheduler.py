@@ -82,7 +82,7 @@ class JobShopScheduler:
 				self.absurd_times.add(label)
 
 		for task in self.tasks:
-			if task.machine in disable_till.keys():
+			if task.machine in disable_till:
 				for i in range(disable_till[task.machine]):
 					label = get_label(task, i)
 					self.absurd_times.add(label)

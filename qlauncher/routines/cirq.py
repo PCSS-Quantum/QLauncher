@@ -2,21 +2,20 @@
 Routine file for Cirq library
 """
 
-from typing import Any, Iterable, Literal
-from collections.abc import Sequence
 import math
+from collections.abc import Iterable, Sequence
+from typing import Any, Literal
 
 import numpy as np
 import qiskit
-
-from qiskit.result import QuasiDistribution
-from qiskit.primitives import Sampler, BaseSamplerV2, BitArray, DataBin
-from qiskit.primitives.primitive_job import PrimitiveJob
+from qiskit.primitives import BaseSamplerV2, BitArray, DataBin, Sampler
 from qiskit.primitives.base.base_primitive_job import BasePrimitiveJob
 from qiskit.primitives.base.sampler_result import SamplerResult
 from qiskit.primitives.containers.primitive_result import PrimitiveResult
-from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 from qiskit.primitives.containers.sampler_pub import SamplerPubLike
+from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
+from qiskit.primitives.primitive_job import PrimitiveJob
+from qiskit.result import QuasiDistribution
 
 from qlauncher.base import Backend
 from qlauncher.base.translator import Translation

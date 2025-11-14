@@ -1,9 +1,10 @@
-from typing import TypeVar, Iterable
-from qiskit import QuantumCircuit, transpile
-from qiskit.providers.backend import BackendV1, BackendV2
-from qiskit.primitives import BackendSamplerV2, BackendEstimatorV2
-from qiskit_ibm_runtime import EstimatorV2, SamplerV2
+from collections.abc import Iterable
+from typing import TypeVar
 
+from qiskit import QuantumCircuit, transpile
+from qiskit.primitives import BackendEstimatorV2, BackendSamplerV2
+from qiskit.providers.backend import BackendV1, BackendV2
+from qiskit_ibm_runtime import EstimatorV2, SamplerV2
 
 AUTO_TRANSPILE_SAMPLER_TYPE = TypeVar('AUTO_TRANSPILE_SAMPLER_TYPE', BackendSamplerV2, SamplerV2)
 AUTO_TRANSPILE_ESTIMATOR_TYPE = TypeVar('AUTO_TRANSPILE_ESTIMATOR_TYPE', BackendEstimatorV2, EstimatorV2)

@@ -1,27 +1,25 @@
-from collections.abc import Sequence
-from typing import Any, Iterable
-
 import math
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import numpy as np
-
 from qiskit import transpile
+from qiskit.primitives import BasePrimitiveJob, BitArray, DataBin, SamplerResult
+from qiskit.primitives.base import BaseEstimatorV1, BaseEstimatorV2, BaseSamplerV1, BaseSamplerV2, EstimatorResult
 from qiskit.primitives.containers import PubResult
+from qiskit.primitives.containers.estimator_pub import EstimatorPub, EstimatorPubLike
 from qiskit.primitives.containers.primitive_result import PrimitiveResult
+from qiskit.primitives.containers.sampler_pub import SamplerPub, SamplerPubLike
 from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
-from qiskit.result import QuasiDistribution
-from qiskit.primitives import SamplerResult, BasePrimitiveJob, BitArray, DataBin
-from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2, BaseEstimatorV1, BaseEstimatorV2, EstimatorResult
-from qiskit.primitives.containers.sampler_pub import SamplerPubLike, SamplerPub
-from qiskit.primitives.containers.estimator_pub import EstimatorPubLike, EstimatorPub
 from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.quantum_info import SparsePauliOp
+from qiskit.result import QuasiDistribution
 
 
 def _transpile_circuits(circuits, backend):
 	# Transpile qaoa circuit to backend instruction set, if backend is provided
 	# ? I pass a backend into SamplerV2 as *mode* but here sampler_v2.mode returns None, why?
-	if not backend is None:
+	if backend is not None:
 		if isinstance(circuits, Sequence):
 			circuits = [transpile(circuit) for circuit in circuits]
 		else:

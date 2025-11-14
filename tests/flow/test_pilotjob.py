@@ -1,11 +1,14 @@
 import glob
 import shutil
+
 import pytest
-from qlauncher.workflow.pilotjob_scheduler import JobManager
+
 from qlauncher import QLauncher, Result
 from qlauncher.problems import EC
 from qlauncher.routines.qiskit import FALQON, QiskitBackend
 from qlauncher.routines.qiskit.algorithms import EducatedGuess
+from qlauncher.workflow.pilotjob_scheduler import JobManager
+
 # TODO: address event loop problem (To @dsiera: what was the problem?)
 
 

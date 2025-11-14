@@ -1,8 +1,9 @@
 """Module with functionalities for debugging Hamiltonians and checking their boolean properties"""
 
 from itertools import product
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.hampy.object import Equation

@@ -7,6 +7,7 @@
 import os
 import sys
 import tomllib
+
 import better_apidoc
 
 conf_path = os.path.dirname(os.path.abspath(__file__))

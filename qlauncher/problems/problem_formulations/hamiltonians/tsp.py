@@ -1,13 +1,12 @@
 from typing import Literal
 
-import numpy as np
 import networkx as nx
+import numpy as np
 
-from qlauncher.problems.problem_initialization import TSP
-
-from qlauncher.hampy import Equation
 import qlauncher.hampy as hampy
+from qlauncher.hampy import Equation
 from qlauncher.hampy.utils import shift_affected_qubits
+from qlauncher.problems.problem_initialization import TSP
 
 
 def make_non_collision_hamiltonian(node_count: int, quadratic=False):

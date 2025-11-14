@@ -1,13 +1,13 @@
 """Wrapper for QLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
 
-from typing import Literal
-from collections.abc import Callable
 import time
+from collections.abc import Callable
+from typing import Literal
 
-from qlauncher.problems import Raw
-from qlauncher.base.base import Backend, Algorithm, Problem, Result
-from qlauncher.launcher.qlauncher import QLauncher
+from qlauncher.base.base import Algorithm, Backend, Problem, Result
 from qlauncher.launcher.aql.aql_task import AQLTask, get_timeout
+from qlauncher.launcher.qlauncher import QLauncher
+from qlauncher.problems import Raw
 
 
 class AQL:
@@ -137,7 +137,7 @@ class AQL:
 			return launcher.formatter(launcher.problem)
 
 		# Split real device task into generation and actual run on a QC
-		t_gen = AQLTask(gen_task, dependencies=[dep for dep in dependencies_list if not dep in self._quantum_tasks])
+		t_gen = AQLTask(gen_task, dependencies=[dep for dep in dependencies_list if dep not in self._quantum_tasks])
 
 		def quantum_task(formatted, *_):
 			ql = QLauncher(Raw(formatted, launcher.problem.instance_name), launcher.algorithm, launcher.backend)
@@ -182,7 +182,7 @@ class AQL:
 
 		gateway_task_quantum = AQLTask(lambda: 42, dependencies=self._quantum_tasks.copy())
 
-		for ct in [t for t in self._classical_tasks if not t in quantum_dependencies]:
+		for ct in [t for t in self._classical_tasks if t not in quantum_dependencies]:
 			ct.dependencies.append(gateway_task_quantum)
 
 		self._classical_tasks.append(gateway_task_classical)

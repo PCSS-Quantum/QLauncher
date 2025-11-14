@@ -1,10 +1,12 @@
 import os
+import warnings
+
+import pytest
+
 from qlauncher import QLauncher
-from qlauncher.routines.qiskit import FALQON, QiskitBackend
 from qlauncher.base.base import Result
 from qlauncher.problems import TSP
-import warnings
-import pytest
+from qlauncher.routines.qiskit import FALQON, QiskitBackend
 
 
 def prepare_launcher():
