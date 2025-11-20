@@ -1,35 +1,25 @@
 """DWave algorithms"""
 
-from collections.abc import Callable
-
-from qlauncher.base import Algorithm, Backend, Problem, Result
+from qlauncher.base import Algorithm, Result
+from qlauncher.base.problem_like import BQM
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.dwave.backends import BQMBackend
 
 try:
 	from dimod import SampleSet
-	from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 except ImportError as e:
 	raise DependencyError(e, install_hint='dwave') from e
 
 
-class DwaveSolver(Algorithm):
-	_algorithm_format = 'bqm'
-
+class DwaveSolver(Algorithm[BQM, BQMBackend]):
 	def __init__(self, chain_strength=1, num_reads=1000, **alg_kwargs) -> None:
 		self.chain_strength = chain_strength
 		self.num_reads = num_reads
 		self.label: str = 'TBD_TBD'
 		super().__init__(**alg_kwargs)
 
-	def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
-		if not isinstance(backend, BQMBackend):
-			raise ValueError(f'{backend.__class__} is not supported by DwaveSolver algorithm, use BQMBackend instead')
-		self.label = f'{problem.name}_{problem.instance_name}'
-
-		bqm: BinaryQuadraticModel = formatter(problem)
-
-		res = self._solve_bqm(bqm, backend.sampler, **self.alg_kwargs)
+	def run(self, problem: BQM, backend: BQMBackend) -> Result:
+		res = self._solve_bqm(problem.bqm, backend.sampler, **self.alg_kwargs)
 		return self._construct_result(res)
 
 	def _solve_bqm(self, bqm, sampler, **kwargs):

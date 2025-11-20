@@ -17,11 +17,11 @@ class EC(Problem):
 	of elements such that the subset covers all elements and the number of elements in the subset is minimized.
 	The class contains an instance of the problem, so it can be passed into QLauncher.
 
-	Attributes:
-	    onehot (str): The one-hot encoding used for the problem.
-	    instance (any): The instance of the problem.
-	    instance_name (str | None): The name of the instance.
-	    instance_path (str): The path to the instance file.
+	Args:
+		onehot (str): The one-hot encoding used for the problem.
+		instance (any): The instance of the problem.
+		instance_name (str | None): The name of the instance.
+		instance_path (str): The path to the instance file.
 
 	"""
 

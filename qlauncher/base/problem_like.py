@@ -1,7 +1,12 @@
 from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
+from qiskit_nature.second_q.drivers import PySCFDriver
+from qiskit_nature.second_q.formats.molecule_info import MoleculeInfo
+from qiskit_nature.second_q.mappers import ParityMapper, QubitMapper
+from qiskit_nature.second_q.problems import ElectronicStructureProblem
 
 
 class ProblemLike: ...
@@ -49,3 +54,34 @@ class FN(ProblemLike):
 class Hamiltonian(ProblemLike):
 	def __init__(self, hamiltonian: SparsePauliOp) -> None:
 		self.hamiltonian = hamiltonian
+
+	def get_mixer_hamiltonian(self) -> None: ...
+
+	def get_QAOAAnsatz_initial_state(self) -> None: ...
+
+
+class BQM(ProblemLike):
+	def __init__(self, bqm: Any) -> None:  # noqa: ANN401
+		self.bqm = bqm
+
+
+class Molecule(ProblemLike):
+	def __init__(self, instance: MoleculeInfo, mapper: QubitMapper | None = None, basis_set: str = 'STO-6G') -> None:
+		self.instance = instance
+		self.basis_set = basis_set
+		self.mapper = ParityMapper() if mapper is None else mapper
+		self.problem: ElectronicStructureProblem = PySCFDriver.from_molecule(instance, basis=self.basis_set).run()
+		self.mapper.num_particles = self.problem.num_particles
+		operator = self.mapper.map(self.problem.hamiltonian.second_q_op())
+		if not isinstance(operator, SparsePauliOp):
+			raise TypeError
+		self.operator: SparsePauliOp = operator
+
+	@staticmethod
+	def from_preset(instance_name: str) -> 'Molecule':
+		match instance_name:
+			case 'H2':
+				instance = MoleculeInfo(['H', 'H'], [(0.0, 0.0, 0.0), (0.0, 0.0, 0.74)])
+			case _:
+				raise ValueError(f"Molecule {instance_name} not supported, currently you can use: 'H2'")
+		return Molecule(instance)

@@ -2,7 +2,8 @@ import os
 import pickle
 import sys
 
-from qlauncher.base.base import Algorithm, Backend, Problem, Result
+from qlauncher.base.base import Algorithm, Backend, Result
+from qlauncher.base.problem_like import ProblemLike
 from qlauncher.exceptions import DependencyError
 
 try:
@@ -19,8 +20,8 @@ class JobManager:
 		Job manager is QLauncher's wrapper for process management system, current version works on top of qcg-pilotjob
 
 		Args:
-		    manager (Manager | None, optional): Manager system to schedule jobs, if set to None, the pilotjob's LocalManager is set.
-		    Defaults to None.
+			manager (Manager | None, optional): Manager system to schedule jobs, if set to None, the pilotjob's LocalManager is set.
+			Defaults to None.
 		"""
 		self.jobs = {}
 		self.code_path = os.path.join(os.path.dirname(__file__), 'pilotjob_task.py')
@@ -31,19 +32,19 @@ class JobManager:
 	def _count_not_finished(self) -> int:
 		return len([job for job in self.jobs.values() if job.get('finished') is False])
 
-	def submit(self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores: int | None = None) -> str:
+	def submit(self, problem: ProblemLike, algorithm: Algorithm, backend: Backend, output_path: str, cores: int | None = None) -> str:
 		"""
 		Submits QLauncher job to the scheduler
 
 		Args:
-		    problem (Problem): Problem.
-		    algorithm (Algorithm): Algorithm.
-		    backend (Backend): Backend.
-		    output_path (str): Path of output file.
-		    cores (int | None, optional): Number of cores per task, if None value set to number of free cores (at least 1). Defaults to None.
+			problem (Problem): Problem.
+			algorithm (Algorithm): Algorithm.
+			backend (Backend): Backend.
+			output_path (str): Path of output file.
+			cores (int | None, optional): Number of cores per task, if None value set to number of free cores (at least 1). Defaults to None.
 
 		Returns:
-		    str: Job Id.
+			str: Job Id.
 		"""
 		if cores is None:
 			cores = 1
@@ -51,21 +52,27 @@ class JobManager:
 		return self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
 
 	def submit_many(
-		self, problem: Problem, algorithm: Algorithm, backend: Backend, output_path: str, cores_per_job: int = 1, n_jobs: int | None = None
+		self,
+		problem: ProblemLike,
+		algorithm: Algorithm,
+		backend: Backend,
+		output_path: str,
+		cores_per_job: int = 1,
+		n_jobs: int | None = None,
 	) -> list[str]:
 		"""
 		Submits as many jobs as there are currently available cores.
 
 		Args:
-		    problem (Problem): Problem.
-		    algorithm (Algorithm): Algorithm.
-		    backend (Backend): Backend.
-		    output_path (str): Path of output file.
-		    cores_per_job (int, optional): Number of cores per job. Defaults to 1.
-		    n_jobs: number of jobs to submit. If None, submit as many as possible (free_cores//cores_per_job). Defaults to None.
+			problem (Problem): Problem.
+			algorithm (Algorithm): Algorithm.
+			backend (Backend): Backend.
+			output_path (str): Path of output file.
+			cores_per_job (int, optional): Number of cores per job. Defaults to 1.
+			n_jobs: number of jobs to submit. If None, submit as many as possible (free_cores//cores_per_job). Defaults to None.
 
 		Returns:
-		    list[str]: List with Job Id's.
+			list[str]: List with Job Id's.
 		"""
 		free_cores = self.manager.resources()['free_cores']
 		if free_cores == 0:
@@ -81,14 +88,14 @@ class JobManager:
 		Waits for a job to finish and returns it's id and status.
 
 		Args:
-		    job_id (str | None, optional): Id of selected job, if None waiting for any job. Defaults to None.
-		    timeout (int  |  float | None, optional): Timeout in seconds. Defaults to None.
+			job_id (str | None, optional): Id of selected job, if None waiting for any job. Defaults to None.
+			timeout (int  |  float | None, optional): Timeout in seconds. Defaults to None.
 
 		Raises:
-		    ValueError: Raises if job_id not found or there are no jobs left.
+			ValueError: Raises if job_id not found or there are no jobs left.
 
 		Returns:
-		    tuple[str, str]: job_id, job's status
+			tuple[str, str]: job_id, job's status
 		"""
 		if job_id is None:
 			if self._count_not_finished() <= 0:
@@ -102,9 +109,9 @@ class JobManager:
 		self.jobs[job_id]['finished'] = True
 		return job_id, state
 
-	def _prepare_ql_dill_job(self, problem: Problem, algorithm: Algorithm, backend: Backend, output: str, cores: int = 1) -> dict:
+	def _prepare_ql_dill_job(self, problem: ProblemLike, algorithm: Algorithm, backend: Backend, output: str, cores: int = 1) -> dict:
 		# circular import fix
-		from qlauncher.launcher.qlauncher import QLauncher  # pylint:disable = import-outside-toplevel
+		from qlauncher.launcher.plauncher import QLauncher  # pylint:disable = import-outside-toplevel
 
 		job_uid = f'{len(self.jobs):05d}'
 		output_file = os.path.abspath(f'{output}output.{job_uid}')
@@ -132,10 +139,10 @@ class JobManager:
 		Reads the result of given job_id.
 
 		Args:
-		    job_id (str): Job Id.
+			job_id (str): Job Id.
 
 		Returns:
-		    Result: Result of selected Job.
+			Result: Result of selected Job.
 		"""
 		output_path = self.jobs[job_id]['output_file']
 		with open(output_path, 'rb') as rt:

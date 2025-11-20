@@ -1,9 +1,9 @@
 """Algorithms for Qiskit routines"""
 
 import statistics
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Generic, Literal
 
 import numpy as np
 import qiskit_algorithms
@@ -18,19 +18,21 @@ from qiskit_nature.second_q.algorithms.ground_state_solvers import GroundStateEi
 from qiskit_nature.second_q.problems import EigenstateResult
 from scipy.optimize import minimize
 
-from qlauncher.base import Algorithm, Problem, Result
-from qlauncher.base.base import Backend
-from qlauncher.problems import Molecule
+from qlauncher.base import Algorithm, Result
+from qlauncher.base.base import _ProblemLike
+from qlauncher.base.problem_like import Hamiltonian, Molecule
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.utils import int_to_bitstring
 
-from qiskit.primitives.containers import BitArray
+if TYPE_CHECKING:
+	from qiskit.primitives.containers import BitArray
 
-class QiskitOptimizationAlgorithm(Algorithm):
+
+class QiskitOptimizationAlgorithm(Algorithm[_ProblemLike, QiskitBackend], Generic[_ProblemLike]):
 	"""Abstract class for Qiskit optimization algorithms"""
 
-	def make_tag(self, problem: Problem, backend: QiskitBackend) -> str:
+	def make_tag(self, problem: _ProblemLike, backend: QiskitBackend) -> str:
 		return (
 			problem.__class__.__name__
 			+ '-'
@@ -60,7 +62,7 @@ def commutator(op_a: SparsePauliOp, op_b: SparsePauliOp) -> SparsePauliOp:
 	return op_a @ op_b - op_b @ op_a
 
 
-def cvar_cost(probs_values: Iterable[tuple[float, float]], alpha: float):
+def cvar_cost(probs_values: Iterable[tuple[float, float]], alpha: float) -> float:
 	"""CVar cost function to be used instead of mean for qaoa training"""
 	if not (alpha > 0 and alpha <= 1):
 		raise ValueError('Alpha must be in range (0,1]')
@@ -73,28 +75,26 @@ def cvar_cost(probs_values: Iterable[tuple[float, float]], alpha: float):
 	return cvar / alpha
 
 
-class QAOA(QiskitOptimizationAlgorithm):
+class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 	"""Algorithm class with QAOA.
 
 	Args:
-	    p (int): The number of QAOA steps. Defaults to 1.
-	    optimizer (Optimizer | None): Optimizer used during algorithm runtime. If set to `None` turns into COBYLA. Defaults to None,
-	    alternating_ansatz (bool): Whether to use an alternating ansatz. Defaults to False. If True, it's recommended to provide a mixer_h to alg_kwargs.
-	    aux: Auxiliary input for the QAOA algorithm.
-	    **alg_kwargs: Additional keyword arguments for the base class.
+		p (int): The number of QAOA steps. Defaults to 1.
+		optimizer (Optimizer | None): Optimizer used during algorithm runtime. If set to `None` turns into COBYLA. Defaults to None,
+		alternating_ansatz (bool): Whether to use an alternating ansatz. Defaults to False. If True, it's recommended to provide a mixer_h to alg_kwargs.
+		aux: Auxiliary input for the QAOA algorithm.
+		**alg_kwargs: Additional keyword arguments for the base class.
 
 	Attributes:
-	    name (str): The name of the algorithm.
-	    aux: Auxiliary input for the QAOA algorithm.
-	    p (int): The number of QAOA steps.
-	    optimizer (Optimizer): Optimizer used during algorithm runtime.
-	    alternating_ansatz (bool): Whether to use an alternating ansatz.
-	    parameters (list): List of parameters for the algorithm.
-	    mixer_h (SparsePauliOp | None): The mixer Hamiltonian.
+		name (str): The name of the algorithm.
+		aux: Auxiliary input for the QAOA algorithm.
+		p (int): The number of QAOA steps.
+		optimizer (Optimizer): Optimizer used during algorithm runtime.
+		alternating_ansatz (bool): Whether to use an alternating ansatz.
+		parameters (list): List of parameters for the algorithm.
+		mixer_h (SparsePauliOp | None): The mixer Hamiltonian.
 
 	"""
-
-	_algorithm_format = 'hamiltonian'
 
 	def __init__(
 		self,
@@ -133,11 +133,11 @@ class QAOA(QiskitOptimizationAlgorithm):
 		Optimize circuit params
 
 		Args:
-		    circuit (QuantumCircuit): QAOA circuit to be optimized
-		    backend (Backend): Backend containing sampler
+			circuit (QuantumCircuit): QAOA circuit to be optimized
+			backend (Backend): Backend containing sampler
 
 		Returns:
-		    tuple[QuantumCircuit,list[float]]: Circuit with optimal param values applied, energy history
+			tuple[QuantumCircuit,list[float]]: Circuit with optimal param values applied, energy history
 		"""
 		costs = []
 
@@ -166,32 +166,32 @@ class QAOA(QiskitOptimizationAlgorithm):
 
 		return res.x, costs
 
-	def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
+	def run(self, problem: Hamiltonian, backend: QiskitBackend) -> Result:
 		"""Runs the QAOA algorithm"""
 
 		if not (isinstance(backend, (QiskitBackend, CirqBackend))):
 			raise ValueError('Backend should be CirqBackend, QiskitBackend or subclass.')
 
-		hamiltonian: SparsePauliOp = formatter(problem)
+		# problem.hamiltonian: SparsePauliOp = formatter(problem)
 
 		if self.alternating_ansatz:
 			if self.mixer_h is None:
-				self.mixer_h = formatter.get_mixer_hamiltonian(problem)
+				self.mixer_h = problem.get_mixer_hamiltonian()
 			if self.initial_state is None:
-				self.initial_state = formatter.get_QAOAAnsatz_initial_state(problem)
+				self.initial_state = problem.get_QAOAAnsatz_initial_state()
 
 		# Cirq translation issues if we use QAOAAnsatz() by itself without appending it to a QuantumCircuit
-		circuit = QuantumCircuit(hamiltonian.num_qubits)
-		circuit.append(QAOAAnsatz(cost_operator=hamiltonian, reps=self.p).to_instruction(), range(hamiltonian.num_qubits))
+		circuit = QuantumCircuit(problem.hamiltonian.num_qubits)
+		circuit.append(QAOAAnsatz(cost_operator=problem.hamiltonian, reps=self.p).to_instruction(), range(problem.hamiltonian.num_qubits))
 
 		circuit.measure_all()
 
-		opt_params, costs = self._get_optimized_circuit_params(circuit, hamiltonian, backend)
+		opt_params, costs = self._get_optimized_circuit_params(circuit, problem.hamiltonian, backend)
 
 		job = backend.sampler.run([(circuit, opt_params)])
 		results = job.result()[0].data.meas.get_int_counts()
 
-		final_energies = {int_to_bitstring(k, circuit.num_qubits): np.real(evaluate_energy(k, hamiltonian)) for k in results.keys()}
+		final_energies = {int_to_bitstring(k, circuit.num_qubits): np.real(evaluate_energy(k, problem.hamiltonian)) for k in results.keys()}
 		final_counts = {int_to_bitstring(k, circuit.num_qubits): v for k, v in results.items()}
 
 		depth = circuit.decompose(reps=10).depth()
@@ -233,25 +233,25 @@ class QAOA(QiskitOptimizationAlgorithm):
 		)
 
 
-class FALQON(QiskitOptimizationAlgorithm):
+class FALQON(QiskitOptimizationAlgorithm[Hamiltonian]):
 	"""
 	Algorithm class with FALQON.
 
 	Args:
-	    driver_h (Operator | None): The driver Hamiltonian for the problem.
-	    delta_t (float): The time step for the evolution operators.
-	    beta_0 (float): The initial value of beta.
-	    n (int): The number of iterations to run the algorithm.
-	    **alg_kwargs: Additional keyword arguments for the base class.
+		driver_h (Operator | None): The driver Hamiltonian for the problem.
+		delta_t (float): The time step for the evolution operators.
+		beta_0 (float): The initial value of beta.
+		n (int): The number of iterations to run the algorithm.
+		**alg_kwargs: Additional keyword arguments for the base class.
 
 	Attributes:
-	    driver_h (Operator | None): The driver Hamiltonian for the problem.
-	    delta_t (float): The time step for the evolution operators.
-	    beta_0 (float): The initial value of beta.
-	    n (int): The number of iterations to run the algorithm.
-	    cost_h (Operator | None): The cost Hamiltonian for the problem.
-	    n_qubits (int): The number of qubits in the problem.
-	    parameters (list[str]): The list of algorithm parameters.
+		driver_h (Operator | None): The driver Hamiltonian for the problem.
+		delta_t (float): The time step for the evolution operators.
+		beta_0 (float): The initial value of beta.
+		n (int): The number of iterations to run the algorithm.
+		cost_h (Operator | None): The cost Hamiltonian for the problem.
+		n_qubits (int): The number of qubits in the problem.
+		parameters (list[str]): The list of algorithm parameters.
 
 	"""
 
@@ -283,20 +283,20 @@ class FALQON(QiskitOptimizationAlgorithm):
 	def _get_path(self) -> str:
 		return f'{self.name}@{self.max_reps}@{self.delta_t}@{self.beta_0}'
 
-	def run(self, problem: Problem, backend: QiskitBackend, formatter: Callable) -> Result:
+	def run(self, problem: Hamiltonian, backend: QiskitBackend) -> Result:
 		"""Runs the FALQON algorithm"""
 
 		if isinstance(backend.sampler, BaseSamplerV1) or isinstance(backend.estimator, BaseEstimatorV1):
 			raise ValueError('FALQON works only on V2 samplers and estimators, consider using a different backend.')
 
-		cost_h = formatter(problem)
-
-		if cost_h is None:
+		if problem.hamiltonian is None:
 			raise ValueError('Formatter returned None')
 
-		self.n_qubits = cost_h.num_qubits
+		problem.hamiltonian.num_qubits
 
-		best_sample, betas, energies, depths, cnot_counts = self._falqon_subroutine(cost_h, backend)
+		self.n_qubits = problem.hamiltonian.num_qubits
+
+		best_sample, betas, energies, depths, cnot_counts = self._falqon_subroutine(problem.hamiltonian, backend)
 
 		best_data: BitArray = best_sample[0].data.meas
 		counts: dict = best_data.get_counts()
@@ -314,14 +314,14 @@ class FALQON(QiskitOptimizationAlgorithm):
 		}
 
 		return Result(
-			best_bitstring=max(counts, key=counts.get),
-			most_common_bitstring=max(counts, key=counts.get),
+			best_bitstring=max(counts, key=lambda x: counts.get(x, 0)),
+			most_common_bitstring=max(counts, key=lambda x: counts.get(x, 0)),
 			distribution={k: v / shots for k, v in counts.items()},
 			energies=energies,
-			energy_std=np.std(energies),
+			energy_std=float(np.std(energies)),
 			best_energy=min(energies),
 			num_of_samples=shots,
-			average_energy=np.mean(energies),
+			average_energy=float(np.mean(energies)),
 			most_common_bitstring_energy=0,
 			result=result,
 		)
@@ -355,12 +355,12 @@ class FALQON(QiskitOptimizationAlgorithm):
 		Run the 'meat' of the algorithm.
 
 		Args:
-		    cost_hamiltonian (SparsePauliOp): Cost hamiltonian from the formatter.
-		    backend (QiskitBackend): Backend
+			cost_hamiltonian (SparsePauliOp): Cost hamiltonian from the formatter.
+			backend (QiskitBackend): Backend
 
 		Returns:
-		    tuple[PrimitiveResult[SamplerPubResult], list[float], list[float], list[int], list[int]]:
-		    Sampler result from best betas, list of betas, list of energies, list of depths, list of cnot counts
+			tuple[PrimitiveResult[SamplerPubResult], list[float], list[float], list[int], list[int]]:
+			Sampler result from best betas, list of betas, list of energies, list of depths, list of cnot counts
 		"""
 
 		if self.driver_h is None:
@@ -403,13 +403,13 @@ class FALQON(QiskitOptimizationAlgorithm):
 		return best_sample, betas, energies, circuit_depths, cnot_counts
 
 
-class VQE(QiskitOptimizationAlgorithm):
+class VQE(QiskitOptimizationAlgorithm[Molecule]):
 	"""Variational Quantum EigenSolver - qiskit-algorithm implementation wrapper.
 
 	Args:
-	    optimizer (optimizers.Optimizer | None, optional): Optimizer for VQE. Defaults to None.
-	    ansatz (QuantumCircuit | None, optional): VQE's ansatz. Defaults to None.
-	    with_numpy (bool, optional): Ignores ansatz parameter and backend, and changes solver to Numpy based. Defaults to False.
+		optimizer (optimizers.Optimizer | None, optional): Optimizer for VQE. Defaults to None.
+		ansatz (QuantumCircuit | None, optional): VQE's ansatz. Defaults to None.
+		with_numpy (bool, optional): Ignores ansatz parameter and backend, and changes solver to Numpy based. Defaults to False.
 	"""
 
 	# pip install git+https://github.com/qiskit-community/qiskit-nature.git
@@ -434,11 +434,7 @@ class VQE(QiskitOptimizationAlgorithm):
 	def ansatz(self, custom_ansatz) -> None:
 		self._ansatz = custom_ansatz
 
-	def run(self, problem: Problem, backend: Backend, formatter: Callable[..., Any]) -> Result:
-		if not isinstance(backend, QiskitBackend):
-			raise ValueError('Backend should be QiskitBackend or subclass.')
-		if not isinstance(problem, Molecule):
-			raise ValueError('The problem for this algorithm should be Molecule problem')
+	def run(self, problem: Molecule, backend: QiskitBackend) -> Result:
 		if not isinstance(problem.operator.num_qubits, int):
 			raise ValueError('num_qubits from problem operator is expected to be int')
 

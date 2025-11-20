@@ -3,29 +3,27 @@
 import math
 import os
 import weakref
-from collections.abc import Callable
 
 import numpy as np
 import scipy
 
-from qlauncher.base import Algorithm, Problem, Result
+from qlauncher.base import Algorithm, Result
+from qlauncher.base.problem_like import Hamiltonian
 from qlauncher.routines.qiskit.algorithms.qiskit_native import QAOA
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.workflow.pilotjob_scheduler import JobManager
 
 
-class EducatedGuess(Algorithm):
-	_algorithm_format = 'hamiltonian'
-
+class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
 	def __init__(self, starting_p: int = 3, max_p: int = 8, max_job_batch_size: int | None = None, verbose: bool = False):
 		"""
 		Algorithm utilizing all available cores to run multiple QAOA's in parallel to find optimal parameters.
 
 		Args:
-		    starting_p (int, optional): Initial value of QAOA's p parameter. Defaults to 3.
-		    max_p (int, optional): Maximum value for QAOA's p parameter. Defaults to 8.
-		    max_job_batch_size: Maximum number of jobs to run for a given p value. If None, run as many as possible. Defaults to None.
-		    verbose (bool, optional): Verbose. Defaults to False.
+			starting_p (int, optional): Initial value of QAOA's p parameter. Defaults to 3.
+			max_p (int, optional): Maximum value for QAOA's p parameter. Defaults to 8.
+			max_job_batch_size: Maximum number of jobs to run for a given p value. If None, run as many as possible. Defaults to None.
+			verbose (bool, optional): Verbose. Defaults to False.
 		"""
 		self.output_initial = 'initial/'
 		self.output_interpolated = 'interpolated/'
@@ -41,7 +39,7 @@ class EducatedGuess(Algorithm):
 
 		weakref.finalize(self, self.manager.stop)  # Kill the running jobs in case of a crash or otherwise
 
-	def run(self, problem: Problem, backend: QiskitBackend, formatter: Callable) -> Result:
+	def run(self, problem: Hamiltonian, backend: QiskitBackend) -> Result:
 		self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial, n_jobs=self.max_jobs)
 		print(f'{len(self.manager.jobs)} jobs submitted to qcg')
 
