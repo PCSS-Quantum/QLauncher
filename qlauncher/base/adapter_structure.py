@@ -52,7 +52,8 @@ class ProblemFormatter:
 		if unused_count > 0:
 			warnings.warn(
 				f'{unused_count} unused parameters. {_get_callable_name(self.formatter)} does not accept {[k for k in run_params if k not in params_used]}',
-				Warning, stacklevel=2,
+				Warning,
+				stacklevel=2,
 			)
 		return self.formatter(*args, **kwargs, **params_used)
 
@@ -64,7 +65,8 @@ class ProblemFormatter:
 		common_params = set(curr_run_params.keys()).intersection(set(self.adapter_requirements.keys()))
 		if len(common_params) > 0:
 			warnings.warn(
-				f'Attempting to reassign parameter values required by one of the adapters: {common_params}, those params will not be set.', stacklevel=2
+				f'Attempting to reassign parameter values required by one of the adapters: {common_params}, those params will not be set.',
+				stacklevel=2,
 			)
 
 		curr_run_params = curr_run_params | self.adapter_requirements
@@ -78,7 +80,7 @@ class ProblemFormatter:
 	def get_pipeline(self) -> str:
 		"""
 		Returns:
-		    String representing the conversion process: problem -> formatter -> adapters (if applicable)
+			String representing the conversion process: problem -> formatter -> adapters (if applicable)
 		"""
 		return ' -> '.join(
 			[str(list(self.formatter_sig.parameters.keys())[0])]
@@ -177,14 +179,14 @@ def get_formatter(problem: type[Problem], alg_format: str) -> ProblemFormatter:
 	Creates a ProblemFormatter that converts a given Problem subclass into the requested format.
 
 	Args:
-	    problem (type[Problem]): Input problem type
-	    alg_format (str): Desired output format
+		problem (type[Problem]): Input problem type
+		alg_format (str): Desired output format
 
 	Returns:
-	    ProblemFormatter meeting the desired criteria.
+		ProblemFormatter meeting the desired criteria.
 
 	Raises:
-	    ValueError: If no combination of adapters can achieve conversion from problem to desired format.
+		ValueError: If no combination of adapters can achieve conversion from problem to desired format.
 	"""
 	formatter, adapters = None, None
 	available_problem_formats = set(__QL_FORMATTERS[problem].keys())

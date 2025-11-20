@@ -83,10 +83,10 @@ def transpile_circuit(qc: qiskit.QuantumCircuit, basis_gates: list[str]) -> qisk
 	"""Makes circuit compatible with cirq
 
 	Args:
-	    qc (qiskit.QuantumCircuit): circuit
+		qc (qiskit.QuantumCircuit): circuit
 
 	Returns:
-	    qiskit.QuantumCircuit: transpiled circuit
+		qiskit.QuantumCircuit: transpiled circuit
 	"""
 	qc_transpiled = transpile(qc, basis_gates=basis_gates, optimization_level=3)
 

@@ -1,9 +1,9 @@
-from collections.abc import Callable
 from typing import Literal
 
 import numpy as np
 
-from qlauncher.base import Algorithm, Backend, Problem, Result
+from qlauncher.base import Algorithm, Result
+from qlauncher.base.problem_like import QUBO
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.orca.backends import OrcaBackend
 
@@ -13,7 +13,7 @@ except ImportError as e:
 	raise DependencyError(e, install_hint='orca', private=True) from e
 
 
-class BBS(Algorithm):
+class BBS(Algorithm[QUBO, OrcaBackend]):
 	"""
 	Binary Bosonic Solver algorithm class.
 
@@ -34,8 +34,6 @@ class BBS(Algorithm):
 	- updates (int, optional): Number of epochs. Defaults to 100.
 
 	"""
-
-	_algorithm_format = 'qubo'
 
 	def __init__(
 		self,
@@ -64,55 +62,30 @@ class BBS(Algorithm):
 		}
 		self.input_state = input_state
 
-	def run(self, problem: Problem, backend: Backend, formatter: Callable[[Problem], np.ndarray]) -> Result:
-		if not isinstance(backend, OrcaBackend):
-			raise ValueError(f'{backend.__class__} is not supported by BBS algorithm, use OrcaBackend instead')
-		objective = formatter(problem)
-
-		# TODO: use offset somehow
-		if not callable(objective):
-			objective, offset = objective
-
+	def run(self, problem: QUBO, backend: OrcaBackend) -> Result:
 		if self.input_state is None:
-			if not callable(objective):
-				self.input_state = [(i + 1) % 2 for i in range(len(objective))]
-			else:
-				raise ValueError('input_state needs to be provided if objective is a function (callable)')
+			self.input_state = [(i + 1) % 2 for i in range(len(problem.matrix))]
 
-		tbi = backend.get_tbi()
 		bbs = BinaryBosonicSolver(
-			pb_dim=len(self.input_state), objective=objective, input_state=self.input_state, tbi=tbi, **self.bbs_params
+			pb_dim=len(self.input_state),
+			objective=problem.matrix,
+			input_state=self.input_state,
+			tbi=backend.get_tbi(),
+			**self.bbs_params,
 		)
 
 		bbs.solve(**self.training_params)
 
-		return self.construct_results(bbs)
+		return self.construct_results(bbs, problem.offset)
 
 	def get_bitstring(self, result: list[float]) -> str:
 		return ''.join(map(str, map(int, result)))
 
-	def construct_results(self, solver: BinaryBosonicSolver) -> Result:
+	def construct_results(self, solver: BinaryBosonicSolver, offset: float) -> Result:
 		# TODO: add support for distribution (probably with different logger)
 		best_bitstring = ''.join(map(str, map(int, solver.config_min_encountered)))
-		best_energy = solver.E_min_encountered
-		most_common_bitstring = None
-		most_common_bitstring_energy = None
-		distribution = None
-		energy = None
+		best_energy = solver.E_min_encountered + offset
 		num_of_samples = solver.n_samples
-		average_energy = None
-		energy_std = None
 		#! Todo: instead of None attach relevant info from 'results'
 		# results fail to pickle correctly btw
-		return Result(
-			best_bitstring,
-			best_energy,
-			most_common_bitstring,
-			most_common_bitstring_energy,
-			distribution,
-			energy,
-			num_of_samples,
-			average_energy,
-			energy_std,
-			None,
-		)
+		return Result(best_bitstring, best_energy, None, None, None, None, num_of_samples, None, None, None)  # type: ignore

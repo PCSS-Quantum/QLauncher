@@ -1,11 +1,14 @@
 """This module contains the MaxCut class."""
 
+from typing import Literal
+
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
+from qlauncher import hampy
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import QUBO
+from qlauncher.base.problem_like import QUBO, Hamiltonian
 
 
 class MaxCut(Problem):
@@ -16,12 +19,13 @@ class MaxCut(Problem):
 	vertices of a graph into two sets such that the number of edges between the two sets is maximized. The class contains
 	an instance of the problem, so it can be passed into QLauncher.
 
-	Attributes:
-	    instance (nx.Graph): The graph instance representing the problem.
+	Args:
+		instance (nx.Graph): The graph instance representing the problem.
 
 	"""
 
 	def __init__(self, instance: nx.Graph, instance_name='unnamed'):
+		self.instance: nx.Graph
 		super().__init__(instance, instance_name)
 
 	@property
@@ -29,7 +33,7 @@ class MaxCut(Problem):
 		return {'instance_name': self.instance_name}
 
 	@staticmethod
-	def from_preset(instance_name: str) -> 'MaxCut':
+	def from_preset(instance_name: Literal['default'], **kwargs) -> 'MaxCut':
 		match instance_name:
 			case 'default':
 				node_list = list(range(6))
@@ -39,11 +43,8 @@ class MaxCut(Problem):
 		graph.add_edges_from(edge_list)
 		return MaxCut(graph, instance_name=instance_name)
 
-	def _get_path(self) -> str:
-		return f'{self.name}@{self.instance_name}'
-
 	def visualize(self, bitstring: str | None = None) -> None:
-		pos = nx.spring_layout(self.instance, seed=42)  # set seed for same node graphs in plt
+		pos = nx.spring_layout(self.instance, seed=42)
 		plt.figure(figsize=(8, 6))
 		cmap = 'skyblue' if bitstring is None else ['crimson' if bit == '1' else 'skyblue' for bit in bitstring]
 		nx.draw(self.instance, pos, with_labels=True, node_color=cmap, node_size=500, edge_color='gray', font_size=10, font_weight='bold')
@@ -65,3 +66,15 @@ class MaxCut(Problem):
 			Q[j, i] += 1
 
 		return QUBO(Q, 0)
+
+	def to_hamiltonian(self) -> Hamiltonian:
+		hamiltonian: hampy.Equation | None = None
+		n = self.instance.number_of_nodes()
+		for edge in self.instance.edges():
+			if hamiltonian is None:
+				hamiltonian = ~hampy.one_in_n(list(edge), n)
+			else:
+				hamiltonian += ~hampy.one_in_n(list(edge), n)
+		if hamiltonian is None:
+			raise TypeError
+		return Hamiltonian(hamiltonian.hamiltonian.simplify())

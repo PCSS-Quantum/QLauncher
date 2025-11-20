@@ -8,27 +8,27 @@ from qlauncher.base import adapter, formatter
 from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
 
 
-@adapter('qubo', 'qubo_fn')
-def qubo_to_fn(qubo):
-	# TODO check
-	def qubo_fn(bin_vec):
-		return np.dot(bin_vec, np.dot(qubo, bin_vec))
+# @adapter('qubo', 'qubo_fn')
+# def qubo_to_fn(qubo):
+# 	# TODO check
+# 	def qubo_fn(bin_vec):
+# 		return np.dot(bin_vec, np.dot(qubo, bin_vec))
 
-	return qubo_fn
+# 	return qubo_fn
 
 
-@formatter(problem.MaxCut, 'qubo')
-def get_maxcut_qubo(problem: problem.MaxCut):
-	"""Returns Qubo function"""
-	n = len(problem.instance)
-	Q = np.zeros((n, n))
-	for i, j in problem.instance.edges:
-		Q[i, i] += -1
-		Q[j, j] += -1
-		Q[i, j] += 1
-		Q[j, i] += 1
+# @formatter(problem.MaxCut, 'qubo')
+# def get_maxcut_qubo(problem: problem.MaxCut):
+# 	"""Returns Qubo function"""
+# 	n = len(problem.instance)
+# 	Q = np.zeros((n, n))
+# 	for i, j in problem.instance.edges:
+# 		Q[i, i] += -1
+# 		Q[j, j] += -1
+# 		Q[i, j] += 1
+# 		Q[j, i] += 1
 
-	return Q, 0
+# 	return Q, 0
 
 
 @formatter(problem.EC, 'qubo')
@@ -212,17 +212,18 @@ def knapsack_qubo(problem: problem.Knapsack, penalty_weight: float = 2.0, value_
 	"""
 	values = problem.values
 	weights = problem.weights
-	C = problem.capacity
 	n = len(values)
 
 	x = Array.create('a_x', shape=n, vartype='BINARY')
 
-	m = 1 if C == 0 else int(np.ceil(np.log2(C + 1)))
+	m = 1 if problem.capacity == 0 else int(np.ceil(np.log2(problem.capacity + 1)))
 	y = Array.create('z_y', shape=m, vartype='BINARY')
 	slack = sum((2**k) * y[k] for k in range(m))
 
 	weight_sum = sum(weights[i] * x[i] for i in range(n))
-	penalty = (weight_sum + slack - C) ** 2
+	if not isinstance(weight_sum, Array):
+		raise TypeError
+	penalty = (weight_sum + slack - problem.capacity) ** 2
 	value_term = sum(values[i] * x[i] for i in range(n))
 	H = penalty_weight * penalty - value_weight * value_term
 

@@ -1,11 +1,15 @@
 import logging
 import pickle
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Literal, Never
+from typing import Any, Generic, Literal, TypeVar
+
+from qlauncher.base.problem_like import ProblemLike
 
 AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'bqm', 'none', 'fn', 'tabular_ml']
+
+_ProblemLike = TypeVar('_ProblemLike', bound=ProblemLike)
+_Backends = TypeVar('_Backends', bound='Backend')
 
 
 @dataclass
@@ -69,9 +73,9 @@ class Backend:
 	Abstract class representing a backend for quantum computing.
 
 	Attributes:
-	    name (str): The name of the backend.
-	    path (str | None): The path to the backend (optional).
-	    parameters (list): A list of parameters for the backend (optional).
+		name (str): The name of the backend.
+		path (str | None): The path to the backend (optional).
+		parameters (list): A list of parameters for the backend (optional).
 
 	"""
 
@@ -89,31 +93,29 @@ class Backend:
 		return f'{self.name}'
 
 
-class Problem(ABC):
+class Problem:
 	"""
 	Abstract class for defining Problems.
 
 	Attributes:
-	    variant (str): The variant of the problem. The default variant is "Optimization".
-	    path (str | None): The path to the problem.
-	    name (str): The name of the problem.
-	    instance_name (str): The name of the instance.
-	    instance (any): An instance of the problem.
+		variant (str): The variant of the problem. The default variant is "Optimization".
+		path (str | None): The path to the problem.
+		name (str): The name of the problem.
+		instance_name (str): The name of the instance.
+		instance (any): An instance of the problem.
 
 	"""
-
-	_problem_id = None
 
 	def __init__(self, instance: Any, instance_name: str = 'unnamed') -> None:
 		"""
 		Initializes a Problem instance.
 
 		Params:
-		    instance (any): An instance of the problem.
-		    instance_name (str | None): The name of the instance.
+			instance (any): An instance of the problem.
+			instance_name (str | None): The name of the instance.
 
 		Returns:
-		    None
+			None
 		"""
 		self.instance: Any = instance
 		self.instance_name = instance_name
@@ -128,24 +130,25 @@ class Problem(ABC):
 		return cls(instance)
 
 	@staticmethod
-	def from_preset(instance_name: str, **kwargs) -> Never:
+	def from_preset(instance_name, **kwargs) -> 'Problem':
 		raise NotImplementedError()
 
 	def __init_subclass__(cls) -> None:
 		if Problem not in cls.__bases__:
 			return
-		cls._problem_id = cls
+		# TODO(Dawid): Check if to_sth is implemented
+		...
 
 	def read_result(self, exp, log_path):
 		"""
 		Reads a result from a file.
 
 		Args:
-		    exp: The experiment.
-		    log_path: The path to the log file.
+			exp: The experiment.
+			log_path: The path to the log file.
 
 		Returns:
-		    The result.
+			The result.
 		"""
 		exp += exp  # ?: this is perplexing
 		with open(log_path, 'rb') as file:
@@ -156,29 +159,33 @@ class Problem(ABC):
 		Analyzes the result.
 
 		Args:
-		    result: The result.
+			result: The result.
 
 		"""
 		raise NotImplementedError()
 
+	def to(self, problem_type: type[ProblemLike]) -> ProblemLike:
+		name = problem_type.__name__.lower()
+		if hasattr(self, f'to_{name}'):
+			return getattr(self, f'to_{name}')()
+		raise TypeError
 
-class Algorithm(ABC):
+
+class Algorithm(ABC, Generic[_ProblemLike, _Backends]):
 	"""
 	Abstract class for Algorithms.
 
 	Attributes:
-	    name (str): The name of the algorithm, derived from the class name in lowercase.
-	    path (str | None): The path to the algorithm, if applicable.
-	    parameters (list): A list of parameters for the algorithm.
-	    alg_kwargs (dict): Additional keyword arguments for the algorithm.
+		name (str): The name of the algorithm, derived from the class name in lowercase.
+		path (str | None): The path to the algorithm, if applicable.
+		parameters (list): A list of parameters for the algorithm.
+		alg_kwargs (dict): Additional keyword arguments for the algorithm.
 
 	Abstract methods:
-	    __init__(self, **alg_kwargs): Initializes the Algorithm object.
-	    _get_path(self) -> str: Returns the common path for the algorithm.
-	    run(self, problem: Problem, backend: Backend): Runs the algorithm on a specific problem using a backend.
+		__init__(self, **alg_kwargs): Initializes the Algorithm object.
+		_get_path(self) -> str: Returns the common path for the algorithm.
+		run(self, problem: Problem, backend: Backend): Runs the algorithm on a specific problem using a backend.
 	"""
-
-	_algorithm_format: AVAILABLE_FORMATS = 'none'
 
 	def __init__(self, **alg_kwargs) -> None:
 		self.name: str = self.__class__.__name__.lower()
@@ -190,19 +197,23 @@ class Algorithm(ABC):
 		"""Parses results so that they can be saved as a JSON file.
 
 		Args:
-		    o (object): The result object to be parsed.
+			o (object): The result object to be parsed.
 
 		Returns:
-		    dict: The parsed result as a dictionary.
+			dict: The parsed result as a dictionary.
 		"""
 		print('Algorithm does not have the parse_result_to_json method implemented')
 		return o.__dict__
 
+	@classmethod
+	def get_input_format(cls) -> type[ProblemLike] | None:
+		return cls.run.__annotations__.get('problem', None)
+
 	@abstractmethod
-	def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
+	def run(self, problem: _ProblemLike, backend: _Backends) -> Result:
 		"""Runs the algorithm on a specific problem using a backend.
 
 		Args:
-		    problem (Problem): The problem to be solved.
-		    backend (Backend): The backend to be used for execution.
+			problem (Problem): The problem to be solved.
+			backend (Backend): The backend to be used for execution.
 		"""
