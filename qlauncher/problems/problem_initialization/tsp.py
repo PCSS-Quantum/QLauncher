@@ -14,9 +14,9 @@ class TSP(Problem):
 	def __init__(self, instance: nx.Graph, instance_name: str = 'unnamed'):
 		"""
 		Args:
-		    instance (nx.Graph): Graph representing the TSP instance.
-		    instance_name (str): Name of the instance.
-		    quadratic (bool): Whether to use quadratic constraints
+			instance (nx.Graph): Graph representing the TSP instance.
+			instance_name (str): Name of the instance.
+			quadratic (bool): Whether to use quadratic constraints
 		"""
 		super().__init__(instance=instance, instance_name=instance_name)
 
@@ -32,10 +32,10 @@ class TSP(Problem):
 		Converts the solution of the TSP problem to a chain of nodes (order of visiting)
 
 		Args:
-		    solution: Solution of the TSP problem. If type is str, qiskit-style ordering is assumed (MSB first)
+			solution: Solution of the TSP problem. If type is str, qiskit-style ordering is assumed (MSB first)
 
 		Returns:
-		    np.ndarray: Solution chain of nodes to visit
+			np.ndarray: Solution chain of nodes to visit
 		"""
 		bitstring = solution[::-1] if isinstance(solution, str) else solution.best_measurement['bitstring'][::-1]
 
@@ -153,11 +153,11 @@ class TSP(Problem):
 		Generate TSP instance from a preset name.
 
 		Args:
-		    instance_name (str): Name of the preset instance
-		    quadratic (bool, optional): Whether to use quadratic constraints. Defaults to False
+			instance_name (str): Name of the preset instance
+			quadratic (bool, optional): Whether to use quadratic constraints. Defaults to False
 
 		Returns:
-		    TSP: TSP instance
+			TSP: TSP instance
 		"""
 		match instance_name:
 			case 'default':
@@ -178,13 +178,13 @@ class TSP(Problem):
 		Generate a random TSP instance.
 
 		Args:
-		    num_vertices (int): Number of vertices in the graph
-		    min_distance (float, optional): Minimum distance between vertices. Defaults to 1.0
-		    max_distance (float, optional): Maximum distance between vertices. Defaults to 10.0
-		    quadratic (bool, optional): Whether to use quadratic constraints. Defaults to False
+			num_vertices (int): Number of vertices in the graph
+			min_distance (float, optional): Minimum distance between vertices. Defaults to 1.0
+			max_distance (float, optional): Maximum distance between vertices. Defaults to 10.0
+			quadratic (bool, optional): Whether to use quadratic constraints. Defaults to False
 
 		Returns:
-		    TSP: TSP instance
+			TSP: TSP instance
 		"""
 		if num_vertices < 2:
 			raise ValueError('num_vertices must be at least 2')
