@@ -149,8 +149,7 @@ class QLauncher:
 			raise TypeError
 		if isinstance(self.problem, Problem):
 			problem = self.problem.to(input_format)
-
-		if isinstance(self.problem, ProblemLike):
+		elif isinstance(self.problem, ProblemLike):
 			problem = self.problem
 		else:
 			raise TypeError

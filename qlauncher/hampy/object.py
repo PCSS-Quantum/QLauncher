@@ -80,7 +80,9 @@ class Equation:
 
 		return self.hamiltonian == other.hamiltonian
 
-	def __add__(self, other: 'Variable | Equation') -> 'Equation':
+	def __add__(self, other: 'Variable | Equation | SparsePauliOp') -> 'Equation':
+		if isinstance(other, SparsePauliOp):
+			other = Equation(other)
 		if isinstance(other, Variable):
 			other = other.to_equation()
 

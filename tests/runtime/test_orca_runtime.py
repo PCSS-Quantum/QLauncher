@@ -2,7 +2,8 @@ import numpy as np
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.problems import EC, JSSP, TSP, GraphColoring, Knapsack, MaxCut, Raw
+from qlauncher.base.problem_like import QUBO
+from qlauncher.problems import EC, JSSP, TSP, GraphColoring, Knapsack, MaxCut
 from qlauncher.routines.orca import BBS, OrcaBackend
 
 
@@ -39,13 +40,13 @@ def test_maxcut() -> None:
 	assert isinstance(inform, Result)
 
 
-def test_raw() -> None:
-	"""Testing function for Raw"""
-	qubo = np.array([[10, 1], [0, -10]]), 2
-	pr = Raw(qubo)
-	bbs = BBS(updates=1)
-	backend = OrcaBackend('local_simulator')
-	launcher = QLauncher(pr, bbs, backend)
+def test_qubo() -> None:
+	"""Testing function for QUBO"""
+	launcher = QLauncher(
+		QUBO(np.array([[10, 1], [0, -10]]), 2),
+		BBS(updates=1),
+		OrcaBackend('local_simulator'),
+	)
 
 	inform = launcher.run()
 	assert isinstance(inform, Result)
