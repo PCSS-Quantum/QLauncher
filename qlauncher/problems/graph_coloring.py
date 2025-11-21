@@ -20,7 +20,7 @@ class GraphColoring(Problem):
 	Class for Graph Coloring Problem which is a combinatorial problem involving assigning labels to vertices of the graph such that no two adjacent vertices share the same label.
 
 	Attributes:
-	    instance (nx.Graph): The graph for which the coloring problem is to be solved.
+		instance (nx.Graph): The graph for which the coloring problem is to be solved.
 
 
 	"""
