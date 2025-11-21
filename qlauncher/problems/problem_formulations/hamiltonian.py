@@ -265,45 +265,45 @@ def get_qiskit_hamiltonian(problem: problems.Raw) -> SparsePauliOp:
 	return problem.instance
 
 
-@formatter(problems.TSP, 'hamiltonian')
-def get_qiskit_hamiltonian(problem: problems.TSP, onehot='exact', constraints_weight=1, costs_weight=1) -> SparsePauliOp:
-	return tsp_to_hamiltonian(problem, onehot=onehot, constraints_weight=constraints_weight, costs_weight=costs_weight)
+# @formatter(problems.TSP, 'hamiltonian')
+# def get_qiskit_hamiltonian(problem: problems.TSP, onehot='exact', constraints_weight=1, costs_weight=1) -> SparsePauliOp:
+# 	return tsp_to_hamiltonian(problem, onehot=onehot, constraints_weight=constraints_weight, costs_weight=costs_weight)
 
 
-@formatter(problems.GraphColoring, 'hamiltonian')
-def get_qiskit_hamiltonian(problem: problems.GraphColoring, constraints_weight=1, costs_weight=1):
-	color_bit_length = int(np.ceil(np.log2(problem.num_colors)))
-	num_qubits = problem.instance.number_of_nodes() * color_bit_length
-	eq = Equation(num_qubits)
-	# Penalty for assigning the same colors to neighboring vertices
-	for node1, node2 in problem.instance.edges:
-		for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
-			if ind >= problem.num_colors:
-				break
-			eq2 = None
-			for i in range(color_bit_length):
-				qubit1 = eq[node1 * color_bit_length + i]
-				qubit2 = eq[node2 * color_bit_length + i]
-				exp = qubit1 & qubit2 if comb[i] else ~qubit1 & ~qubit2
-				if eq2 is None:
-					eq2 = exp
-				else:
-					eq2 &= exp
-			eq += eq2
-	eq *= costs_weight
-	# Penalty for using excessive colors
-	for node in problem.instance.nodes:
-		for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
-			if ind < problem.num_colors:
-				continue
-			eq2 = None
-			for i in range(color_bit_length):
-				qubit = eq[node * color_bit_length + i]
-				exp = qubit if comb[i] else ~qubit
-				if eq2 is None:
-					eq2 = exp
-				else:
-					eq2 &= exp
-			eq += eq2
-	eq *= constraints_weight
-	return eq.hamiltonian
+# @formatter(problems.GraphColoring, 'hamiltonian')
+# def get_qiskit_hamiltonian(problem: problems.GraphColoring, constraints_weight=1, costs_weight=1):
+# 	color_bit_length = int(np.ceil(np.log2(problem.num_colors)))
+# 	num_qubits = problem.instance.number_of_nodes() * color_bit_length
+# 	eq = Equation(num_qubits)
+# 	# Penalty for assigning the same colors to neighboring vertices
+# 	for node1, node2 in problem.instance.edges:
+# 		for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
+# 			if ind >= problem.num_colors:
+# 				break
+# 			eq2 = None
+# 			for i in range(color_bit_length):
+# 				qubit1 = eq[node1 * color_bit_length + i]
+# 				qubit2 = eq[node2 * color_bit_length + i]
+# 				exp = qubit1 & qubit2 if comb[i] else ~qubit1 & ~qubit2
+# 				if eq2 is None:
+# 					eq2 = exp
+# 				else:
+# 					eq2 &= exp
+# 			eq += eq2
+# 	eq *= costs_weight
+# 	# Penalty for using excessive colors
+# 	for node in problem.instance.nodes:
+# 		for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
+# 			if ind < problem.num_colors:
+# 				continue
+# 			eq2 = None
+# 			for i in range(color_bit_length):
+# 				qubit = eq[node * color_bit_length + i]
+# 				exp = qubit if comb[i] else ~qubit
+# 				if eq2 is None:
+# 					eq2 = exp
+# 				else:
+# 					eq2 &= exp
+# 			eq += eq2
+# 	eq *= constraints_weight
+# 	return eq.hamiltonian

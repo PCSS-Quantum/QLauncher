@@ -17,11 +17,10 @@ from qlauncher.hampy import Equation
 
 class GraphColoring(Problem):
 	"""
-	    Class for Graph Coloring Problem which is a combinatorial problem involving assigning labels to vertices of the graph such that no two adjacent
-	    vertices share the same label.
+	Class for Graph Coloring Problem which is a combinatorial problem involving assigning labels to vertices of the graph such that no two adjacent vertices share the same label.
 
-	    Attributes:
-	instance (nx.Graph): The graph for which the coloring problem is to be solved.
+	Attributes:
+		instance (nx.Graph): The graph for which the coloring problem is to be solved.
 
 
 	"""
@@ -97,11 +96,8 @@ class GraphColoring(Problem):
 		graph = graphs[randint(0, len(graphs) - 1)]
 		return GraphColoring(graph, num_colors=num_colors)
 
-	def to_hamiltonian(self, constraints_weight: float = 1, costs_weight: float = 1) -> SparsePauliOp:
-		color_bit_length = int(np.ceil(np.log2(self.num_colors)))
-		num_qubits = self.instance.number_of_nodes() * color_bit_length
-
-		# Penalty for assigning the same colors to neighboring vertices
+	# Penalty for assigning the same colors to neighboring vertices
+	def _color_duplication_hamiltonian(self, num_qubits: int, color_bit_length: int) -> Equation:
 		eq = Equation(num_qubits)
 		for node1, node2 in self.instance.edges:
 			for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
@@ -118,27 +114,35 @@ class GraphColoring(Problem):
 						eq_inner &= exp
 				if eq_inner is not None:
 					eq += eq_inner
-		eq *= costs_weight
+		return eq
 
-		# Penalty for using excessive colors
-		eq2 = Equation(num_qubits)
+	# Penalty for using excessive colors
+	def _excessive_colors_use_hamiltonian(self, num_qubits: int, color_bit_length: int) -> Equation:
+		eq = Equation(num_qubits)
 		for node in self.instance.nodes:
 			for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
 				if ind < self.num_colors:
 					continue
 				eq_inner = None
 				for i in range(color_bit_length):
-					qubit = eq2[node * color_bit_length + i]
+					qubit = eq[node * color_bit_length + i]
 					exp = qubit if comb[i] else ~qubit
 					if eq_inner is None:
 						eq_inner = exp
 					else:
 						eq_inner &= exp
 				if eq_inner is not None:
-					eq2 += eq_inner
-		eq2 *= constraints_weight
-		eq += eq2
-		return eq.hamiltonian
+					eq += eq_inner
+		return eq
+
+	def to_hamiltonian(self, constraints_weight: float = 1, costs_weight: float = 1) -> SparsePauliOp:
+		color_bit_length = int(np.ceil(np.log2(self.num_colors)))
+		num_qubits = self.instance.number_of_nodes() * color_bit_length
+
+		eq = self._color_duplication_hamiltonian(num_qubits, color_bit_length)
+		eq2 = self._excessive_colors_use_hamiltonian(num_qubits, color_bit_length)
+
+		return (eq * costs_weight + eq2 * constraints_weight).hamiltonian
 
 	def to_qubo(self) -> tuple[NDArray[np.float64], float]:
 		"""Returns Qubo function"""
