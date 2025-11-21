@@ -170,12 +170,12 @@ class EC(Problem):
 		for set_ in ring:
 			mix_ham += ring_ham(set_, len(self.instance))
 
-		x_gate = hampy.Equation(len(self.instance))
+		x_gate_ham = hampy.Equation(len(self.instance))
 		# creating mixer hamiltonians for all qubits that aren't in rings (in other words applying X gate to them)
 		for elem in x_gate:
-			x_gate += SparsePauliOp.from_sparse_list([('X', [elem], 1)], len(self.instance))
+			x_gate_ham += SparsePauliOp.from_sparse_list([('X', [elem], 1)], len(self.instance))
 
-		return (mix_ham + x_gate).hamiltonian
+		return (mix_ham + x_gate_ham).hamiltonian
 
 	def to_qubo(self) -> QUBO:
 		n = len(self.instance)
