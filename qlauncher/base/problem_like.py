@@ -54,6 +54,15 @@ class FN(ProblemLike):
 class Hamiltonian(ProblemLike):
 	def __init__(self, hamiltonian: SparsePauliOp) -> None:
 		self.hamiltonian = hamiltonian
+		self._mixer_hamiltonian: SparsePauliOp | None = None
+
+	@property
+	def mixer_hamiltonian(self) -> SparsePauliOp | None:
+		return self._mixer_hamiltonian
+
+	@mixer_hamiltonian.setter
+	def mixer_hamiltonian(self, mixer_hamiltonian: SparsePauliOp) -> None:
+		self._mixer_hamiltonian = mixer_hamiltonian
 
 	def get_mixer_hamiltonian(self) -> None: ...
 

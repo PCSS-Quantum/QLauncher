@@ -8,8 +8,8 @@ from qiskit.providers import BackendV1, BackendV2
 from qiskit_ibm_runtime import Options
 
 from qlauncher.exceptions import DependencyError
-from qlauncher.routines.qiskit import QiskitBackend
 from qlauncher.routines.qiskit.adapters import EstimatorV1ToEstimatorV2Adapter, SamplerV1ToSamplerV2Adapter
+from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 try:
 	from qiskit_aqt_provider import AQTProvider

@@ -1,14 +1,25 @@
-# """
-# ``qiskit``
-# ================
+"""
+``qiskit``
+================
 
-# The QLauncher version for Qiskit-based architecture.
-# """
+The QLauncher version for Qiskit-based architecture.
+"""
 
 # from qlauncher.problems.problem_formulations.hamiltonian import *
-# from qlauncher.routines.qiskit.backends.aer_backend import AerBackend
-# from qlauncher.routines.qiskit.backends.aqt_backend import AQTBackend
-# from qlauncher.routines.qiskit.backends.ibm_backend import IBMBackend
-# from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
+from qlauncher.routines.qiskit.backends.aer_backend import AerBackend
+from qlauncher.routines.qiskit.backends.aqt_backend import AQTBackend
+from qlauncher.routines.qiskit.backends.ibm_backend import IBMBackend
+from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
-# from .algorithms import FALQON, QAOA, EducatedGuess, TrainQSVCKernel
+from .algorithms import FALQON, QAOA, EducatedGuess, TrainQSVCKernel
+
+__all__ = [
+	'FALQON',
+	'QAOA',
+	'EducatedGuess',
+	'TrainQSVCKernel',
+	'AerBackend',
+	'AQTBackend',
+	'IBMBackend',
+	'QiskitBackend',
+]

@@ -4,7 +4,8 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.problems import EC, JSSP, QATM, TSP, GraphColoring, Knapsack, MaxCut, Raw
+from qlauncher.base.problem_like import Hamiltonian
+from qlauncher.problems import EC, JSSP, QATM, TSP, GraphColoring, Knapsack, MaxCut
 from qlauncher.routines.qiskit import FALQON, QAOA, QiskitBackend  # , AQTBackend
 from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
 from qlauncher.utils import int_to_bitstring
@@ -103,10 +104,22 @@ def test_maxcut() -> None:
 	assert isinstance(results, Result)
 
 
-def test_raw() -> None:
-	"""Testing function for Raw"""
+def test_maxcut() -> None:
+	"""Testing function for Max Cut"""
+	pr = MaxCut.from_preset(instance_name='default')
+	qaoa = FALQON(max_reps=1)
+	backend = QiskitBackend('local_simulator')
+	launcher = QLauncher(pr, qaoa, backend)
+
+	# results = launcher.process(save_pickle=True)
+	results = launcher.run()
+	assert isinstance(results, Result)
+
+
+def test_hamiltonian() -> None:
+	"""Testing function for Hamiltonian"""
 	hamiltonian = SparsePauliOp.from_list([('ZZ', -1), ('ZI', 2), ('IZ', 2), ('II', -1)])
-	pr = Raw(hamiltonian)
+	pr = Hamiltonian(hamiltonian)
 	qaoa = FALQON(max_reps=1)
 	backend = QiskitBackend('local_simulator')
 	launcher = QLauncher(pr, qaoa, backend)
