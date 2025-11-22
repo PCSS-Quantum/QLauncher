@@ -26,6 +26,9 @@ dependencies = [
     "pyscf"
 ]
 
+[tool.uv]
+package = true
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["qlauncher*"]

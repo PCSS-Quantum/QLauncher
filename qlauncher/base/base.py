@@ -1,3 +1,4 @@
+from collections.abc import Callable
 import logging
 import pickle
 from abc import ABC, abstractmethod
@@ -106,6 +107,8 @@ class Problem:
 
 	"""
 
+	_all_problems: dict[str, type['Problem']] = {}
+
 	def __init__(self, instance: Any, instance_name: str = 'unnamed') -> None:
 		"""
 		Initializes a Problem instance.
@@ -136,8 +139,12 @@ class Problem:
 	def __init_subclass__(cls) -> None:
 		if Problem not in cls.__bases__:
 			return
-		# TODO(Dawid): Check if to_sth is implemented
-		...
+		Problem._all_problems[cls.__name__] = cls
+		cls._mapping: dict[type[ProblemLike], Callable[[], ProblemLike]] = {}
+		for method_name in cls.__dict__:
+			if method_name.startswith('to_'):
+				method = cls.__dict__[method_name]
+				cls._mapping[method.__annotations__['return']] = method
 
 	def read_result(self, exp, log_path):
 		"""
