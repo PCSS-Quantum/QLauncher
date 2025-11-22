@@ -7,11 +7,10 @@ from random import randint
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from numpy.typing import NDArray
 from pyqubo import Array, Binary
-from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.base import Problem
+from qlauncher.base.problem_like import QUBO, Hamiltonian
 from qlauncher.hampy import Equation
 
 
@@ -51,6 +50,8 @@ class GraphColoring(Problem):
 				graph = nx.Graph()
 				graph.add_edges_from([(0, 1), (1, 2), (0, 2), (3, 2)])
 				return GraphColoring(graph, instance_name=instance_name, num_colors=3)
+			case _:
+				raise ValueError(f'Preset f{instance_name} not defined')
 
 	@staticmethod
 	def from_file(path: str) -> 'GraphColoring':
@@ -135,16 +136,16 @@ class GraphColoring(Problem):
 					eq += eq_inner
 		return eq
 
-	def to_hamiltonian(self, constraints_weight: float = 1, costs_weight: float = 1) -> SparsePauliOp:
+	def to_hamiltonian(self, constraints_weight: float = 1, costs_weight: float = 1) -> Hamiltonian:
 		color_bit_length = int(np.ceil(np.log2(self.num_colors)))
 		num_qubits = self.instance.number_of_nodes() * color_bit_length
 
 		eq = self._color_duplication_hamiltonian(num_qubits, color_bit_length)
 		eq2 = self._excessive_colors_use_hamiltonian(num_qubits, color_bit_length)
 
-		return (eq * costs_weight + eq2 * constraints_weight).hamiltonian
+		return Hamiltonian((eq * costs_weight + eq2 * constraints_weight).hamiltonian.simplify())
 
-	def to_qubo(self) -> tuple[NDArray[np.float64], float]:
+	def to_qubo(self) -> QUBO:
 		"""Returns Qubo function"""
 		num_qubits = self.instance.number_of_nodes() * self.num_colors
 		x = Array.create('x', shape=(self.instance.number_of_nodes(), self.num_colors), vartype='BINARY')
@@ -169,4 +170,4 @@ class GraphColoring(Problem):
 				key = ('x[' + str(n1) + '][' + str(c1) + ']', 'x[' + str(n2) + '][' + str(c2) + ']')
 				if key in qubo_dict:
 					Q_matrix[i, j] = qubo_dict[key]
-		return Q_matrix, offset
+		return QUBO(Q_matrix, offset)

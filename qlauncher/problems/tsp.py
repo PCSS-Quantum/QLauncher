@@ -8,6 +8,7 @@ from qiskit_algorithms import SamplingMinimumEigensolverResult
 
 import qlauncher.hampy as hampy
 from qlauncher.base import Problem
+from qlauncher.base.problem_like import Hamiltonian
 from qlauncher.hampy import Equation
 from qlauncher.hampy.utils import shift_affected_qubits
 
@@ -285,7 +286,7 @@ class TSP(Problem):
 		costs_weight: int = 1,
 		return_to_start: bool = True,
 		onehot: Literal['exact', 'quadratic'] = 'exact',
-	) -> SparsePauliOp:
+	) -> Hamiltonian:
 		"""
 		Creates a Hamiltonian for the TSP problem.
 
@@ -310,4 +311,4 @@ class TSP(Problem):
 		constraints = self._make_non_collision_hamiltonian(node_count, quadratic=(onehot == 'quadratic'))
 		costs = self._make_connection_hamiltonian(scaled_edge_costs, return_to_start=return_to_start)
 
-		return constraints * constraints_weight + costs * costs_weight
+		return Hamiltonian((constraints * constraints_weight + costs * costs_weight).simplify())

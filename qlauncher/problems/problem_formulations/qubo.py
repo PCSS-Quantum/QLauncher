@@ -7,7 +7,6 @@ import qlauncher.problems.problem_initialization as problem
 from qlauncher.base import adapter, formatter
 from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
 
-
 # @adapter('qubo', 'qubo_fn')
 # def qubo_to_fn(qubo):
 # 	# TODO check
@@ -205,36 +204,36 @@ def get_raw_qubo(problem: problem.Raw):
 # 	return Q_matrix, offset
 
 
-@formatter(problem=problem.Knapsack, alg_format='qubo')
-def knapsack_qubo(problem: problem.Knapsack, penalty_weight: float = 2.0, value_weight: float = 1.0):
-	"""
-	Returns QUBO function for Knapsack problem.
-	"""
-	values = problem.values
-	weights = problem.weights
-	n = len(values)
+# @formatter(problem=problem.Knapsack, alg_format='qubo')
+# def knapsack_qubo(problem: problem.Knapsack, penalty_weight: float = 2.0, value_weight: float = 1.0):
+# 	"""
+# 	Returns QUBO function for Knapsack problem.
+# 	"""
+# 	values = problem.values
+# 	weights = problem.weights
+# 	n = len(values)
 
-	x = Array.create('a_x', shape=n, vartype='BINARY')
+# 	x = Array.create('a_x', shape=n, vartype='BINARY')
 
-	m = 1 if problem.capacity == 0 else int(np.ceil(np.log2(problem.capacity + 1)))
-	y = Array.create('z_y', shape=m, vartype='BINARY')
-	slack = sum((2**k) * y[k] for k in range(m))
+# 	m = 1 if problem.capacity == 0 else int(np.ceil(np.log2(problem.capacity + 1)))
+# 	y = Array.create('z_y', shape=m, vartype='BINARY')
+# 	slack = sum((2**k) * y[k] for k in range(m))
 
-	weight_sum = sum(weights[i] * x[i] for i in range(n))
-	if not isinstance(weight_sum, Array):
-		raise TypeError
-	penalty = (weight_sum + slack - problem.capacity) ** 2
-	value_term = sum(values[i] * x[i] for i in range(n))
-	H = penalty_weight * penalty - value_weight * value_term
+# 	weight_sum = sum(weights[i] * x[i] for i in range(n))
+# 	if not isinstance(weight_sum, Array):
+# 		raise TypeError
+# 	penalty = (weight_sum + slack - problem.capacity) ** 2
+# 	value_term = sum(values[i] * x[i] for i in range(n))
+# 	H = penalty_weight * penalty - value_weight * value_term
 
-	qubo_dict, offset = H.compile().to_qubo()
-	var_labels = [f'z_y[{k}]' for k in range(m)] + [f'a_x[{i}]' for i in reversed(range(n))]
-	N = len(var_labels)
-	Q = np.zeros((N, N))
-	for i, vi in enumerate(var_labels):
-		for j, vj in enumerate(var_labels):
-			key = (vi, vj)
-			if key in qubo_dict:
-				Q[i, j] = qubo_dict[key]
+# 	qubo_dict, offset = H.compile().to_qubo()
+# 	var_labels = [f'z_y[{k}]' for k in range(m)] + [f'a_x[{i}]' for i in reversed(range(n))]
+# 	N = len(var_labels)
+# 	Q = np.zeros((N, N))
+# 	for i, vi in enumerate(var_labels):
+# 		for j, vj in enumerate(var_labels):
+# 			key = (vi, vj)
+# 			if key in qubo_dict:
+# 				Q[i, j] = qubo_dict[key]
 
-	return Q, float(offset)
+# 	return Q, float(offset)
