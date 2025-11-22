@@ -4,44 +4,27 @@ import numpy as np
 from pyqubo import Spin
 
 from qlauncher.base import adapter, formatter
+from qlauncher.base.problem_like import BQM, QUBO
 from qlauncher.problems.problem_initialization import Raw
 
 
 @adapter('qubo', 'bqm')
-def qubo_to_bqm(qubo_with_offset) -> dict:
-	qubo, offset = qubo_with_offset
-	bqm, _ = QUBOMatrix(qubo, offset).qubo_matrix_into_bqm()
+def qubo_to_bqm(qubo: QUBO) -> BQM:
+	bqm, _ = QUBOMatrix(qubo.matrix, qubo.offset).qubo_matrix_into_bqm()
 	return bqm
 
 
 class QUBOMatrix:
-	def __init__(self, qubo_matrix, offset):
-		self.qubo_matrix = qubo_matrix
+	def __init__(self, matrix: np.ndarray, offset: float):
+		self.matrix = matrix
 		self.offset = offset
 
-		if type(self.qubo_matrix) == str:
-			self.qubo_matrix = np.array(ast.literal_eval(self.qubo_matrix))
-
-		self.symetric = True
-		self._check_if_symetric()
-
-	def _check_if_symetric(self) -> None:
-		"""
-		Function to check if matrix is symetric
-		"""
-		self.symetric = (self.qubo_matrix.transpose() == self.qubo_matrix).all()
+		self.symetric = (self.matrix.transpose() == self.matrix).all()
 		if not self.symetric:
-			self.qubo_matrix = self._remove_lower_triangle(self.qubo_matrix)
-
-	def _remove_lower_triangle(self, matrix):
-		"""
-		Function to remove lower triangle from matrix
-		"""
-		for i in range(len(matrix)):
-			for j in range(len(matrix)):
-				if i > j:
-					matrix[i][j] = 0
-		return matrix
+			for i in range(len(self.matrix)):
+				for j in range(len(self.matrix)):
+					if i > j:
+						self.matrix[i][j] = 0
 
 	def _get_values_and_qubits(self, matrix):
 		"""
@@ -57,7 +40,8 @@ class QUBOMatrix:
 		return result, len(matrix)
 
 	def qubo_matrix_into_bqm(self):
-		values_and_qubits, number_of_qubits = self._get_values_and_qubits(self.qubo_matrix)
+		values_and_qubits = {(x, y): c for y, r in enumerate(self.matrix) for x, c in enumerate(r) if c != 0}
+		number_of_qubits = len(self.matrix)
 		qubits = [Spin(f'x{i}') for i in range(number_of_qubits)]
 		H = 0
 		for (x, y), value in values_and_qubits.items():
@@ -74,3 +58,27 @@ class QUBOMatrix:
 @formatter(Raw, 'bqm')
 def Rawbqm(problem: Raw):
 	return problem.instance
+
+
+def to_bqm(self: QUBO) -> BQM:
+	matrix = self.matrix
+	symmetric = (self.matrix.transpose() == self.matrix).all()
+	if not symmetric:
+		for i in range(len(self.matrix)):
+			for j in range(len(self.matrix)):
+				if i > j:
+					matrix[i][j] = 0
+
+	values_and_qubits = {(x, y): c for y, r in enumerate(matrix) for x, c in enumerate(r) if c != 0}
+	number_of_qubits = len(matrix)
+	qubits = [Spin(f'x{i}') for i in range(number_of_qubits)]
+	H = 0
+	for (x, y), value in values_and_qubits.items():
+		if symmetric:
+			H += value / len({x, y}) * qubits[x] * qubits[y]
+		else:
+			H += value * qubits[x] * qubits[y]
+	model = H.compile()
+	bqm = model.to_bqm()
+	bqm.offset += self.offset
+	return BQM(bqm, model)

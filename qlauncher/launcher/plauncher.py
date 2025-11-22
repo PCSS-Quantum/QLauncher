@@ -3,6 +3,7 @@
 import json
 import logging
 import pickle
+from collections.abc import Callable
 from typing import Literal
 
 from qlauncher.base import Algorithm, Backend, Problem, Result
@@ -147,15 +148,35 @@ class QLauncher:
 		input_format = self.algorithm.get_input_format()
 		if input_format is None:
 			raise TypeError
-		if isinstance(self.problem, Problem):
-			problem = self.problem.to(input_format)
-		elif isinstance(self.problem, ProblemLike):
-			problem = self.problem
-		else:
+		problem = self.problem
+		methods = self._bfs_search(problem, input_format)
+		if methods is None:
 			raise TypeError
+		for method in methods:
+			problem = method(problem)
+
 		self.result = self.algorithm.run(problem, self.backend)
 		self.logger.info('Algorithm ended successfully!')
 		return self.result
+
+	def _bfs_search(
+		self, problem: Problem | ProblemLike, input_format: type[ProblemLike]
+	) -> list[Callable[[Problem | ProblemLike], ProblemLike]] | None:
+		to_check: list[tuple[list, type[Problem] | type[ProblemLike]]] = [([], type(problem))]
+		visited: set = {type(problem)}
+		if isinstance(problem, input_format):
+			return []
+		while len(to_check) > 0:
+			parents, current = to_check.pop(0)
+			if current is input_format:
+				return parents
+			for child, method in current._mapping.items():
+				if isinstance(child, str):
+					child = ProblemLike._all_problems[child]
+				if child in visited:
+					continue
+				to_check.append((parents + [method], child))
+		return None
 
 	def save(self, path: str, save_format: Literal['pickle', 'txt', 'json'] = 'pickle') -> None:
 		"""
