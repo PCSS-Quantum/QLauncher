@@ -24,7 +24,7 @@ class MaxCut(Problem):
 
 	"""
 
-	def __init__(self, instance: nx.Graph, instance_name='unnamed'):
+	def __init__(self, instance: nx.Graph, instance_name: str = 'unnamed'):
 		self.instance: nx.Graph
 		super().__init__(instance, instance_name)
 
