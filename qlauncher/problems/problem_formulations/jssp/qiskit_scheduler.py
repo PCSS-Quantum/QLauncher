@@ -1,14 +1,16 @@
-
 from bisect import bisect_right
+from typing import Literal
+
+from qiskit.quantum_info import SparsePauliOp
 
 import qlauncher.hampy as hampy
 
 from .scheduler import JobShopScheduler, KeyList, get_label
 
 
-def get_jss_hamiltonian(job_dict, max_time, onehot):
+def get_jss_hamiltonian(job_dict, max_time, onehot, version: Literal['decision', 'optimization']) -> SparsePauliOp:
 	scheduler = QiskitScheduler(job_dict, max_time, onehot)
-	return scheduler.get_hamiltonian()
+	return scheduler.get_hamiltonian(version)
 
 
 class QiskitScheduler(JobShopScheduler):
@@ -92,7 +94,7 @@ class QiskitScheduler(JobShopScheduler):
 				self.H_label_by_pos[len(self.H_label_by_pos)] = label
 		self.n = len(self.H_pos_by_label)
 
-	def get_hamiltonian(self):
+	def get_hamiltonian(self, version: Literal['decision', 'optimization'] = 'optimization') -> SparsePauliOp:
 		self._remove_absurd_times({}, {}, [])
 		self._build_variable_dict()
 		self._add_one_start_constraint()
@@ -139,13 +141,10 @@ class QiskitScheduler(JobShopScheduler):
 		#   solution penalties
 
 		# Get BQM
-		decision_hamiltonian = self.H.simplify().copy()
-
-		base = len(self.last_task_indices) + 1  # Base for exponent
+		if version == 'decision':
+			return self.H.simplify().copy()
 		# Get our pruned (remove_absurd_times) variable list so we don't undo pruning
 		# pruned_variables = list(bqm.variables)
-
-		h = 0
 
 		for i in self.last_task_indices:
 			task = self.tasks[i]
@@ -157,10 +156,6 @@ class QiskitScheduler(JobShopScheduler):
 				if end_time > self.max_time:
 					continue
 
-				# Add bias to variable
-				bias = 2 * base ** (end_time - self.max_time)
-				# bias = base**(end_time - 5)
-				# bias = base ** (end_time)
 				label = get_label(task, t)
 				if label in self.absurd_times:
 					continue
@@ -170,5 +165,4 @@ class QiskitScheduler(JobShopScheduler):
 		# self.H += h / (base * len(self.last_task_indices))
 
 		# Get BQM
-		optimization_hamiltonian = self.H.simplify().copy()
-		return decision_hamiltonian, optimization_hamiltonian, self.H_pos_by_label.copy(), self.H_label_by_pos.copy()
+		return self.H.simplify().copy()
