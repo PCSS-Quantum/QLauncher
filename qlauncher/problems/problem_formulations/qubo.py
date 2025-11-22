@@ -90,89 +90,89 @@ class ECOrca:
 		return Q, 0
 
 
-@formatter(problem.JSSP, 'qubo')
-class JSSPOrca:
-	gamma = 1
-	lagrange_one_hot = 1
-	lagrange_precedence = 2
-	lagrange_share = 5
+# @formatter(problem.JSSP, 'qubo')
+# class JSSPOrca:
+# 	gamma = 1
+# 	lagrange_one_hot = 1
+# 	lagrange_precedence = 2
+# 	lagrange_share = 5
 
-	def _fix_get_jss_bqm(
-		self, instance, max_time, config, lagrange_one_hot=0, lagrange_precedence=0, lagrange_share=0
-	) -> tuple[dict, list, None]:
-		pre_result = get_jss_bqm(
-			instance,
-			max_time,
-			config,
-			lagrange_one_hot=lagrange_one_hot,
-			lagrange_precedence=lagrange_precedence,
-			lagrange_share=lagrange_share,
-		)
-		result = (pre_result.spin.linear, pre_result.spin.quadratic, pre_result.spin.offset)  # I need to change it into dict somehow
-		return result, list(result[0].keys()), None
+# 	def _fix_get_jss_bqm(
+# 		self, instance, max_time, config, lagrange_one_hot=0, lagrange_precedence=0, lagrange_share=0
+# 	) -> tuple[dict, list, None]:
+# 		pre_result = get_jss_bqm(
+# 			instance,
+# 			max_time,
+# 			config,
+# 			lagrange_one_hot=lagrange_one_hot,
+# 			lagrange_precedence=lagrange_precedence,
+# 			lagrange_share=lagrange_share,
+# 		)
+# 		result = (pre_result.spin.linear, pre_result.spin.quadratic, pre_result.spin.offset)  # I need to change it into dict somehow
+# 		return result, list(result[0].keys()), None
 
-	def calculate_instance_size(self, problem: problem.JSSP):
-		# Calculate instance size for training
-		_, variables, _ = self._fix_get_jss_bqm(
-			problem.instance,
-			problem.max_time,
-			self.config,
-			lagrange_one_hot=self.lagrange_one_hot,
-			lagrange_precedence=self.lagrange_precedence,
-			lagrange_share=self.lagrange_share,
-		)
-		return len(variables)
+# 	def calculate_instance_size(self, problem: problem.JSSP):
+# 		# Calculate instance size for training
+# 		_, variables, _ = self._fix_get_jss_bqm(
+# 			problem.instance,
+# 			problem.max_time,
+# 			self.config,
+# 			lagrange_one_hot=self.lagrange_one_hot,
+# 			lagrange_precedence=self.lagrange_precedence,
+# 			lagrange_share=self.lagrange_share,
+# 		)
+# 		return len(variables)
 
-	def get_len_all_jobs(self, problem: problem.JSSP):
-		result = 0
-		for job in problem.instance.values():
-			result += len(job)
-		return result
+# 	def get_len_all_jobs(self, problem: problem.JSSP):
+# 		result = 0
+# 		for job in problem.instance.values():
+# 			result += len(job)
+# 		return result
 
-	def one_hot_to_jobs(self, binary_vector, problem: problem.JSSP):
-		actually_its_qubo, variables, model = self._fix_get_jss_bqm(
-			problem.instance,
-			problem.max_time,
-			self.config,
-			lagrange_one_hot=self.lagrange_one_hot,
-			lagrange_precedence=self.lagrange_precedence,
-			lagrange_share=self.lagrange_share,
-		)
-		return [variables[i] for i in range(len(variables)) if binary_vector[i] == 1]
+# 	def one_hot_to_jobs(self, binary_vector, problem: problem.JSSP):
+# 		actually_its_qubo, variables, model = self._fix_get_jss_bqm(
+# 			problem.instance,
+# 			problem.max_time,
+# 			self.config,
+# 			lagrange_one_hot=self.lagrange_one_hot,
+# 			lagrange_precedence=self.lagrange_precedence,
+# 			lagrange_share=self.lagrange_share,
+# 		)
+# 		return [variables[i] for i in range(len(variables)) if binary_vector[i] == 1]
 
-	def _set_config(self) -> None:
-		self.config = {}
-		self.config['parameters'] = {}
-		self.config['parameters']['job_shop_scheduler'] = {}
-		self.config['parameters']['job_shop_scheduler']['problem_version'] = 'optimization'
+# 	def _set_config(self) -> None:
+# 		self.config = {}
+# 		self.config['parameters'] = {}
+# 		self.config['parameters']['job_shop_scheduler'] = {}
+# 		self.config['parameters']['job_shop_scheduler']['problem_version'] = 'optimization'
 
-	def __call__(self, problem: problem.JSSP):
-		# Define the matrix Q used for QUBO
-		self.config = {}
-		self.instance_size = self.calculate_instance_size(problem)
-		self._set_config()
-		actually_its_qubo, variables, model = self._fix_get_jss_bqm(
-			problem.instance,
-			problem.max_time,
-			self.config,
-			lagrange_one_hot=self.lagrange_one_hot,
-			lagrange_precedence=self.lagrange_precedence,
-			lagrange_share=self.lagrange_share,
-		)
-		reverse_dict_map = {v: i for i, v in enumerate(variables)}
+# 	def __call__(self, problem: problem.JSSP):
+# 		# Define the matrix Q used for QUBO
+# 		self.config = {}
+# 		self.instance_size = self.calculate_instance_size(problem)
+# 		self._set_config()
+# 		actually_its_qubo, variables, model = self._fix_get_jss_bqm(
+# 			problem.instance,
+# 			problem.max_time,
+# 			self.config,
+# 			lagrange_one_hot=self.lagrange_one_hot,
+# 			lagrange_precedence=self.lagrange_precedence,
+# 			lagrange_share=self.lagrange_share,
+# 		)
+# 		reverse_dict_map = {v: i for i, v in enumerate(variables)}
 
-		Q = np.zeros((self.instance_size, self.instance_size))
+# 		Q = np.zeros((self.instance_size, self.instance_size))
 
-		for (label_i, label_j), value in actually_its_qubo[1].items():
-			i = reverse_dict_map[label_i]
-			j = reverse_dict_map[label_j]
-			Q[i, j] += value
-			Q[j, i] = Q[i, j]
+# 		for (label_i, label_j), value in actually_its_qubo[1].items():
+# 			i = reverse_dict_map[label_i]
+# 			j = reverse_dict_map[label_j]
+# 			Q[i, j] += value
+# 			Q[j, i] = Q[i, j]
 
-		for label_i, value in actually_its_qubo[0].items():
-			i = reverse_dict_map[label_i]
-			Q[i, i] += value
-		return Q / max(np.max(Q), -np.min(Q)), 0
+# 		for label_i, value in actually_its_qubo[0].items():
+# 			i = reverse_dict_map[label_i]
+# 			Q[i, i] += value
+# 		return Q / max(np.max(Q), -np.min(Q)), 0
 
 
 @formatter(problem.Raw, 'qubo')

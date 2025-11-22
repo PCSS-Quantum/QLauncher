@@ -167,11 +167,11 @@ class ECQiskit:
 		return mix_ham
 
 
-@formatter(problems.JSSP, 'hamiltonian')
-def get_qiskit_hamiltonian(problem: problems.JSSP) -> SparsePauliOp:
-	if problem.optimization_problem:
-		return problem.h_o
-	return problem.h_d
+# @formatter(problems.JSSP, 'hamiltonian')
+# def get_qiskit_hamiltonian(problem: problems.JSSP) -> SparsePauliOp:
+# 	if problem.optimization_problem:
+# 		return problem.h_o
+# 	return problem.h_d
 
 
 @formatter(problems.MaxCut, 'hamiltonian')
