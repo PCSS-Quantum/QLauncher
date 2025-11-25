@@ -5,11 +5,11 @@ from qiskit.quantum_info import SparsePauliOp
 
 class Equation:
 	@overload
-	def __init__(self, size: int): ...
+	def __init__(self, size: int, /): ...
 	@overload
-	def __init__(self, hamiltonian: SparsePauliOp): ...
+	def __init__(self, hamiltonian: SparsePauliOp, /): ...
 	@overload
-	def __init__(self, sparse_list: list[tuple], size: int): ...
+	def __init__(self, sparse_list: list[tuple], size: int, /): ...
 
 	def __init__(self, argument, *args):
 		if isinstance(argument, int):
@@ -107,6 +107,9 @@ class Equation:
 		if isinstance(other, (float, int)):
 			return Equation(float(other) * self.hamiltonian)
 		return Equation(self.hamiltonian.compose(other.hamiltonian))
+
+	def __truediv__(self, other: float) -> 'Equation':
+		return Equation(self.hamiltonian / other)
 
 
 class Variable:

@@ -99,7 +99,7 @@ class QLauncher:
 	def __init__(
 		self,
 		problem: Problem | ProblemLike,
-		algorithm: Algorithm[ProblemLike, Backend],
+		algorithm: Algorithm,
 		backend: Backend,
 		logger: logging.Logger | None = None,
 	) -> None:
@@ -207,19 +207,6 @@ class QLauncher:
 				f.write(str(self.result))
 		else:
 			raise ValueError(f'format: {save_format} in not supported try: pickle, txt, csv or json')
-
-	# def get_plugins(self, plugin_type: WHEN) -> list[Plugin]:
-	# 	def condition_check(plugin: Plugin) -> bool:
-	# 		return plugin._when == plugin_type
-
-	# 	return list(filter(condition_check, self._plugins))
-
-	# @property
-	# def plugins(self) -> list[Plugin]:
-	# 	return self._plugins
-
-	# def add_plugin(self, plugin: Plugin) -> None:
-	# 	self._plugins.append(plugin)
 
 
 def fix_json(o: object):

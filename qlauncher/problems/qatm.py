@@ -1,0 +1,120 @@
+from pathlib import Path
+from typing import Literal
+
+import numpy as np
+import pandas as pd
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import SparsePauliOp
+
+from qlauncher import hampy
+from qlauncher.base.base import Problem
+from qlauncher.base.problem_like import Hamiltonian
+from qlauncher.hampy.object import Equation
+from qlauncher.problems.ec import ring_ham
+
+
+class QATM(Problem):
+	def __init__(
+		self,
+		cm: np.ndarray,
+		aircrafts: pd.DataFrame,
+		onehot: Literal['exact', 'quadratic', 'xor'] = 'exact',
+		optimization: bool = True,
+	) -> None:
+		self.cm = cm
+		self.aircrafts = aircrafts
+		self.onehot = onehot
+		self.optimization = optimization
+
+		self.size = len(self.cm)
+
+	@staticmethod
+	def from_preset(instance_name: Literal['rcp-3'], **kwargs) -> 'QATM':
+		match instance_name:
+			case 'rcp-3':
+				cm = np.array(
+					[
+						[1, 0, 1, 0, 0, 0],
+						[0, 1, 0, 0, 0, 1],
+						[1, 0, 1, 0, 1, 0],
+						[0, 0, 0, 1, 0, 0],
+						[0, 0, 1, 0, 1, 0],
+						[0, 1, 0, 0, 0, 1],
+					]
+				)
+				aircrafts = pd.DataFrame(
+					{
+						'manouver': ['A0', 'A1', 'A2', 'A0_a=10', 'A1_a=10', 'A2_a=10'],
+						'aircraft': ['A0', 'A1', 'A2', 'A0', 'A1', 'A2'],
+					}
+				)
+			case _:
+				raise KeyError
+		return QATM(cm, aircrafts)
+
+	@classmethod
+	def from_file(cls, path: str, instance_name: str = 'QATM', optimization: bool = True) -> 'QATM':
+		cm_path = Path(path, 'CM_' + instance_name)
+		aircrafts_path = Path(path, 'aircrafts_' + instance_name)
+
+		return QATM(
+			np.loadtxt(cm_path),
+			pd.read_csv(aircrafts_path, delimiter=' ', names=['manouver', 'aircraft']),
+			'exact',
+			optimization,
+		)
+
+	def to_hamiltonian(self, onehot: Literal['exact', 'quadratic', 'xor'] = 'exact') -> Hamiltonian:
+		cm = self.cm
+		aircrafts = self.aircrafts
+		size = len(cm)
+
+		onehot_hamiltonian = Equation(size)
+		for _, manouvers in aircrafts.groupby(by='aircraft'):
+			if onehot == 'exact':
+				h = ~hampy.one_in_n(manouvers.index.values.tolist(), size)
+			elif onehot == 'quadratic':
+				h = hampy.one_in_n(manouvers.index.values.tolist(), size, quadratic=True)
+			elif onehot == 'xor':
+				total = Equation(size)
+				for part in manouvers.index.values.tolist():
+					total ^= total[part]
+				h = (~total).hamiltonian
+
+			onehot_hamiltonian += h
+
+		triu = np.triu(cm, k=1)
+		conflict_hamiltonian = Equation(size)
+		for p1, p2 in zip(*np.where(triu == 1), strict=True):
+			eq = Equation(size)
+			conflict_hamiltonian += (eq[int(p1)] & eq[int(p2)]).hamiltonian
+
+		hamiltonian = onehot_hamiltonian + conflict_hamiltonian
+
+		if self.optimization:
+			goal_hamiltonian = Equation(size)
+			for i, (maneuver, ac) in self.aircrafts.iterrows():
+				if not isinstance(i, int):
+					raise TypeError
+				if maneuver != ac:
+					goal_hamiltonian += goal_hamiltonian.get_variable(i)
+			hamiltonian += goal_hamiltonian / cm.sum().sum()
+
+		return Hamiltonian(
+			hamiltonian.hamiltonian.simplify(),
+			mixer_hamiltonian=self.get_mixer_hamiltonian(),
+			initial_state=self.get_initial_state(),
+		)
+
+	def get_mixer_hamiltonian(self) -> SparsePauliOp:
+		mixer_hamiltonian = Equation(self.size)
+		for _, manouvers in self.aircrafts.groupby(by='aircraft'):
+			h = ring_ham(manouvers.index.values.tolist(), self.size)
+			mixer_hamiltonian += h
+		return mixer_hamiltonian.hamiltonian
+
+	def get_initial_state(self) -> QuantumCircuit:
+		qc = QuantumCircuit(self.size)
+		for _, manouvers in self.aircrafts.groupby(by='aircraft'):
+			qc.x(manouvers.index.values.tolist()[0])
+		return qc

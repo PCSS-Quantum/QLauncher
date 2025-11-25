@@ -1,7 +1,7 @@
-from collections.abc import Callable
 import logging
 import pickle
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Generic, Literal, TypeVar
 
