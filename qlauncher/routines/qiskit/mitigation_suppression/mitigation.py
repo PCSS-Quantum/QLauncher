@@ -157,15 +157,13 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
             self,
             num_extrapolations: int = 4,
             polynomial_degree: int = 3,
-            mode: Literal["linear", "exponential"] = "linear",
-            do_transpile: bool = True
+            mode: Literal["linear", "exponential"] = "linear"
     ) -> None:
         super().__init__()
         if polynomial_degree >= num_extrapolations:
             raise ValueError("Degree must be lower than number of data points.")
         self.num_extrapolations = num_extrapolations
         self.degree = polynomial_degree
-        self.do_transpile = do_transpile
         self.mode = mode
 
     def _get_repeated_circuits(self, circuit: QuantumCircuit) -> list[QuantumCircuit]:
@@ -203,17 +201,21 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
         return result
 
     def sample(self, circuit: QuantumCircuit, backend: "QiskitBackend", shots: int = 1024) -> Result:
-        circuit = transpile(circuit, backend.backendv1v2) if self.do_transpile else circuit
-        counts = np.array([self._get_np_array_from_counts_dict(res.join_data().get_int_counts(), circuit.num_clbits)
-                          for res in backend.sampler.run(self._get_repeated_circuits(circuit), shots=shots).result()])
+        counts = np.array([
+            self._get_np_array_from_counts_dict(res.join_data().get_int_counts(), circuit.num_clbits)
+            for res in backend.sampler.run(self._get_repeated_circuits(circuit), shots=shots).result()
+        ])
+
         if self.mode == "exponential":
             counts = np.log2(counts)
             counts_fit = np.power(self._get_zero_estimate_sampling(counts), 2)
         else:
             counts_fit = np.maximum(self._get_zero_estimate_sampling(counts), 0) + (10 if counts.sum() == 0 else 0)
+
         counts_dict = {}
         for i, val in enumerate(counts_fit):
             counts_dict[np.binary_repr(i, circuit.num_clbits)] = int(val)
+
         return Result.from_counts_energies(counts_dict, {k: 1 for k in counts_dict.keys()})
 
     def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: "QiskitBackend") -> Result:
