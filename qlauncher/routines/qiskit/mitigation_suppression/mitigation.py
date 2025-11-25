@@ -1,24 +1,35 @@
+from typing import Literal
 import numpy as np
+
+from sklearn.linear_model import LinearRegression
+
 
 from qiskit import QuantumCircuit, transpile
 from qiskit.circuit import Gate, Operation, Instruction
 from qiskit._accelerate.circuit import CircuitInstruction as AccelerateInstruction
+from qiskit.quantum_info import SparsePauliOp
 from qlauncher.base import Result
-from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.utils import sum_counts
-from .base import CircuitSamplingMethod
+from .base import CircuitExecutionMethod
 
 
-class PauliTwirling(CircuitSamplingMethod):
+class NoMitigation(CircuitExecutionMethod):
+    def sample(self, circuit: QuantumCircuit, backend: "QiskitBackend", shots: int = 1024) -> Result:
+        counts = backend.sampler.run([circuit], shots=shots).result()[0].join_data().get_counts()
+        return Result.from_counts_energies(counts, {k: 1 for k in counts.keys()}, {})
+
+    def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: "QiskitBackend") -> Result:
+        return super().estimate(circuit, observable, backend)
+
+
+class PauliTwirling(CircuitExecutionMethod):
     def __init__(
         self,
         num_random_circuits: int,
-        shots_per_circuit: int = 200,
         max_substitute_gates_per_circuit: int = 4,
         do_transpile: bool = True
     ) -> None:
         self.num_random_circuits = num_random_circuits
-        self.shots_per_circuit = shots_per_circuit
         self.max_substitute_gates_per_circuit = max_substitute_gates_per_circuit
         self.do_transpile = do_transpile
 
@@ -27,6 +38,17 @@ class PauliTwirling(CircuitSamplingMethod):
         match op.name:
             case "cx":
                 return [
+                    [
+                        AccelerateInstruction(operation=Instruction(name='x', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[0]]),
+                        AccelerateInstruction(operation=Instruction(name='y', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[1]]),
+                        inst,
+                        AccelerateInstruction(operation=Instruction(name='y', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[0]]),
+                        AccelerateInstruction(operation=Instruction(name='z', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[1]]),
+                    ],
                     [
                         AccelerateInstruction(operation=Instruction(name='x', num_qubits=1,
                                               num_clbits=0, params=[]), qubits=[inst.qubits[0]]),
@@ -42,8 +64,39 @@ class PauliTwirling(CircuitSamplingMethod):
                         inst,
                         AccelerateInstruction(operation=Instruction(name='z', num_qubits=1,
                                               num_clbits=0, params=[]), qubits=[inst.qubits[0]]),
-                    ]][int(np.random.randint(0, 2))]
+                    ]][int(np.random.randint(0, 3))]
 
+            case "ecr":
+                return [
+                    [
+                        AccelerateInstruction(operation=Instruction(name='x', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[0]]),
+                        AccelerateInstruction(operation=Instruction(name='y', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[1]]),
+                        inst,
+                        AccelerateInstruction(operation=Instruction(name='x', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[0]]),
+                        AccelerateInstruction(operation=Instruction(name='y', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[1]]),
+                    ],
+                    [
+                        AccelerateInstruction(operation=Instruction(name='x', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[0]]),
+                        AccelerateInstruction(operation=Instruction(name='z', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[1]]),
+                        inst,
+                        AccelerateInstruction(operation=Instruction(name='x', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[0]]),
+                        AccelerateInstruction(operation=Instruction(name='z', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[1]]),
+                    ],
+                    [
+                        AccelerateInstruction(operation=Instruction(name='x', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[1]]),
+                        inst,
+                        AccelerateInstruction(operation=Instruction(name='x', num_qubits=1,
+                                              num_clbits=0, params=[]), qubits=[inst.qubits[1]]),
+                    ]][int(np.random.randint(0, 3))]
             case _:
                 return [
                     inst
@@ -70,16 +123,103 @@ class PauliTwirling(CircuitSamplingMethod):
 
         return transpiled_circuit
 
-    def sample(self, circuit: QuantumCircuit, backend: QiskitBackend) -> Result:
+    def sample(self, circuit: QuantumCircuit, backend: "QiskitBackend", shots: int = 1024) -> Result:
         input_circ = transpile(circuit, backend.backendv1v2) if self.do_transpile else circuit
         results = backend.sampler.run(
             [
                 transpile(self._twirl_circuit(input_circ), backend.backendv1v2) for _ in range(self.num_random_circuits)
             ],
-            shots=self.shots_per_circuit).result()
+            shots=shots // self.num_random_circuits).result()
 
         counts = [r.join_data().get_counts() for r in results]
 
         added = sum_counts(*counts)
 
-        return Result.from_distributions(added, {k: -1 for k in added.keys()}, {})
+        return Result.from_counts_energies(added, {k: -1 for k in added.keys()}, {})
+
+    def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: "QiskitBackend") -> float:
+        input_circ = transpile(circuit, backend.backendv1v2) if self.do_transpile else circuit
+        results = backend.estimator.run(
+            [
+                (transpile(self._twirl_circuit(input_circ), backend.backendv1v2), observable) for _ in range(self.num_random_circuits)
+            ],
+        ).result()
+
+        sum_evs = 0
+        for r in results:
+            sum_evs += r.data.evs
+
+        return sum_evs / self.num_random_circuits
+
+
+class ZeroNoiseExtrapolation(CircuitExecutionMethod):
+    def __init__(
+            self,
+            num_extrapolations: int = 4,
+            polynomial_degree: int = 3,
+            mode: Literal["linear", "exponential"] = "linear",
+            do_transpile: bool = True
+    ) -> None:
+        super().__init__()
+        if polynomial_degree >= num_extrapolations:
+            raise ValueError("Degree must be lower than number of data points.")
+        self.num_extrapolations = num_extrapolations
+        self.degree = polynomial_degree
+        self.do_transpile = do_transpile
+        self.mode = mode
+
+    def _get_repeated_circuits(self, circuit: QuantumCircuit) -> list[QuantumCircuit]:
+        result = []
+        meas_ops = [inst for inst in circuit.data if inst.operation.name == "measure"]
+
+        meas_circ = QuantumCircuit(circuit.num_qubits, circuit.num_clbits)
+        for inst, qargs, cargs in meas_ops:
+            meas_circ.append(inst, qargs, cargs)
+
+        mod_circuit: QuantumCircuit = circuit.remove_final_measurements(inplace=False)
+        circuit_gate = mod_circuit.to_gate()
+        inv_gate = circuit_gate.inverse()
+        for _ in range(1, self.num_extrapolations+1):
+            mod_circuit.append(inv_gate, qargs=range(mod_circuit.num_qubits))
+            mod_circuit.append(circuit_gate, qargs=range(mod_circuit.num_qubits))
+
+            result.append(mod_circuit.compose(meas_circ, qubits=mod_circuit.qubits))
+        return result
+
+    def _get_zero_estimate(self, y_values: np.ndarray) -> float:
+        return np.polynomial.Polynomial.fit(
+            np.array(range(1, self.num_extrapolations+1)),
+            y_values,
+            self.degree
+        ).convert().coef[0]
+
+    def _get_zero_estimate_sampling(self, y_values: np.ndarray) -> np.ndarray:
+        return np.array([self._get_zero_estimate(y_values.T[i]) for i in range(len(y_values[0]))])
+
+    def _get_np_array_from_counts_dict(self, int_counts: dict[int, int], num_measured: int) -> np.ndarray:
+        result = np.zeros(2**num_measured)
+        for value, counts in int_counts.items():
+            result[value] = counts
+        return result
+
+    def sample(self, circuit: QuantumCircuit, backend: "QiskitBackend", shots: int = 1024) -> Result:
+        circuit = transpile(circuit, backend.backendv1v2) if self.do_transpile else circuit
+        counts = np.array([self._get_np_array_from_counts_dict(res.join_data().get_int_counts(), circuit.num_clbits)
+                          for res in backend.sampler.run(self._get_repeated_circuits(circuit), shots=shots).result()])
+        if self.mode == "exponential":
+            counts = np.log2(counts)
+            counts_fit = np.power(self._get_zero_estimate_sampling(counts), 2)
+        else:
+            counts_fit = np.maximum(self._get_zero_estimate_sampling(counts), 0) + (10 if counts.sum() == 0 else 0)
+        counts_dict = {}
+        for i, val in enumerate(counts_fit):
+            counts_dict[np.binary_repr(i, circuit.num_clbits)] = int(val)
+        return Result.from_counts_energies(counts_dict, {k: 1 for k in counts_dict.keys()})
+
+    def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: "QiskitBackend") -> Result:
+        evs = np.array([res.data.evs for res in backend.estimator.run([(x, observable)
+                       for x in self._get_repeated_circuits(circuit)]).result()])
+        if self.mode == "exponential":
+            evs = np.log2(evs)
+            return 2**self._get_zero_estimate(evs)
+        return self._get_zero_estimate(evs)
