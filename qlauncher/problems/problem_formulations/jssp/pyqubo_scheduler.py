@@ -1,37 +1,16 @@
-
 from bisect import bisect_right
 
 # from pyqubo import Binary
 from .Binary import Binary
 from .scheduler import JobShopScheduler, KeyList, get_label
-
-
-def get_jss_bqm(
-	job_dict,
-	max_time,
-	disable_till=None,
-	disable_since=None,
-	disabled_variables=None,
-	lagrange_one_hot=3,
-	lagrange_precedence=1,
-	lagrange_share=2,
-):
-	if disable_till is None:
-		disable_till = {}
-	if disable_since is None:
-		disable_since = {}
-	if disabled_variables is None:
-		disabled_variables = []
-
-	scheduler = DWaveScheduler(job_dict, max_time)
-	return scheduler.get_bqm(disable_till, disable_since, disabled_variables, lagrange_one_hot, lagrange_precedence, lagrange_share)
+from dimod import BinaryQuadraticModel
 
 
 class DWaveScheduler(JobShopScheduler):
 	def __init__(self, job_dict, max_time=None):
 		super().__init__(job_dict, max_time)
 
-	def _add_one_start_constraint(self, lagrange_one_hot=1) -> None:
+	def _add_one_start_constraint(self, lagrange_one_hot: float = 1) -> None:
 		"""self.csp gets the constraint: A task can start once and only once"""
 		for task in self.tasks:
 			task_times = {get_label(task, t) for t in range(self.max_time)}
@@ -47,11 +26,11 @@ class DWaveScheduler(JobShopScheduler):
 				H_term += var
 			self.H += lagrange_one_hot * ((1 - H_term) ** 2)
 
-	def _add_precedence_constraint(self, lagrange_precedence=1) -> None:
+	def _add_precedence_constraint(self, lagrange_precedence: float = 1) -> None:
 		"""self.csp gets the constraint: Task must follow a particular order.
 		Note: assumes self.tasks are sorted by jobs and then by position
 		"""
-		for current_task, next_task in zip(self.tasks, self.tasks[1:]):
+		for current_task, next_task in zip(self.tasks, self.tasks[1:], strict=False):
 			if current_task.job != next_task.job:
 				continue
 
@@ -79,7 +58,7 @@ class DWaveScheduler(JobShopScheduler):
 
 					self.H += lagrange_precedence * var1 * var2
 
-	def _add_share_machine_constraint(self, lagrange_share=1) -> None:
+	def _add_share_machine_constraint(self, lagrange_share: float = 1) -> None:
 		"""self.csp gets the constraint: At most one task per machine per time unit"""
 		sorted_tasks = sorted(self.tasks, key=lambda x: x.machine)
 		# Key wrapper for bisect function
@@ -127,11 +106,11 @@ class DWaveScheduler(JobShopScheduler):
 
 							self.H += lagrange_share * var1 * var2
 
-	def get_bqm(self, disable_till, disable_since, disabled_variables, lagrange_one_hot, lagrange_precedence, lagrange_share):
+	def get_bqm(self, lagrange_one_hot: float, lagrange_precedence: float, lagrange_share: float) -> BinaryQuadraticModel:
 		"""Returns a BQM to the Job Shop Scheduling problem."""
 
 		# Apply constraints to self.csp
-		self._remove_absurd_times(disable_till, disable_since, disabled_variables)
+		self._remove_absurd_times()
 		self._add_one_start_constraint(lagrange_one_hot)
 		self._add_precedence_constraint(lagrange_precedence)
 		self._add_share_machine_constraint(lagrange_share)
