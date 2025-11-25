@@ -54,7 +54,7 @@ class JobShopScheduler:
 		if self.max_time is None:
 			self.max_time = total_time
 
-	def _remove_absurd_times(self, disable_till: dict, disable_since, disabled_variables) -> None:
+	def _remove_absurd_times(self) -> None:
 		predecessor_time = 0
 		current_job = self.tasks[0].job
 		for task in self.tasks:
@@ -80,6 +80,7 @@ class JobShopScheduler:
 				label = get_label(task, (self.max_time - 1) - t)
 				self.absurd_times.add(label)
 
+	def _remove_additional_times(self, disable_till: dict, disable_since, disabled_variables) -> None:
 		for task in self.tasks:
 			if task.machine in disable_till:
 				for i in range(disable_till[task.machine]):

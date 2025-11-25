@@ -1,24 +1,21 @@
-
 from bisect import bisect_right
+from typing import Literal
+
+from qiskit.quantum_info import SparsePauliOp
 
 import qlauncher.hampy as hampy
 
 from .scheduler import JobShopScheduler, KeyList, get_label
 
 
-def get_jss_hamiltonian(job_dict, max_time, onehot):
-	scheduler = QiskitScheduler(job_dict, max_time, onehot)
-	return scheduler.get_hamiltonian()
-
-
 class QiskitScheduler(JobShopScheduler):
-	def __init__(self, job_dict, max_time=None, onehot='exact'):
+	def __init__(self, job_dict: dict, max_time: int | None = None, onehot: str = 'exact'):
 		super().__init__(job_dict, max_time)
 		self.H_pos_by_label = {}
 		self.H_label_by_pos = {}
 		self.onehot = onehot
 
-	def _add_one_start_constraint(self, lagrange_one_hot=1) -> None:
+	def _add_one_start_constraint(self, lagrange_one_hot: float = 1) -> None:
 		for task in self.tasks:
 			task_times = {get_label(task, t) for t in range(self.max_time)}
 			onehot_tasks = set()
@@ -27,12 +24,12 @@ class QiskitScheduler(JobShopScheduler):
 					continue
 				onehot_tasks.add(self.H_pos_by_label[label])
 			if self.onehot == 'exact':
-				self.H += (~hampy.one_in_n(onehot_tasks, self.n)).hamiltonian
+				self.H += lagrange_one_hot * (~hampy.one_in_n(onehot_tasks, self.n)).hamiltonian
 			elif self.onehot == 'quadratic':
-				self.H += hampy.one_in_n(onehot_tasks, self.n, quadratic=True).hamiltonian
+				self.H += lagrange_one_hot * hampy.one_in_n(onehot_tasks, self.n, quadratic=True).hamiltonian
 
-	def _add_precedence_constraint(self, lagrange_precedence=1) -> None:
-		for current_task, next_task in zip(self.tasks, self.tasks[1:]):
+	def _add_precedence_constraint(self, lagrange_precedence: float = 1) -> None:
+		for current_task, next_task in zip(self.tasks, self.tasks[1:], strict=False):
 			if current_task.job != next_task.job:
 				continue
 			for t in range(self.max_time):
@@ -46,9 +43,9 @@ class QiskitScheduler(JobShopScheduler):
 						continue
 					var2 = self.H_pos_by_label[next_label]
 					equation = hampy.Equation(self.n)
-					self.H += (equation[var1] & equation[var2]).hamiltonian
+					self.H += lagrange_precedence * (equation[var1] & equation[var2]).hamiltonian
 
-	def _add_share_machine_constraint(self, lagrange_share=1) -> None:
+	def _add_share_machine_constraint(self, lagrange_share: float = 1) -> None:
 		sorted_tasks = sorted(self.tasks, key=lambda x: x.machine)
 		wrapped_tasks = KeyList(sorted_tasks, lambda x: x.machine)
 
@@ -80,7 +77,7 @@ class QiskitScheduler(JobShopScheduler):
 								continue
 							var2 = self.H_pos_by_label[this_label]
 							equation = hampy.Equation(self.n)
-							self.H += (equation[var1] & equation[var2]).hamiltonian
+							self.H += lagrange_share * (equation[var1] & equation[var2]).hamiltonian
 
 	def _build_variable_dict(self) -> None:
 		for task in self.tasks:
@@ -92,12 +89,18 @@ class QiskitScheduler(JobShopScheduler):
 				self.H_label_by_pos[len(self.H_label_by_pos)] = label
 		self.n = len(self.H_pos_by_label)
 
-	def get_hamiltonian(self):
-		self._remove_absurd_times({}, {}, [])
+	def get_hamiltonian(
+		self,
+		lagrange_one_hot: float,
+		lagrange_precedence: float,
+		lagrange_share: float,
+		version: Literal['decision', 'optimization'] = 'optimization',
+	) -> SparsePauliOp:
+		self._remove_absurd_times()
 		self._build_variable_dict()
-		self._add_one_start_constraint()
-		self._add_precedence_constraint()
-		self._add_share_machine_constraint()
+		self._add_one_start_constraint(lagrange_one_hot)
+		self._add_precedence_constraint(lagrange_precedence)
+		self._add_share_machine_constraint(lagrange_share)
 		# Get BQM
 		# bqm = dwavebinarycsp.stitch(self.csp, **stitch_kwargs)
 
@@ -139,13 +142,10 @@ class QiskitScheduler(JobShopScheduler):
 		#   solution penalties
 
 		# Get BQM
-		decision_hamiltonian = self.H.simplify().copy()
-
-		base = len(self.last_task_indices) + 1  # Base for exponent
+		if version == 'decision':
+			return self.H.simplify().copy()
 		# Get our pruned (remove_absurd_times) variable list so we don't undo pruning
 		# pruned_variables = list(bqm.variables)
-
-		h = 0
 
 		for i in self.last_task_indices:
 			task = self.tasks[i]
@@ -157,10 +157,6 @@ class QiskitScheduler(JobShopScheduler):
 				if end_time > self.max_time:
 					continue
 
-				# Add bias to variable
-				bias = 2 * base ** (end_time - self.max_time)
-				# bias = base**(end_time - 5)
-				# bias = base ** (end_time)
 				label = get_label(task, t)
 				if label in self.absurd_times:
 					continue
@@ -170,5 +166,4 @@ class QiskitScheduler(JobShopScheduler):
 		# self.H += h / (base * len(self.last_task_indices))
 
 		# Get BQM
-		optimization_hamiltonian = self.H.simplify().copy()
-		return decision_hamiltonian, optimization_hamiltonian, self.H_pos_by_label.copy(), self.H_label_by_pos.copy()
+		return self.H.simplify().copy()

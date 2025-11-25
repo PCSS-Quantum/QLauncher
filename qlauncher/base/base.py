@@ -106,7 +106,6 @@ class Problem:
 		instance (any): An instance of the problem.
 
 	"""
-
 	_all_problems: dict[str, type['Problem']] = {}
 
 	def __init__(self, instance: Any, instance_name: str = 'unnamed') -> None:
@@ -122,7 +121,7 @@ class Problem:
 		"""
 		self.instance: Any = instance
 		self.instance_name = instance_name
-		self.variant: str = 'Optimization'
+		self.variant: Literal['decision', 'optimization'] = 'optimization'
 		self.path: str | None = None
 		self.name = self.__class__.__name__.lower()
 
