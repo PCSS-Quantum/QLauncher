@@ -4,7 +4,8 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.problems import MaxCut, Raw
+from qlauncher.base.problem_like import Hamiltonian
+from qlauncher.problems import MaxCut
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit import QAOA
 
@@ -19,10 +20,9 @@ def test_cirq() -> None:
 	assert isinstance(results, Result)
 
 
-def test_raw() -> None:
+def test_hamiltonian() -> None:
 	"""Testing function for Raw"""
-	hamiltonian = SparsePauliOp.from_list([('ZZ', -1), ('ZI', 2), ('IZ', 2), ('II', -1)])
-	pr = Raw(hamiltonian)
+	pr = Hamiltonian(SparsePauliOp.from_list([('ZZ', -1), ('ZI', 2), ('IZ', 2), ('II', -1)]))
 	qaoa = QAOA()
 	backend = CirqBackend()
 	launcher = QLauncher(pr, qaoa, backend)

@@ -2,6 +2,7 @@ from pyqubo import Spin
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
+from qlauncher.base.problem_like import BQM
 from qlauncher.problems import EC, JSSP, TSP, Knapsack, MaxCut, Raw
 from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend, SteepestDescentBackend, TabuBackend
 
@@ -53,7 +54,7 @@ def test_maxcut() -> None:
 	_test_with_steepest_descent(problem, solver)
 
 
-def test_raw() -> None:
+def test_bqm() -> None:
 	"""Testing function for Raw"""
 	qubits = [Spin(f'x{i}') for i in range(2)]
 	H = 0
@@ -61,7 +62,7 @@ def test_raw() -> None:
 	H += 1 * qubits[1]
 	H += -5 * qubits[0] * qubits[1]
 	bqm = H.compile().to_bqm()
-	problem = Raw(bqm)
+	problem = BQM(bqm)
 	solver = DwaveSolver(1, num_reads=10)
 	results = [_test_with_simulated_annealing(problem, solver), _test_with_steepest_descent(problem, solver)]
 	for res in results:

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from pyqubo import Spin
+from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_nature.second_q.drivers import PySCFDriver
 from qiskit_nature.second_q.formats.molecule_info import MoleculeInfo
@@ -91,9 +92,15 @@ class FN(ProblemLike):
 
 
 class Hamiltonian(ProblemLike):
-	def __init__(self, hamiltonian: SparsePauliOp) -> None:
+	def __init__(
+		self,
+		hamiltonian: SparsePauliOp,
+		mixer_hamiltonian: SparsePauliOp | None = None,
+		initial_state: QuantumCircuit | None = None,
+	) -> None:
 		self.hamiltonian = hamiltonian
-		self._mixer_hamiltonian: SparsePauliOp | None = None
+		self._mixer_hamiltonian: SparsePauliOp | None = mixer_hamiltonian
+		self._initial_state: QuantumCircuit | None = initial_state
 
 	@property
 	def mixer_hamiltonian(self) -> SparsePauliOp | None:
@@ -103,9 +110,13 @@ class Hamiltonian(ProblemLike):
 	def mixer_hamiltonian(self, mixer_hamiltonian: SparsePauliOp) -> None:
 		self._mixer_hamiltonian = mixer_hamiltonian
 
-	def get_mixer_hamiltonian(self) -> None: ...
+	@property
+	def initial_state(self) -> QuantumCircuit | None:
+		return self._initial_state
 
-	def get_QAOAAnsatz_initial_state(self) -> None: ...
+	@initial_state.setter
+	def initial_state(self, initial_state: QuantumCircuit) -> None:
+		self._initial_state = initial_state
 
 	def to_qubo(self) -> QUBO:
 		qp = from_ising(self.hamiltonian)

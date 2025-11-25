@@ -4,10 +4,14 @@ import json
 import logging
 import pickle
 from collections.abc import Callable
-from typing import Literal
+from typing import Literal, overload
+
+from qiskit.primitives.containers import SamplerPubLike
 
 from qlauncher.base import Algorithm, Backend, Problem, Result
 from qlauncher.base.base import ProblemLike
+from qlauncher.problems.problem_initialization.circuit import _Circuit
+from qlauncher.routines.qiskit.algorithms.wrapper import CircuitRunner
 
 
 def _extract_args(argtypes: list[tuple[str, type]], args, kwargs) -> dict[str, object]:
@@ -47,96 +51,80 @@ class QLauncher:
 
 	Example of usage::
 
-	        from qlauncher import QLauncher
-	        from qlauncher.problems import MaxCut
-	        from qlauncher.routines.qiskit import QAOA, QiskitBackend
+	                from qlauncher import QLauncher
+	                from qlauncher.problems import MaxCut
+	                from qlauncher.routines.qiskit import QAOA, QiskitBackend
 
-	        problem = MaxCut(instance_name='default')
-	        algorithm = QAOA()
-	        backend = QiskitBackend('local_simulator')
+	                problem = MaxCut(instance_name='default')
+	                algorithm = QAOA()
+	                backend = QiskitBackend('local_simulator')
 
-	        launcher = QLauncher(problem, algorithm, backend)
-	        result = launcher.process(save_pickle=True)
-	        print(result)
+	                launcher = QLauncher(problem, algorithm, backend)
+	                result = launcher.process(save_pickle=True)
+	                print(result)
 
 	"""
 
-	# @overload
-	# def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend, logger: logging.Logger | None = None) -> None:
-	# 	"""
-	# 	Create a QLauncher instance that solves a `problem` using a given `algorithm` on a `backend`.
-
-	# 	Args:
-	# 		problem (Problem): Problem to solve.
-	# 		algorithm (Algorithm): Algorithm to use.
-	# 		backend (Backend | None, optional): Backend to run on.
-	# 		logger (logging.Logger | None, optional): Logger. Defaults to None.
-	# 	"""
-
-	# @overload
-	# def __init__(self, circuit: SamplerPubLike, backend: Backend, shots: int = 1024, logger: logging.Logger | None = None) -> None:
-	# 	"""
-	# 	Create a QLauncher instance that samples `circuit` on the `backend` for `shots` shots.
-
-	# 	Args:
-	# 		circuit (SamplerPubLike): Circuit or (circuit, params) to sample.
-	# 		backend (Backend): Backend to run the circuit on.
-	# 		shots (int, optional): Samples to draw. Defaults to 1024.
-	# 		logger (logging.Logger | None, optional): Logger. Defaults to None.
-	# 	"""
-
-	# @overload
-	# def __init__(self, problem: Problem, algorithm: Algorithm, logger: logging.Logger | None = None) -> None:
-	# 	"""
-	# 	Create a QLauncher instance that solves a `problem` using a given workflow `algorithm`. Backend is None.
-
-	# 	Args:
-	# 		problem (Problem): Problem to solve.
-	# 		algorithm (Algorithm): Algorithm to use.
-	# 		logger (logging.Logger | None, optional): Logger. Defaults to None.
-	# 	"""
-
+	@overload
 	def __init__(
-		self,
-		problem: Problem | ProblemLike,
-		algorithm: Algorithm[ProblemLike, Backend],
-		backend: Backend,
-		logger: logging.Logger | None = None,
+		self, problem: Problem | ProblemLike, algorithm: Algorithm, backend: Backend, /, *, logger: logging.Logger | None = None
 	) -> None:
-		args_matched = False
+		"""
+		Create a QLauncher instance that solves a `problem` using a given `algorithm` on a `backend`.
+
+		Args:
+			problem (Problem): Problem to solve.
+			algorithm (Algorithm): Algorithm to use.
+			backend (Backend | None, optional): Backend to run on.
+			logger (logging.Logger | None, optional): Logger. Defaults to None.
+		"""
+
+	@overload
+	def __init__(self, circuit: SamplerPubLike, backend: Backend, /, *, shots: int = 1024, logger: logging.Logger | None = None) -> None:
+		"""
+		Create a QLauncher instance that samples `circuit` on the `backend` for `shots` shots.
+
+		Args:
+			circuit (SamplerPubLike): Circuit or (circuit, params) to sample.
+			backend (Backend): Backend to run the circuit on.
+			shots (int, optional): Samples to draw. Defaults to 1024.
+			logger (logging.Logger | None, optional): Logger. Defaults to None.
+		"""
+
+	@overload
+	def __init__(self, problem: Problem | ProblemLike, algorithm: Algorithm, /, *, logger: logging.Logger | None = None) -> None:
+		"""
+		Create a QLauncher instance that solves a `problem` using a given workflow `algorithm`. Backend is None.
+
+		Args:
+			problem (Problem | ProblemLike): Problem to solve.
+			algorithm (Algorithm): Algorithm to use.
+			logger (logging.Logger | None, optional): Logger. Defaults to None.
+		"""
+
+	def __init__(self, *args, **kwargs) -> None:
+		if len(args) == 3:
+			problem: Problem | ProblemLike = args[0]
+			algorithm: Algorithm = args[1]
+			backend: Backend = args[2]
+		elif len(args) == 2 and isinstance(args[0], Problem | ProblemLike):
+			problem: Problem | ProblemLike = args[0]
+			algorithm: Algorithm = args[1]
+			backend: Backend = Backend('')
+		elif len(args) == 2 and isinstance(args[0], SamplerPubLike):
+			problem, algorithm, backend = self._build_from_circuit(args[0], args[1], kwargs.get('shots', 1024))
+		else:
+			raise TypeError
 		self.problem = problem
 		self.algorithm = algorithm
 		self.backend = backend
-		# for init_set in [
-		# 	# Standard Problem, Algorithm, Backend
-		# 	([('problem', object), ('algorithm', Algorithm), ('backend', Backend)], self._build_from_PAB),
-		# 	# Circuit running
-		# 	([('circuit', object), ('backend', Backend)], self._build_from_circuit),
-		# 	# Workflows: Problem, Algorithm (workflow)
-		# 	([('problem', object), ('algorithm', Algorithm)], lambda parse: self._build_from_PAB(parse | {'backend': None})),
-		# ]:
-		# 	arg_set, build_function = init_set
-		# 	parse = _extract_args(arg_set, args, kwargs)
-		# 	if not parse:
-		# 		continue
 
-		# 	args_matched = True
-		# 	build_function(parse | kwargs)
-		# 	break
-
-		# if not args_matched:
-		# 	raise ValueError(
-		# 		'Incorrect argument set to create a QLauncher instance! Expected either (Problem, Algorithm, Backend), (Problem, Algorithm) or (Qiskit sampler pub like [for example Quantum Circuit], Backend)'
-		# 	)
-
-		# logger = kwargs.get('logger')
-
+		logger = kwargs.get('logger')
 		if logger is None:
 			logger = logging.getLogger('QLauncher')
 		self.logger = logger
 
 		self.result: Result | None = None
-		self._plugins = []
 
 	def run(self, **kwargs) -> Result:
 		"""
@@ -158,6 +146,9 @@ class QLauncher:
 		self.result = self.algorithm.run(problem, self.backend)
 		self.logger.info('Algorithm ended successfully!')
 		return self.result
+
+	def _build_from_circuit(self, circuit: SamplerPubLike, backend: Backend, shots: int) -> tuple[ProblemLike, Algorithm, Backend]:
+		return (_Circuit(circuit), CircuitRunner(shots), backend)
 
 	def _bfs_search(
 		self, problem: Problem | ProblemLike, input_format: type[ProblemLike]
@@ -207,19 +198,6 @@ class QLauncher:
 				f.write(str(self.result))
 		else:
 			raise ValueError(f'format: {save_format} in not supported try: pickle, txt, csv or json')
-
-	# def get_plugins(self, plugin_type: WHEN) -> list[Plugin]:
-	# 	def condition_check(plugin: Plugin) -> bool:
-	# 		return plugin._when == plugin_type
-
-	# 	return list(filter(condition_check, self._plugins))
-
-	# @property
-	# def plugins(self) -> list[Plugin]:
-	# 	return self._plugins
-
-	# def add_plugin(self, plugin: Plugin) -> None:
-	# 	self._plugins.append(plugin)
 
 
 def fix_json(o: object):
