@@ -177,6 +177,9 @@ class Problem:
 		raise TypeError
 
 
+class OptimizationAlgorithm: ...
+
+
 class Algorithm(ABC, Generic[_ProblemLike, _Backends]):
 	"""
 	Abstract class for Algorithms.

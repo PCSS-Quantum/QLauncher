@@ -119,9 +119,10 @@ class EC(Problem):
 				part = hampy.one_in_n(list(ohs), len(self.instance), quadratic=True)
 			equation += part
 
-		hamiltonian = Hamiltonian(equation.hamiltonian.simplify())
-		hamiltonian.mixer_hamiltonian = self.get_mixer_hamiltonian()
-		return hamiltonian
+		return Hamiltonian(
+			equation.hamiltonian.simplify(),
+			mixer_hamiltonian=self.get_mixer_hamiltonian(),
+		)
 
 	def get_mixer_hamiltonian(self, amount_of_rings=None) -> SparsePauliOp:
 		"""generates mixer hamiltonian"""

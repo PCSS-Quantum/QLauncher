@@ -36,3 +36,21 @@ class _CircuitRunner(Algorithm):
 		energy_fake_distribution = dict.fromkeys(counts.keys(), 1.0)  # No energy calculations in sampling
 
 		return Result.from_counts_energies(counts, energy_fake_distribution)
+
+
+class CircuitRunner(Algorithm[_Circuit, QiskitBackend]):
+	def __init__(self, shots: int) -> None:
+		self.shots = shots
+
+	def run(self, problem: _Circuit, backend: QiskitBackend) -> Result:
+		num_bits = SamplerPub.coerce(problem.pub).circuit.num_qubits
+
+		out = backend.sampler.run([problem.pub], shots=self.shots).result()[0]
+		data = BitArray.concatenate_bits(list(out.data.values()))
+
+		counts = data.get_int_counts()
+		counts = {int_to_bitstring(k, total_bits=num_bits): v for k, v in counts.items()}
+
+		energy_fake_distribution = dict.fromkeys(counts.keys(), 1.0)  # No energy calculations in sampling
+
+		return Result.from_counts_energies(counts, energy_fake_distribution)
