@@ -1,4 +1,5 @@
 from typing import Literal
+from itertools import chain
 import numpy as np
 
 from sklearn.linear_model import LinearRegression
@@ -23,6 +24,11 @@ class NoMitigation(CircuitExecutionMethod):
 
 
 class PauliTwirling(CircuitExecutionMethod):
+    """
+    Error mitigation technique based on averaging the results of running multiple "twirled" versions of the initial circuit.
+    The method appends additional gates on both sides of random 2 qubit gates (cx, ecr).
+    """
+
     def __init__(
         self,
         num_random_circuits: int,
@@ -103,8 +109,11 @@ class PauliTwirling(CircuitExecutionMethod):
                 ]
 
     def _twirl_circuit(self, transpiled_circuit: QuantumCircuit) -> QuantumCircuit:
+        """Apply random self.max_substitute_gates_per_circuit twirls on random (no replacement) gates of the circuit."""
+        circuit = transpiled_circuit.copy()
+
         double_gates_with_indices: list[tuple[int, AccelerateInstruction]] = [
-            (i, x) for i, x in enumerate(transpiled_circuit.data) if x.operation.num_qubits == 2]
+            (i, x) for i, x in enumerate(circuit.data) if x.operation.num_qubits == 2]
 
         choice_idxs = np.random.choice(
             range(len(double_gates_with_indices)),
@@ -114,17 +123,24 @@ class PauliTwirling(CircuitExecutionMethod):
             ),
             replace=False)
 
-        data_cpy = [[x] for x in transpiled_circuit.data]
+        data_cpy = [[x] for x in circuit.data]
 
         for i in choice_idxs:
             data_cpy[i] = self._random_replacement_op(data_cpy[i][0])
 
-        transpiled_circuit.data = sum(data_cpy, start=[])
+        circuit.data = list(chain.from_iterable(data_cpy))  # Collapse [[e1],[e2,e3],[e4],...] to [e1,e2,e3,e4,...]
 
-        return transpiled_circuit
+        return circuit
+
+    def _get_workable_circuit(self, circuit: QuantumCircuit, backend: "QiskitBackend") -> QuantumCircuit:
+        """Get either transpiled circuit if do_transpile is set or copy of circuit you can change as you wish."""
+        return transpile(
+            circuit,
+            basis_gates=list(backend.backendv1v2.target.operation_names)
+        ) if self.do_transpile else circuit.copy()
 
     def sample(self, circuit: QuantumCircuit, backend: "QiskitBackend", shots: int = 1024) -> Result:
-        input_circ = transpile(circuit, backend.backendv1v2) if self.do_transpile else circuit
+        input_circ = self._get_workable_circuit(circuit, backend)
         results = backend.sampler.run(
             [
                 transpile(self._twirl_circuit(input_circ), backend.backendv1v2) for _ in range(self.num_random_circuits)
@@ -138,10 +154,11 @@ class PauliTwirling(CircuitExecutionMethod):
         return Result.from_counts_energies(added, {k: -1 for k in added.keys()}, {})
 
     def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: "QiskitBackend") -> float:
-        input_circ = transpile(circuit, backend.backendv1v2) if self.do_transpile else circuit
+        input_circ = self._get_workable_circuit(circuit, backend)
+
         results = backend.estimator.run(
             [
-                (transpile(self._twirl_circuit(input_circ), backend.backendv1v2), observable) for _ in range(self.num_random_circuits)
+                (transpile(self._twirl_circuit(input_circ), basis_gates=list(backend.backendv1v2.target.operation_names)), observable) for _ in range(self.num_random_circuits)
             ],
         ).result()
 
@@ -153,12 +170,30 @@ class PauliTwirling(CircuitExecutionMethod):
 
 
 class ZeroNoiseExtrapolation(CircuitExecutionMethod):
+    """
+    Error mitigation technique based on fitting a model to data generated 
+    by running a circuit made to multiply the error of the original circuit, 
+    then predicting the values at x=0 (original circuit)
+    """
+
     def __init__(
             self,
             num_extrapolations: int = 4,
             polynomial_degree: int = 3,
             mode: Literal["linear", "exponential"] = "linear"
     ) -> None:
+        """
+        Args:
+            num_extrapolations (int, optional): Number of times the whole circuit is repeated for the largest X. Defaults to 4.
+            polynomial_degree (int, optional): Degree of fitted polynomial. Defaults to 3.
+            mode (Literal[&quot;linear&quot;, &quot;exponential&quot;], optional): 
+                Scaling method. "linear" keeps the original values as is, 
+                "exponential" applies log before fitting model then applies exp to the model prediction.
+                Defaults to "linear".
+
+        Raises:
+            ValueError: If the polynomial degree is larger or equal to the number of data points (num_extrapolations)
+        """
         super().__init__()
         if polynomial_degree >= num_extrapolations:
             raise ValueError("Degree must be lower than number of data points.")
@@ -207,8 +242,8 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
         ])
 
         if self.mode == "exponential":
-            counts = np.log2(counts)
-            counts_fit = np.power(self._get_zero_estimate_sampling(counts), 2)
+            counts = np.log(counts)
+            counts_fit = np.exp(self._get_zero_estimate_sampling(counts))
         else:
             counts_fit = np.maximum(self._get_zero_estimate_sampling(counts), 0) + (10 if counts.sum() == 0 else 0)
 
@@ -222,6 +257,6 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
         evs = np.array([res.data.evs for res in backend.estimator.run([(x, observable)
                        for x in self._get_repeated_circuits(circuit)]).result()])
         if self.mode == "exponential":
-            evs = np.log2(evs)
-            return 2**self._get_zero_estimate(evs)
+            evs = np.log(evs)
+            return np.exp(self._get_zero_estimate(evs))
         return self._get_zero_estimate(evs)
