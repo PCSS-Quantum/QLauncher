@@ -18,6 +18,9 @@ if TYPE_CHECKING:
 class ProblemLike:
 	_all_problems: dict[str, type['ProblemLike']] = {}
 
+	def __init__(self, instance: Any) -> None:
+		self.instance = instance
+
 	def __init_subclass__(cls) -> None:
 		if ProblemLike not in cls.__bases__:
 			return

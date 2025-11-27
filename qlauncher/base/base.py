@@ -106,6 +106,7 @@ class Problem:
 		instance (any): An instance of the problem.
 
 	"""
+
 	_all_problems: dict[str, type['Problem']] = {}
 
 	def __init__(self, instance: Any, instance_name: str = 'unnamed') -> None:
@@ -215,8 +216,11 @@ class Algorithm(ABC, Generic[_ProblemLike, _Backends]):
 		return o.__dict__
 
 	@classmethod
-	def get_input_format(cls) -> type[ProblemLike] | None:
+	def get_class_input_format(cls) -> type[ProblemLike] | None:
 		return cls.run.__annotations__.get('problem', None)
+
+	def get_input_format(self) -> type[ProblemLike] | None:
+		return self.get_class_input_format()
 
 	@abstractmethod
 	def run(self, problem: _ProblemLike, backend: _Backends) -> Result:
