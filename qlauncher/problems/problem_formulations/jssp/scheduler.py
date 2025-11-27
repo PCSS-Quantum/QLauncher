@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from typing import Literal
 
-from pyqubo import Array
+from pyqubo import Binary
 
 from qlauncher import hampy
+from qlauncher.hampy import Variable
 
 
 @dataclass
@@ -31,23 +31,14 @@ class JobShopScheduler:
 		self,
 		job_dict: dict[str, list[tuple[str, int]]],
 		max_time: int | None = None,
-		variant: Literal['qubo', 'hamiltonian'] = 'qubo',
-		onehot: Literal['exact', 'quadratic'] | None = None,
 	):
 		self.tasks = []
 		self.tasks_by_machine = {}
 		self.tasks_by_job = {}
 		self.valid_assignments = set()
-		self.variant = variant
 		self._process_data(job_dict, max_time)
 		self._prepare_valid_assignments()
 		self.n = len(self.valid_assignments)
-		if self.variant == 'qubo':
-			self.array = Array.create('variables', self.n, vartype='BINARY')
-			self.qubo = 0
-		else:
-			self.equation = hampy.Equation(self.n)
-			self.onehot = onehot
 
 	def _process_data(self, jobs: dict[str, list[tuple[str, int]]], max_time: int | None = None) -> None:
 		tasks = []
@@ -116,30 +107,24 @@ class JobShopScheduler:
 	def valid(self, task: Task, time: int) -> bool:
 		return (task, time) in self.valid_assignments
 
+	def _get_variable(self, task: Task, time: int) -> Binary | hampy.Variable | None:
+		pass
+
+	def _add_expression(self, var1: Binary | Variable, var2: Binary | Variable, lagrange_factor: float) -> None:
+		pass
+
+	def _add_expression_one_start(self, variables: list[Binary] | list[int | Variable], lagrange_factor: float) -> None:
+		pass
+
 	def _add_one_start_constraint(self, lagrange_one_hot: float = 1) -> None:
 		"""self.csp gets the constraint: A task can start once and only once"""
 		for task in self.tasks:
-			if self.variant == 'qubo':
-				qubo_term = 0
-			else:
-				onehot_tasks = set()
-
+			variables = []
 			for t in range(self.max_time):
 				if not self.valid(task, t):
 					continue
-
-				if self.variant == 'qubo':
-					qubo_term += self.array[self.assignment_index[(task, t)]]
-				else:
-					onehot_tasks.add(self.assignment_index[(task, t)])
-
-			if self.variant == 'qubo':
-				self.qubo += lagrange_one_hot * ((1 - qubo_term) * (1 - qubo_term))
-			else:
-				if self.onehot == 'exact':
-					self.H += lagrange_one_hot * (~hampy.one_in_n(onehot_tasks, self.n)).hamiltonian
-				elif self.onehot == 'quadratic':
-					self.H += lagrange_one_hot * hampy.one_in_n(onehot_tasks, self.n, quadratic=True).hamiltonian
+				variables.append(self._get_variable(task, t))
+			self._add_expression_one_start(variables, lagrange_one_hot)
 
 	def _add_precedence_constraint(self, lagrange_precedence: float = 1) -> None:
 		"""self.csp gets the constraint: Task must follow a particular order.
@@ -151,23 +136,12 @@ class JobShopScheduler:
 				for t in range(self.max_time):
 					if not self.valid(current_task, t):
 						continue
-					var1 = (
-						self.array[self.assignment_index[(current_task, t)]]
-						if self.variant == 'qubo'
-						else self.equation[self.assignment_index[(current_task, t)]]
-					)
+					var1 = self._get_variable(current_task, t)
 					for tt in range(min(t + current_task.duration, self.max_time)):
 						if not self.valid(next_task, tt):
 							continue
-						var2 = (
-							self.array[self.assignment_index[(next_task, tt)]]
-							if self.variant == 'qubo'
-							else self.equation[self.assignment_index[(next_task, tt)]]
-						)
-						if self.variant == 'qubo':
-							self.qubo += lagrange_precedence * var1 * var2
-						else:
-							self.H += lagrange_precedence * (var1 & var2).hamiltonian
+						var2 = self._get_variable(next_task, tt)
+						self._add_expression(var1, var2, lagrange_precedence)
 
 	def _add_share_machine_constraint(self, lagrange_share: float = 1) -> None:
 		"""self.csp gets the constraint: At most one task per machine per time unit"""
@@ -178,20 +152,9 @@ class JobShopScheduler:
 					for t in range(self.max_time):
 						if not self.valid(task1, t):
 							continue
-						var1 = (
-							self.array[self.assignment_index[(task1, t)]]
-							if self.variant == 'qubo'
-							else self.equation[self.assignment_index[(task1, t)]]
-						)
+						var1 = self._get_variable(task1, t)
 						for tt in range(t, min(t + task1.duration, self.max_time)):
 							if not self.valid(task2, tt):
 								continue
-							var2 = (
-								self.array[self.assignment_index[(task2, tt)]]
-								if self.variant == 'qubo'
-								else self.equation[self.assignment_index[(task2, tt)]]
-							)
-							if self.variant == 'qubo':
-								self.qubo += lagrange_share * var1 * var2
-							else:
-								self.H += lagrange_share * (var1 & var2).hamiltonian
+							var2 = self._get_variable(task2, tt)
+							self._add_expression(var1, var2, lagrange_share)
