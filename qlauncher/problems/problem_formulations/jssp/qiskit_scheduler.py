@@ -7,6 +7,10 @@ import qlauncher.hampy as hampy
 
 from .scheduler import JobShopScheduler, KeyList, get_label
 
+def get_jss_hamiltonian(job_dict, max_time, onehot):
+	scheduler = QiskitScheduler(job_dict, max_time, onehot)
+	return scheduler.get_hamiltonian()
+
 
 class QiskitScheduler(JobShopScheduler):
 	def __init__(self, job_dict: dict, max_time: int | None = None, onehot: str = 'exact'):

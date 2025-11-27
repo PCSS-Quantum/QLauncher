@@ -5,6 +5,25 @@ from .Binary import Binary
 from .scheduler import JobShopScheduler, KeyList, get_label
 from dimod import BinaryQuadraticModel
 
+def get_jss_bqm(
+	job_dict,
+	max_time,
+	disable_till=None,
+	disable_since=None,
+	disabled_variables=None,
+	lagrange_one_hot=3,
+	lagrange_precedence=1,
+	lagrange_share=2,
+):
+	if disable_till is None:
+		disable_till = {}
+	if disable_since is None:
+		disable_since = {}
+	if disabled_variables is None:
+		disabled_variables = []
+
+	scheduler = DWaveScheduler(job_dict, max_time)
+	return scheduler.get_bqm(disable_till, disable_since, disabled_variables, lagrange_one_hot, lagrange_precedence, lagrange_share)
 
 class DWaveScheduler(JobShopScheduler):
 	def __init__(self, job_dict, max_time=None):
