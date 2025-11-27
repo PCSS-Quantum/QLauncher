@@ -39,7 +39,7 @@ class GraphColoring(Problem):
 		return {'instance_name': self.instance_name}
 
 	@staticmethod
-	def from_preset(instance_name: str) -> 'GraphColoring':
+	def from_preset(instance_name: str, **kwargs) -> 'GraphColoring':
 		match instance_name:
 			case 'default':
 				graph = nx.petersen_graph()
@@ -53,15 +53,15 @@ class GraphColoring(Problem):
 			case _:
 				raise ValueError(f'Preset f{instance_name} not defined')
 
-	@staticmethod
-	def from_file(path: str) -> 'GraphColoring':
+	@classmethod
+	def from_file(cls: type['GraphColoring'], path: str) -> 'Problem':
 		with open(path, 'rb') as f:
 			graph, num_colors = pickle.load(f)
-		return GraphColoring(graph, instance_name=path, num_colors=num_colors)
+		return cls(graph, instance_name=path, num_colors=num_colors)
 
-	def to_file(self, path: str) -> None:
-		with open(path, 'wb') as f:
-			pickle.dump((self.instance, self.num_colors), f, pickle.HIGHEST_PROTOCOL)
+	# def to_file(self, path: str) -> None:
+	# 	with open(path, 'wb') as f:
+	# 		pickle.dump((self.instance, self.num_colors), f, pickle.HIGHEST_PROTOCOL)
 
 	def _get_path(self) -> str:
 		return f'{self.name}@{self.instance_name}'
