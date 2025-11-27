@@ -3,6 +3,8 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from qlauncher.base import Algorithm
+from qlauncher.base.base import Backend, Problem
+from qlauncher.base.problem_like import ProblemLike
 
 
 class Task:
@@ -50,20 +52,22 @@ class SubTask(Task):
 
 
 class Workflow(Algorithm):
-	_algorithm_format = 'none'
-
-	def __init__(self, tasks: list[Task], input_task: Task, output_task: Task, input_format: str = 'none'):
+	def __init__(self, tasks: list[Task], input_task: Task, output_task: Task, input_format: type[Problem | ProblemLike]):
 		self.tasks = tasks
 		self.input_task = input_task
 		self.output_task = output_task
-		self._algorithm_format = input_format
+		self.input_format = input_format
 
-	def run(self, problem, backend, formatter):
-		input_result = formatter(problem)
-		self.input_task.result = input_result
+	def run(self, problem: Algorithm, backend: Backend) -> Any:  # noqa: ANN401
+		self.input_task.result = problem
 		with concurrent.futures.ThreadPoolExecutor() as executor:
 			_execute_workflow(self.tasks, executor)
 		return self.output_task.result
+
+	def get_input_format(self) -> type[ProblemLike]:
+		if issubclass(self.input_format, Problem):
+			return ProblemLike
+		return self.input_format
 
 
 class WorkflowManager:
@@ -71,7 +75,7 @@ class WorkflowManager:
 		self.tasks: list[Task] = []
 		self.manager = manager
 		self.input_task: Task | None = None
-		self.input_task_format: str = 'none'
+		self.input_task_format: type[Problem | ProblemLike] = ProblemLike
 		self.output_task: Task | None = None
 
 	def __enter__(self):
@@ -94,13 +98,14 @@ class WorkflowManager:
 			_execute_workflow(self.tasks, executor)
 		if self.output_task:
 			return self.output_task.result
+		return None
 
 	def print_dag(self) -> None:
 		for task in self.tasks:
 			dep_names = [dep.func.__name__ for dep in task.dependencies]
 			print(f'{task.func.__name__} -> {dep_names}')
 
-	def input(self, format: str = 'none'):
+	def input(self, format: type[Problem | ProblemLike]):
 		self.input_task = Task(func=None)
 		self.input_task.done = True
 		self.input_task_format = format
