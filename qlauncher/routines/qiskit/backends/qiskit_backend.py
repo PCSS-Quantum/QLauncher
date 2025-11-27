@@ -21,35 +21,35 @@ class QiskitBackend(Backend):
 	Base class for backends compatible with qiskit.
 
 	Attributes:
-	    name (str): The name of the backend.
-	    options (Options | None, optional): The options for the backend. Defaults to None.
-	    backendv1v2 (BackendV1 | BackendV2 | None, optional): Predefined backend to use with name 'backendv1v2'. Defaults to None.
-	    sampler (BaseSamplerV2): The sampler used for sampling.
-	    estimator (BaseEstimatorV2): The estimator used for estimation.
+		name (str): The name of the backend.
+		options (Options | None, optional): The options for the backend. Defaults to None.
+		backendv1v2 (BackendV1 | BackendV2 | None, optional): Predefined backend to use with name 'backendv1v2'. Defaults to None.
+		sampler (BaseSamplerV2): The sampler used for sampling.
+		estimator (BaseEstimatorV2): The estimator used for estimation.
 	"""
 
 	def __init__(
 		self,
-		name: Literal['local_simulator', 'backendv1v2'] | str,
+		name: Literal['local_simulator', 'backendv1v2'] | str = 'local_simulator',
 		options: Options | None = None,
 		backendv1v2: BackendV1 | BackendV2 | None = None,
 		auto_transpile_level: Literal[0, 1, 2, 3] | None = None,
 	) -> None:
 		"""
 		Args:
-		    **name (Literal[&#39;local_simulator&#39;, &#39;backendv1v2&#39;] | str)**: Name or mode of operation,
-		    'backendv1v2' allows for using a specific backend simulator.
-		    **options (Options | None, optional)**: Defaults to None.
-		    **backendv1v2 (BackendV1 | BackendV2 | None, optional)**:
-		        Used with name 'backendv1v2', sampler and estimator will use it. Defaults to None.
-		    **auto_transpile_level (Literal[0, 1, 2, 3] | None, optional)**:
-		        Optimization level for automatic transpilation of circuits.
-		    - None: Don't transpile.
-		    - 0: No optimization (only transpile to compatible gates).
-		    - 1: Light optimization.
-		    - 2: Heavy optimization.
-		    - 3: Heaviest optimization.
-		    Defaults to None.
+			**name (Literal[&#39;local_simulator&#39;, &#39;backendv1v2&#39;] | str)**: Name or mode of operation. Defaults to local_simulator,
+			'backendv1v2' allows for using a specific backend simulator.
+			**options (Options | None, optional)**: Defaults to None.
+			**backendv1v2 (BackendV1 | BackendV2 | None, optional)**:
+				Used with name 'backendv1v2', sampler and estimator will use it. Defaults to None.
+			**auto_transpile_level (Literal[0, 1, 2, 3] | None, optional)**:
+				Optimization level for automatic transpilation of circuits.
+			- None: Don't transpile.
+			- 0: No optimization (only transpile to compatible gates).
+			- 1: Light optimization.
+			- 2: Heavy optimization.
+			- 3: Heaviest optimization.
+			Defaults to None.
 		"""
 		super().__init__(name)
 		self.options = options

@@ -4,7 +4,7 @@ from qiskit.primitives import BitArray
 from qiskit.primitives.containers.sampler_pub import SamplerPub
 
 from qlauncher.base.base import Algorithm, Backend, Problem, Result
-from qlauncher.problems.problem_initialization.circuit import _Circuit
+from qlauncher.problems.circuit import _Circuit
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.utils import int_to_bitstring

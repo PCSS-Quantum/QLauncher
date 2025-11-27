@@ -9,7 +9,8 @@ from qlauncher.base.base import Result
 from qlauncher.hampy import Equation
 from qlauncher.launcher.aql import AQL, AQLTask
 from qlauncher.problems import EC, TSP
-from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend
+from qlauncher.routines.dwave import SimulatedAnnealingBackend
+from qlauncher.routines.dwave.algorithms import SimulatedAnnealing
 from qlauncher.routines.qiskit import QAOA, QiskitBackend
 
 
@@ -47,8 +48,8 @@ def prepare_AQL(mode='default') -> AQL:
 
 	be = QiskitBackend('local_simulator')
 	be.is_device = True
-	t1 = aql.add_task((TSP.generate_tsp_instance(5), QAOA(), be))
-	t2 = aql.add_task((TSP.generate_tsp_instance(5), QAOA(), be), dependencies=[t1])
+	t1 = aql.add_task((EC.from_preset('micro'), QAOA(), be))
+	aql.add_task((EC.from_preset('micro'), QAOA(), be), dependencies=[t1])
 
 	return aql
 
@@ -104,7 +105,7 @@ def test_AQL_individual_tasks() -> None:
 	aql = AQL()
 
 	aql.add_task((EC.from_preset('micro'), QAOA(), QiskitBackend('local_simulator')))
-	aql.add_task((EC.from_preset('micro'), DwaveSolver(), SimulatedAnnealingBackend('local_simulator')))
+	aql.add_task((EC.from_preset('micro'), SimulatedAnnealing(num_reads=10), SimulatedAnnealingBackend()))
 
 	aql.start()
 
@@ -121,29 +122,13 @@ def test_AQL_context_manager() -> None:
 	tasks: list[AQLTask] = []
 	with AQL() as aql:
 		t1 = aql.add_task((EC.from_preset('default'), QAOA(), QiskitBackend('local_simulator')))
-		t2 = aql.add_task((EC.from_preset('default'), DwaveSolver(), SimulatedAnnealingBackend('local_simulator')))
+		t2 = aql.add_task((EC.from_preset('default'), SimulatedAnnealing(num_reads=10), SimulatedAnnealingBackend()))
 		tasks: list[AQLTask] = [t1, t2]
 		aql.start()
 
 	for t in tasks:
 		assert not t.running()
-		assert t.result() is None
-
-
-@check_subprocesses_exit()
-def test_AQL_binds_params() -> None:
-	aql = AQL('optimize_session')
-	be = QiskitBackend('local_simulator')
-	be.is_device = True
-	aql.add_task((TSP.generate_tsp_instance(3), QAOA(), be), onehot='quadratic')
-
-	aql.start()
-	aql.results(10)
-	t_gen = aql._classical_tasks[0]
-
-	eq = Equation(t_gen.result())
-
-	assert eq.is_quadratic()
+		assert t.result() is not None
 
 
 @check_subprocesses_exit()

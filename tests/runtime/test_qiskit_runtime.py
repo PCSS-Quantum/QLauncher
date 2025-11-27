@@ -1,19 +1,14 @@
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.base.problem_like import Hamiltonian
 from qlauncher.routines.qiskit import FALQON, QAOA, QiskitBackend  # , AQTBackend
 from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
 from qlauncher.utils import int_to_bitstring
 from tests.runtime.utils import ALL_PROBLEMS, PROBLEM_MAP
-
-
-def _get_hamiltonian() -> Hamiltonian:
-	return Hamiltonian(SparsePauliOp.from_list([('ZZ', -1), ('ZI', 2), ('IZ', 2), ('II', -1)]))
+from tests.utils.problem import get_hamiltonian
 
 
 def test_int_to_bs() -> None:
@@ -31,7 +26,7 @@ def test_circuit() -> None:
 def test_falqon() -> None:
 	qaoa = FALQON(max_reps=1)
 	backend = QiskitBackend('local_simulator')
-	launcher = QLauncher(_get_hamiltonian(), qaoa, backend)
+	launcher = QLauncher(get_hamiltonian(), qaoa, backend)
 
 	results = launcher.run()
 	assert isinstance(results, Result)
@@ -40,7 +35,7 @@ def test_falqon() -> None:
 def test_QAOA() -> None:
 	qaoa = QAOA(p=1)
 	backend = QiskitBackend('local_simulator')
-	launcher = QLauncher(_get_hamiltonian(), qaoa, backend)
+	launcher = QLauncher(get_hamiltonian(), qaoa, backend)
 
 	results = launcher.run()
 	assert isinstance(results, Result)
