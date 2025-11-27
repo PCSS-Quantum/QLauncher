@@ -111,7 +111,7 @@ class JobManager:
 
 	def _prepare_ql_dill_job(self, problem: ProblemLike, algorithm: Algorithm, backend: Backend, output: str, cores: int = 1) -> dict:
 		# circular import fix
-		from qlauncher.launcher.plauncher import QLauncher  # pylint:disable = import-outside-toplevel
+		from qlauncher.launcher.qlauncher import QLauncher  # pylint:disable = import-outside-toplevel
 
 		job_uid = f'{len(self.jobs):05d}'
 		output_file = os.path.abspath(f'{output}output.{job_uid}')
