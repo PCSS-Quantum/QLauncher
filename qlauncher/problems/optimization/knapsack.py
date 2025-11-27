@@ -1,20 +1,12 @@
 """This module contains the Knapsack class."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 
 import numpy as np
 from pyqubo import Array, Binary
 
 from qlauncher.base import Problem
 from qlauncher.base.problem_like import QUBO
-
-
-@dataclass(frozen=True)
-class KnapsackInstance:
-	values: Sequence[int]
-	weights: Sequence[int]
-	capacity: int
 
 
 class Knapsack(Problem):
@@ -26,19 +18,18 @@ class Knapsack(Problem):
 	and can be passed into QLauncher.
 	"""
 
-	def __init__(self, instance: KnapsackInstance, instance_name: str = "unnamed"):
-		if len(instance.values) != len(instance.weights) or len(instance.values) == 0:
+	def __init__(self, values: Sequence[int], weights: Sequence[int], capacity: int, instance_name: str = 'unnamed'):
+		if len(values) != len(weights) or len(values) == 0:
 			raise ValueError('values and weights must have the same positive length')
-		if instance.capacity < 0:
+		if capacity < 0:
 			raise ValueError('capacity must be non-negative')
-		super().__init__(instance, instance_name=instance_name)
+		super().__init__((values, weights, capacity), instance_name=instance_name)
+		self.values = values
+		self.weights = weights
+		self.capacity = capacity
 
 	@staticmethod
-	def from_lists(values: Sequence[int], weights: Sequence[int], capacity: int, name: str = 'unnamed') -> 'Knapsack':
-		return Knapsack(KnapsackInstance(values=list(values), weights=list(weights), capacity=int(capacity)), instance_name=name)
-
-	@staticmethod
-	def from_preset(instance_name: str) -> 'Knapsack':
+	def from_preset(instance_name: str, **kwargs) -> 'Knapsack':
 		values, weights, capacity = None, None, None
 		match instance_name:
 			case 'default':
@@ -50,47 +41,29 @@ class Knapsack(Problem):
 				weights = [3, 2, 2]
 				capacity = 5
 			case _:
-				raise ValueError(f"Preset f{instance_name} not defined")
-		return Knapsack.from_lists(values=values, weights=weights, capacity=capacity, name=instance_name)
-
-	@property
-	def n(self) -> int:
-		return len(self.instance.values)
-
-	@property
-	def capacity(self) -> int:
-		return self.instance.capacity
-
-	@property
-	def values(self) -> list[int]:
-		return list(self.instance.values)
-
-	@property
-	def weights(self) -> list[int]:
-		return list(self.instance.weights)
+				raise ValueError(f'Preset f{instance_name} not defined')
+		return Knapsack(values, weights, capacity, instance_name)
 
 	def to_qubo(self, penalty_weight: float = 2.0, value_weight: float = 1.0) -> QUBO:
 		"""
 		Returns QUBO function for Knapsack problem.
 		"""
-		values = self.values
-		weights = self.weights
-		n = len(values)
+		size = len(self.values)
 
-		x = Array.create('a_x', shape=n, vartype='BINARY')
+		x = Array.create('a_x', shape=size, vartype='BINARY')
 
 		m = 1 if self.capacity == 0 else int(np.ceil(np.log2(self.capacity + 1)))
 		y = Array.create('z_y', shape=m, vartype='BINARY')
 		slack = sum((2**k) * y[k] for k in range(m))
 
-		weight_sum = sum(weights[i] * x[i] for i in range(n))
+		weight_sum = sum(self.weights[i] * x[i] for i in range(size))
 		penalty = weight_sum + slack - self.capacity
 		penalty *= penalty
-		value_term = sum(values[i] * x[i] for i in range(n))
+		value_term = sum(self.values[i] * x[i] for i in range(size))
 		H: Binary = penalty_weight * penalty - value_weight * value_term
 
 		qubo_dict, offset = H.compile().to_qubo()
-		var_labels = [f'z_y[{k}]' for k in range(m)] + [f'a_x[{i}]' for i in reversed(range(n))]
+		var_labels = [f'z_y[{k}]' for k in range(m)] + [f'a_x[{i}]' for i in reversed(range(size))]
 		N = len(var_labels)
 		Q = np.zeros((N, N))
 		for i, vi in enumerate(var_labels):
