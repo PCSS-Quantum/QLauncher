@@ -27,35 +27,9 @@ class HamPyScheduler(JobShopScheduler):
 		elif self.onehot == 'quadratic':
 			self.H += lagrange_factor * hampy.one_in_n(variables, self.n, quadratic=True).hamiltonian
 
-	def get_hamiltonian(
-		self,
-		lagrange_one_hot: float,
-		lagrange_precedence: float,
-		lagrange_share: float,
-		version: Literal['decision', 'optimization'] = 'optimization',
-	) -> SparsePauliOp:
-		self._add_one_start_constraint(lagrange_one_hot)
-		self._add_precedence_constraint(lagrange_precedence)
-		self._add_share_machine_constraint(lagrange_share)
+	def _add_variable(self, var: Variable, bias: float) -> None:
+		self.H += var.to_equation().hamiltonian * bias
+
+	def _get_final(self) -> SparsePauliOp:
 		assert isinstance(self.H, SparsePauliOp)
-
-		base = len(self.tasks_by_job)
-
-		# Get BQM
-		if version == 'decision':
-			return self.H.simplify().copy()
-
-		for tasks in self.tasks_by_job.values():
-			task = tasks[-1]
-
-			for t in range(self.max_time):
-				end_time = t + task.duration
-				bias = 2 * base ** (end_time - self.max_time)
-				if not self.valid(task, t):
-					continue
-
-				var = self._get_variable(task, t)
-				self.H += var.to_equation().hamiltonian * bias
-
-		# Get BQM
 		return self.H.simplify().copy()
