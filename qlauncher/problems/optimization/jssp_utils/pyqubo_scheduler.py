@@ -1,4 +1,3 @@
-from dimod import BinaryQuadraticModel
 from pyqubo import Array, Binary
 
 from .scheduler import JobShopScheduler, Task
@@ -25,5 +24,5 @@ class PyQuboScheduler(JobShopScheduler):
 	def _add_variable(self, var: Binary, bias: float) -> None:
 		self.qubo += var * bias
 
-	def _get_final(self) -> BinaryQuadraticModel:
-		return self.qubo.compile().to_bqm()
+	def _get_final(self) -> tuple[dict[tuple[str, str], float], float, int]:
+		return *self.qubo.compile().to_qubo(), self.n

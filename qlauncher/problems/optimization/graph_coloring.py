@@ -159,7 +159,8 @@ class GraphColoring(Problem):
 		for n1, n2 in self.instance.edges:
 			for c in range(self.num_colors):
 				qubo += x[n1, c] * x[n2, c]
-		assert qubo is not None
+		if qubo is None:
+			raise TypeError
 		model = qubo.compile()
 		qubo_dict, offset = model.to_qubo()
 		Q_matrix = np.zeros((num_qubits, num_qubits))

@@ -4,11 +4,10 @@ from collections import defaultdict
 from typing import Literal
 
 import numpy as np
-from dimod import BinaryQuadraticModel
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import BQM, QUBO, Hamiltonian
+from qlauncher.base.problem_like import QUBO, Hamiltonian
 from qlauncher.problems.optimization.jssp_utils import HamPyScheduler, PyQuboScheduler
 
 
@@ -88,25 +87,19 @@ class JSSP(Problem):
 		lagrange_share: float = 5,
 	) -> QUBO:
 		# Define the matrix Q used for QUBO
-		bqm = self._to_dimod_bqm(lagrange_one_hot, lagrange_precedence, lagrange_share)
-		linear = bqm.spin.linear
-		quadratic = bqm.spin.quadratic
-		variables = list(linear.keys())
-		self.instance_size = len(variables)
-		reverse_dict_map = {v: i for i, v in enumerate(variables)}
-
-		Q = np.zeros((self.instance_size, self.instance_size))
-
-		for (label_i, label_j), value in quadratic.items():
-			i = reverse_dict_map[label_i]
-			j = reverse_dict_map[label_j]
-			Q[i, j] += value
-			Q[j, i] = Q[i, j]
-
-		for label_i, value in linear.items():
-			i = reverse_dict_map[label_i]
-			Q[i, i] += value
-		return QUBO(Q / max(np.max(Q), -np.min(Q)), 0)
+		scheduler = PyQuboScheduler(self.instance, self.max_time)
+		result = scheduler.get_result(lagrange_one_hot, lagrange_precedence, lagrange_share)
+		if isinstance(result, SparsePauliOp):
+			raise TypeError
+		qubo_dict, offset, num_vars = result
+		var_labels = [f'variables[{k}]' for k in range(num_vars)]
+		Q_matrix = np.zeros((num_vars, num_vars))
+		for i, vi in enumerate(var_labels):
+			for j, vj in enumerate(var_labels):
+				key = (vi, vj)
+				if key in qubo_dict:
+					Q_matrix[i, j] = qubo_dict[key]
+		return QUBO(Q_matrix, offset)
 
 	def to_hamiltonian(
 		self,
@@ -120,23 +113,3 @@ class JSSP(Problem):
 		if not isinstance(result, SparsePauliOp):
 			raise TypeError
 		return Hamiltonian(result)
-
-	def _to_dimod_bqm(
-		self,
-		lagrange_one_hot: float,
-		lagrange_precedence: float,
-		lagrange_share: float,
-	) -> BinaryQuadraticModel:
-		scheduler = PyQuboScheduler(self.instance, self.max_time)
-		result = scheduler.get_result(lagrange_one_hot, lagrange_precedence, lagrange_share)
-		if not isinstance(result, BinaryQuadraticModel):
-			raise TypeError
-		return result
-
-	def to_bqm(
-		self,
-		lagrange_one_hot: float = 1,
-		lagrange_precedence: float = 2,
-		lagrange_share: float = 5,
-	) -> BQM:
-		return BQM(self._to_dimod_bqm(lagrange_one_hot, lagrange_precedence, lagrange_share))

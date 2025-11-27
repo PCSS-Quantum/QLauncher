@@ -33,4 +33,4 @@ class HamPyScheduler(JobShopScheduler):
 		self.equation += var.to_equation() * bias
 
 	def _get_final(self) -> SparsePauliOp:
-		return self.equation.hamiltonian.copy()
+		return self.equation.hamiltonian
