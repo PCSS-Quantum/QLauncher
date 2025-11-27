@@ -5,7 +5,7 @@ from pyqubo import Array
 
 import qlauncher.problems.problem_initialization as problem
 from qlauncher.base import adapter, formatter
-from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
+# from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import get_jss_bqm
 
 
 # @formatter(problem.JSSP, 'qubo')

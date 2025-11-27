@@ -8,8 +8,7 @@ from dimod import BinaryQuadraticModel
 
 from qlauncher.base import Problem
 from qlauncher.base.problem_like import BQM, QUBO, Hamiltonian
-from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import DWaveScheduler
-from qlauncher.problems.problem_formulations.jssp.qiskit_scheduler import QiskitScheduler
+from qlauncher.problems.optimization.jssp_utils import HamPyScheduler, PyQuboScheduler
 
 
 class JSSP(Problem):
@@ -81,17 +80,6 @@ class JSSP(Problem):
 				)
 		return JSSP(instance=job_dict, **kwargs)
 
-	def _get_len_all_jobs(self) -> int:
-		result = 0
-		for job in self.instance.values():
-			result += len(job)
-		return result
-
-	def _one_hot_to_jobs(self, binary_vector: list[int]) -> list[str]:
-		bqm = self._to_dimod_bqm(1, 1, 1)
-		variables = list(bqm.spin.linear.keys())
-		return [variables[i] for i in range(len(variables)) if binary_vector[i] == 1]
-
 	def to_qubo(
 		self,
 		lagrange_one_hot: float = 1,
@@ -126,7 +114,7 @@ class JSSP(Problem):
 		lagrange_share: float = 5,
 		onehot: Literal['exact', 'quadratic'] = 'exact',
 	) -> Hamiltonian:
-		scheduler = QiskitScheduler(self.instance, self.max_time, onehot)
+		scheduler = HamPyScheduler(self.instance, self.max_time, onehot)
 		return Hamiltonian(scheduler.get_hamiltonian(lagrange_one_hot, lagrange_precedence, lagrange_share, self.variant).simplify())
 
 	def _to_dimod_bqm(
@@ -135,7 +123,7 @@ class JSSP(Problem):
 		lagrange_precedence: float,
 		lagrange_share: float,
 	) -> BinaryQuadraticModel:
-		scheduler = DWaveScheduler(self.instance, self.max_time)
+		scheduler = PyQuboScheduler(self.instance, self.max_time)
 		return scheduler.get_bqm(lagrange_one_hot, lagrange_precedence, lagrange_share)
 
 	def to_bqm(
