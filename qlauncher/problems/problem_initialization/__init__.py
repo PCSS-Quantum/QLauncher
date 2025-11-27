@@ -1,4 +1,4 @@
-from .circuit import _Circuit
+from ..circuit import _Circuit
 from .graph_coloring import GraphColoring
 from .jssp import JSSP
 from .knapsack import Knapsack
