@@ -5,6 +5,7 @@ from typing import Literal
 
 import numpy as np
 from dimod import BinaryQuadraticModel
+from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.base import Problem
 from qlauncher.base.problem_like import BQM, QUBO, Hamiltonian
@@ -115,7 +116,10 @@ class JSSP(Problem):
 		onehot: Literal['exact', 'quadratic'] = 'exact',
 	) -> Hamiltonian:
 		scheduler = HamPyScheduler(self.instance, self.max_time, onehot)
-		return Hamiltonian(scheduler.get_hamiltonian(lagrange_one_hot, lagrange_precedence, lagrange_share, self.variant).simplify())
+		result = scheduler.get_result(lagrange_one_hot, lagrange_precedence, lagrange_share, self.variant)
+		if not isinstance(result, SparsePauliOp):
+			raise TypeError
+		return Hamiltonian(result)
 
 	def _to_dimod_bqm(
 		self,
@@ -124,7 +128,10 @@ class JSSP(Problem):
 		lagrange_share: float,
 	) -> BinaryQuadraticModel:
 		scheduler = PyQuboScheduler(self.instance, self.max_time)
-		return scheduler.get_bqm(lagrange_one_hot, lagrange_precedence, lagrange_share)
+		result = scheduler.get_result(lagrange_one_hot, lagrange_precedence, lagrange_share)
+		if not isinstance(result, BinaryQuadraticModel):
+			raise TypeError
+		return result
 
 	def to_bqm(
 		self,

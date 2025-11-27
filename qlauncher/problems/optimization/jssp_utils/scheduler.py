@@ -30,6 +30,8 @@ class JobShopScheduler(ABC):
 	tasks_by_machine: dict[str, set[Task]]
 	tasks_by_job: dict[str, list[Task]]
 	max_time: int
+	valid_assignments: set[tuple[Task, int]]
+	n: int
 
 	def __init__(
 		self,
