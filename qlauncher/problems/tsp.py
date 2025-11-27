@@ -8,7 +8,7 @@ from qiskit_algorithms import SamplingMinimumEigensolverResult
 
 import qlauncher.hampy as hampy
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import Hamiltonian
+from qlauncher.base.problem_like import QUBO, Hamiltonian
 from qlauncher.hampy import Equation
 from qlauncher.hampy.utils import shift_affected_qubits
 
@@ -312,3 +312,6 @@ class TSP(Problem):
 		costs = self._make_connection_hamiltonian(scaled_edge_costs, return_to_start=return_to_start)
 
 		return Hamiltonian((constraints * constraints_weight + costs * costs_weight).simplify())
+
+	def to_qubo(self, constraints_weight: int = 5, costs_weight: int = 1, return_to_start: bool = True) -> QUBO:
+		return self.to_hamiltonian(constraints_weight, costs_weight, return_to_start, onehot='quadratic').to_qubo()
