@@ -101,7 +101,7 @@ class QATM(Problem):
 			hamiltonian += goal_hamiltonian / cm.sum().sum()
 
 		return Hamiltonian(
-			hamiltonian.hamiltonian.simplify(),
+			hamiltonian.hamiltonian,
 			mixer_hamiltonian=self.get_mixer_hamiltonian(),
 			initial_state=self.get_initial_state(),
 		)

@@ -1,17 +1,17 @@
 import functools
 import time
+from typing import Literal
 
 import psutil
 import pytest
 from dimod import SampleSet
 
 from qlauncher.base.base import Result
-from qlauncher.hampy import Equation
 from qlauncher.launcher.aql import AQL, AQLTask
-from qlauncher.problems import EC, TSP
 from qlauncher.routines.dwave import SimulatedAnnealingBackend
 from qlauncher.routines.dwave.algorithms import SimulatedAnnealing
 from qlauncher.routines.qiskit import QAOA, QiskitBackend
+from tests.utils.problem import get_hamiltonian, get_qubo
 
 
 def check_subprocesses_exit(max_timeout=5):
@@ -43,13 +43,14 @@ def check_subprocesses_exit(max_timeout=5):
 	return wrapper1
 
 
-def prepare_AQL(mode='default') -> AQL:
+def prepare_AQL(mode: Literal['default', 'optimize_session'] = 'default', long: bool = False) -> AQL:
+	qaoa_p = 10 if long else 1
 	aql = AQL(mode)
 
 	be = QiskitBackend('local_simulator')
 	be.is_device = True
-	t1 = aql.add_task((EC.from_preset('micro'), QAOA(), be))
-	aql.add_task((EC.from_preset('micro'), QAOA(), be), dependencies=[t1])
+	t1 = aql.add_task((get_hamiltonian(), QAOA(p=qaoa_p), be))
+	aql.add_task((get_hamiltonian(), QAOA(p=qaoa_p), be), dependencies=[t1])
 
 	return aql
 
@@ -73,7 +74,7 @@ def test_AQL_cancels_tasks() -> None:
 
 @check_subprocesses_exit()
 def test_AQL_cancels_tasks_in_opt_mode() -> None:
-	aql = prepare_AQL('optimize_session')
+	aql = prepare_AQL('optimize_session', long=True)
 	aql.start()
 	time.sleep(0.5)
 	aql.cancel_running_tasks()
@@ -104,8 +105,8 @@ def test_AQL_cancels_tasks_after_timeout() -> None:
 def test_AQL_individual_tasks() -> None:
 	aql = AQL()
 
-	aql.add_task((EC.from_preset('micro'), QAOA(), QiskitBackend('local_simulator')))
-	aql.add_task((EC.from_preset('micro'), SimulatedAnnealing(num_reads=10), SimulatedAnnealingBackend()))
+	aql.add_task((get_hamiltonian(), QAOA(), QiskitBackend('local_simulator')))
+	aql.add_task((get_qubo(), SimulatedAnnealing(num_reads=10), SimulatedAnnealingBackend()))
 
 	aql.start()
 
@@ -121,14 +122,14 @@ def test_AQL_individual_tasks() -> None:
 def test_AQL_context_manager() -> None:
 	tasks: list[AQLTask] = []
 	with AQL() as aql:
-		t1 = aql.add_task((EC.from_preset('default'), QAOA(), QiskitBackend('local_simulator')))
-		t2 = aql.add_task((EC.from_preset('default'), SimulatedAnnealing(num_reads=10), SimulatedAnnealingBackend()))
+		t1 = aql.add_task((get_hamiltonian(), QAOA(p=10), QiskitBackend('local_simulator')))
+		t2 = aql.add_task((get_qubo(), SimulatedAnnealing(num_reads=10000), SimulatedAnnealingBackend()))
 		tasks: list[AQLTask] = [t1, t2]
 		aql.start()
 
 	for t in tasks:
 		assert not t.running()
-		assert t.result() is not None
+		assert t.result() is None
 
 
 @check_subprocesses_exit()
@@ -139,9 +140,9 @@ def test_AQL_session_optimization() -> None:
 
 	aql = AQL(mode='optimize_session')
 
-	t1_temp = (EC.from_preset('micro'), QAOA(), totally_real_backend)
-	t2_temp = (EC.from_preset('micro'), QAOA(), totally_real_backend)
-	t3_temp = (EC.from_preset('micro'), QAOA(), classical_backend)
+	t1_temp = (get_hamiltonian(), QAOA(), totally_real_backend)
+	t2_temp = (get_hamiltonian(), QAOA(), totally_real_backend)
+	t3_temp = (get_hamiltonian(), QAOA(), classical_backend)
 
 	order = []
 	t1 = aql.add_task(t3_temp)

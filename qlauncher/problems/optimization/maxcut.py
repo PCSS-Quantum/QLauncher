@@ -68,13 +68,10 @@ class MaxCut(Problem):
 		return QUBO(Q, 0)
 
 	def to_hamiltonian(self) -> Hamiltonian:
-		hamiltonian: hampy.Equation | None = None
-		n = self.instance.number_of_nodes()
+		size = self.instance.number_of_nodes()
+		hamiltonian = hampy.Equation(size)
 		for edge in self.instance.edges():
-			if hamiltonian is None:
-				hamiltonian = ~hampy.one_in_n(list(edge), n)
-			else:
-				hamiltonian += ~hampy.one_in_n(list(edge), n)
+			hamiltonian += ~hampy.one_in_n(list(edge), size)
 		if hamiltonian is None:
 			raise TypeError
-		return Hamiltonian(hamiltonian.hamiltonian.simplify())
+		return Hamiltonian(hamiltonian.hamiltonian)

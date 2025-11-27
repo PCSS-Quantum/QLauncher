@@ -29,7 +29,8 @@ def one_in_n(variables: list[int | Variable], size: int | None = None, quadratic
 			if isinstance(var, Variable):
 				size = var.size
 				break
-
+		else:
+			raise TypeError('Size not found')
 	eq = Equation(size)
 	new_variables = set()
 	for var in copy(variables):

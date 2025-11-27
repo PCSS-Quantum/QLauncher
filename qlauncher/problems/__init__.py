@@ -7,4 +7,4 @@ from .other import TabularML
 
 Raw, _Circuit = [None] * 2
 
-__all__ = ['Problem', 'Raw', 'MaxCut', 'EC', 'QATM', 'JSSP', 'TSP', 'GraphColoring', 'TabularML', 'Knapsack', '_Circuit']
+__all__ = ['Problem', 'MaxCut', 'EC', 'QATM', 'JSSP', 'TSP', 'GraphColoring', 'TabularML', 'Knapsack', '_Circuit']
