@@ -1,5 +1,6 @@
 from qlauncher import QLauncher
 from qlauncher.base import Algorithm
+from qlauncher.base.problem_like import QUBO, ProblemLike
 from qlauncher.problems import MaxCut
 from qlauncher.workflow import WorkflowManager
 
@@ -8,15 +9,16 @@ def task1() -> int:
 	return 10
 
 
-def task2(result1):
-	return result1 * 3
+def task2(value: int) -> int:
+	return value * 3
 
 
-def check_if_qubo(qubo) -> int:
-	import numpy as np
+def task3(result1: ProblemLike) -> float:
+	return result1.instance * 3
 
-	assert isinstance(qubo[0], np.ndarray)
-	return 1
+
+def check_if_qubo(qubo: QUBO) -> bool:
+	return isinstance(qubo, QUBO)
 
 
 def test_task_addition() -> None:
@@ -29,34 +31,33 @@ def test_task_addition() -> None:
 
 def test_running() -> None:
 	with WorkflowManager() as wm:
-		data = wm.input()
-		result = wm.task(task2, (data,))
+		data = wm.input(ProblemLike)
+		result = wm.task(task3, (data,))
 		wm.output(result)
 
-	assert wm(4) == 12
+	assert wm(ProblemLike(4)) == 12
 
 
 def test_workflow() -> None:
 	with WorkflowManager() as wm:
-		data = wm.input(format='qubo')
-		result = wm.task(task2, (data,))
+		data = wm.input(ProblemLike)
+		result = wm.task(task3, (data,))
 		wm.output(result)
 
 	workflow = wm.to_workflow()
 	assert isinstance(workflow, Algorithm)
-	launcher = QLauncher(20, workflow)
+	launcher = QLauncher(ProblemLike(20), workflow)
 	result = launcher.run()
 	assert result == 60
 
 
 def test_workflow_format() -> None:
 	with WorkflowManager() as wm:
-		data = wm.input(format='qubo')
+		data = wm.input(format=QUBO)
 		result = wm.task(check_if_qubo, (data,))
 		wm.output(result)
 
 	workflow = wm.to_workflow()
-	assert workflow._algorithm_format == 'qubo'
+	assert workflow.get_input_format() is QUBO
 	launcher = QLauncher(MaxCut.from_preset(instance_name='default'), workflow)
-	result = launcher.run()
-	assert result == 1
+	assert launcher.run()

@@ -33,8 +33,8 @@ class SamplerV2ToSamplerV1Adapter(BaseSamplerV1):
 	def __init__(self, sampler_v2: BaseSamplerV2, backend=None):
 		"""
 		Args:
-		    sampler_v2 (BaseSamplerV2): V2 sampler to be adapted.
-		    backend (Backend | None): Backend to transpile circuits to.
+			sampler_v2 (BaseSamplerV2): V2 sampler to be adapted.
+			backend (Backend | None): Backend to transpile circuits to.
 		"""
 		self.sampler_v2 = sampler_v2
 		self.backend = backend
@@ -76,7 +76,7 @@ class SamplerV1ToSamplerV2Adapter(BaseSamplerV2):
 	Adapts a v1 sampler to a v2 interface.
 
 	Args:
-	    BaseSamplerV2 (_type_): _description_
+		BaseSamplerV2 (_type_): _description_
 	"""
 
 	def __init__(self, sampler_v1: BaseSamplerV1) -> None:
