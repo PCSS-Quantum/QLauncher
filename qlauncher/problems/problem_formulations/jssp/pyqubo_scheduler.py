@@ -1,7 +1,7 @@
 from dimod import BinaryQuadraticModel
 from pyqubo import Array, Binary
 
-from .scheduler import JobShopScheduler
+from .scheduler import JobShopScheduler, Task
 
 
 class DWaveScheduler(JobShopScheduler):
@@ -9,7 +9,18 @@ class DWaveScheduler(JobShopScheduler):
 	qubo: Binary
 
 	def __init__(self, job_dict: dict, max_time: int | None = None):
-		super().__init__(job_dict, max_time, 'qubo')
+		super().__init__(job_dict, max_time)
+		self.array = Array.create('variables', self.n, vartype='BINARY')
+		self.qubo = 0
+
+	def _get_variable(self, task: Task, time: int) -> Binary:
+		return self.array[self.assignment_index[(task, time)]]
+
+	def _add_expression(self, var1: Binary, var2: Binary, lagrange_factor: float) -> None:
+		self.qubo += lagrange_factor * var1 * var2
+
+	def _add_expression_one_start(self, variables: list[Binary], lagrange_factor: float) -> None:
+		self.qubo += lagrange_factor * ((1 - sum(variables)) * (1 - sum(variables)))
 
 	def get_bqm(self, lagrange_one_hot: float, lagrange_precedence: float, lagrange_share: float) -> BinaryQuadraticModel:
 		"""Returns a BQM to the Job Shop Scheduling problem."""
@@ -32,7 +43,7 @@ class DWaveScheduler(JobShopScheduler):
 				bias = 2 * base ** (end_time - self.max_time)
 				if not self.valid(task, t):
 					continue
-				var = self.array[task.uid, t]
+				var = self._get_variable(task, t)
 				self.qubo += var * bias
 
 		# Get BQM
