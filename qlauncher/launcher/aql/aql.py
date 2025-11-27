@@ -5,6 +5,7 @@ from collections.abc import Callable
 from typing import Literal
 
 from qlauncher.base.base import Algorithm, Backend, Problem, Result
+from qlauncher.base.problem_like import ProblemLike
 from qlauncher.launcher.aql.aql_task import AQLTask, get_timeout
 from qlauncher.launcher.qlauncher import QLauncher
 from qlauncher.problems import Raw
@@ -46,11 +47,11 @@ class AQL:
 	def __init__(self, mode: Literal['default', 'optimize_session'] = 'default') -> None:
 		"""
 		Args:
-		    mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;], optional):
-		            Task execution mode.
-		            If 'optimize_session' all tasks running on a real quantum device get split into separate generation and run subtasks,
-		            then the quantum tasks are ran in one shorter block.
-		            Defaults to 'default'.
+			mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;], optional):
+					Task execution mode.
+					If 'optimize_session' all tasks running on a real quantum device get split into separate generation and run subtasks,
+					then the quantum tasks are ran in one shorter block.
+					Defaults to 'default'.
 		"""
 
 		self.tasks: list[AQLTask] = []
@@ -62,7 +63,7 @@ class AQL:
 	def running_task_count(self) -> int:
 		"""
 		Returns:
-		    int: Amount of tasks that are currently executing.
+			int: Amount of tasks that are currently executing.
 		"""
 		return sum(1 for t in self.tasks if t.running())
 
@@ -78,14 +79,14 @@ class AQL:
 		Blocks the thread until all tasks are finished.
 
 		Args:
-		    timeout (float | int | None, optional):
-		            The maximum amount to wait for execution to finish.
-		            If None, wait forever. If not None and time runs out, raises TimeoutError.
-		            Defaults to None.
-		    cancel_tasks_on_timeout (bool): Whether to cancel all other tasks when one task raises a TimeoutError.
+			timeout (float | int | None, optional):
+					The maximum amount to wait for execution to finish.
+					If None, wait forever. If not None and time runs out, raises TimeoutError.
+					Defaults to None.
+			cancel_tasks_on_timeout (bool): Whether to cancel all other tasks when one task raises a TimeoutError.
 
 		Returns:
-		    list[Result | None]: Task results.
+			list[Result | None]: Task results.
 		"""
 		try:
 			start = time.time()
@@ -100,7 +101,7 @@ class AQL:
 
 	def add_task(
 		self,
-		launcher: QLauncher | tuple[Problem, Algorithm, Backend],
+		launcher: QLauncher | tuple[Problem | ProblemLike, Algorithm, Backend],
 		dependencies: list[AQLTask] | None = None,
 		callbacks: list[Callable] | None = None,
 		**kwargs,
@@ -109,15 +110,15 @@ class AQL:
 		Add a QLauncher task to the execution queue.
 
 		Args:
-		    launcher (QLauncher | tuple[Problem, Algorithm, Backend]): Launcher instance that will be run.
-		    dependencies (list[AQLTask] | None, optional): Tasks that must finish first before this task. Defaults to None.
-		    callbacks (list[Callable] | None, optional):
-		            Functions to run when the task finishes.
-		            The task will be passed to the function as the only parameter.
-		            Defaults to None.
+			launcher (QLauncher | tuple[Problem, Algorithm, Backend]): Launcher instance that will be run.
+			dependencies (list[AQLTask] | None, optional): Tasks that must finish first before this task. Defaults to None.
+			callbacks (list[Callable] | None, optional):
+					Functions to run when the task finishes.
+					The task will be passed to the function as the only parameter.
+					Defaults to None.
 
 		Returns:
-		    AQLTask: Pointer to the submitted task.
+			AQLTask: Pointer to the submitted task.
 		"""
 		if isinstance(launcher, tuple):
 			launcher = QLauncher(*launcher)
