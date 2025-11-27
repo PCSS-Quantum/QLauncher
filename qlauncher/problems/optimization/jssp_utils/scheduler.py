@@ -1,6 +1,10 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Literal
 
+from dimod import BinaryQuadraticModel
 from pyqubo import Binary
+from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import hampy
 from qlauncher.hampy import Variable
@@ -21,7 +25,7 @@ class Task:
 		return self.uid.__hash__()
 
 
-class JobShopScheduler:
+class JobShopScheduler(ABC):
 	tasks: list[Task]
 	tasks_by_machine: dict[str, set[Task]]
 	tasks_by_job: dict[str, list[Task]]
@@ -107,13 +111,24 @@ class JobShopScheduler:
 	def valid(self, task: Task, time: int) -> bool:
 		return (task, time) in self.valid_assignments
 
+	@abstractmethod
 	def _get_variable(self, task: Task, time: int) -> Binary | hampy.Variable | None:
 		pass
 
+	@abstractmethod
 	def _add_expression(self, var1: Binary | Variable, var2: Binary | Variable, lagrange_factor: float) -> None:
 		pass
 
+	@abstractmethod
 	def _add_expression_one_start(self, variables: list[Binary] | list[int | Variable], lagrange_factor: float) -> None:
+		pass
+
+	@abstractmethod
+	def _add_variable(self, var: Variable | Binary, bias: float) -> None:
+		pass
+
+	@abstractmethod
+	def _get_final(self) -> SparsePauliOp | BinaryQuadraticModel | None:
 		pass
 
 	def _add_one_start_constraint(self, lagrange_one_hot: float = 1) -> None:
@@ -158,3 +173,39 @@ class JobShopScheduler:
 								continue
 							var2 = self._get_variable(task2, tt)
 							self._add_expression(var1, var2, lagrange_share)
+
+	def get_result(
+		self,
+		lagrange_one_hot: float,
+		lagrange_precedence: float,
+		lagrange_share: float,
+		version: Literal['decision', 'optimization'] = 'optimization',
+	) -> SparsePauliOp | BinaryQuadraticModel:
+		self._add_one_start_constraint(lagrange_one_hot)
+		self._add_precedence_constraint(lagrange_precedence)
+		self._add_share_machine_constraint(lagrange_share)
+
+		base = len(self.tasks_by_job)
+
+		# Get BQM
+		if version == 'decision':
+			final = self._get_final()
+			assert final is not None
+			return final
+
+		for tasks in self.tasks_by_job.values():
+			task = tasks[-1]
+
+			for t in range(self.max_time):
+				end_time = t + task.duration
+				bias = 2 * base ** (end_time - self.max_time)
+				if not self.valid(task, t):
+					continue
+
+				var = self._get_variable(task, t)
+				self._add_variable(var, bias)
+
+		# Get BQM
+		final = self._get_final()
+		assert final is not None
+		return final
