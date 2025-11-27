@@ -8,8 +8,8 @@ from dimod import BinaryQuadraticModel
 
 from qlauncher.base import Problem
 from qlauncher.base.problem_like import BQM, QUBO, Hamiltonian
-from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import DWaveScheduler
-from qlauncher.problems.problem_formulations.jssp.qiskit_scheduler import QiskitScheduler
+# from qlauncher.problems.problem_formulations.jssp.pyqubo_scheduler import DWaveScheduler
+# from qlauncher.problems.problem_formulations.jssp.qiskit_scheduler import QiskitScheduler
 
 
 class JSSP(Problem):
