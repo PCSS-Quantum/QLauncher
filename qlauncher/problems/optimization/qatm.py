@@ -10,7 +10,7 @@ from qlauncher import hampy
 from qlauncher.base.base import Problem
 from qlauncher.base.problem_like import Hamiltonian
 from qlauncher.hampy.object import Equation
-from qlauncher.problems.ec import ring_ham
+from qlauncher.problems.optimization.ec import ring_ham
 
 
 class QATM(Problem):

@@ -84,8 +84,6 @@ class Knapsack(Problem):
 		slack = sum((2**k) * y[k] for k in range(m))
 
 		weight_sum = sum(weights[i] * x[i] for i in range(n))
-		if not isinstance(weight_sum, Array):
-			raise TypeError
 		penalty = weight_sum + slack - self.capacity
 		penalty *= penalty
 		value_term = sum(values[i] * x[i] for i in range(n))
