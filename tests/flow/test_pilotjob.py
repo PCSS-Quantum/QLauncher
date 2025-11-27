@@ -4,10 +4,10 @@ import shutil
 import pytest
 
 from qlauncher import QLauncher, Result
-from qlauncher.problems import EC
 from qlauncher.routines.qiskit import FALQON, QiskitBackend
 from qlauncher.routines.qiskit.algorithms import EducatedGuess
 from qlauncher.workflow.pilotjob_scheduler import JobManager
+from tests.utils.problem import get_hamiltonian
 
 # TODO: address event loop problem (To @dsiera: what was the problem?)
 
@@ -25,7 +25,7 @@ def test_job_manager(tmp_path) -> None:
 	manager = JobManager()
 	assert isinstance(manager, JobManager)
 
-	problem = EC.from_preset('micro')
+	problem = get_hamiltonian()
 	algorithm = FALQON(max_reps=1)
 	backend = QiskitBackend('local_simulator')
 
@@ -45,13 +45,13 @@ def test_job_manager(tmp_path) -> None:
 
 def test_educated_guess(tmp_path) -> None:
 	"""Testing function for QATM"""
-	pr = EC.from_preset('micro')
+	problem = get_hamiltonian()
 	educated_guess = EducatedGuess(2, 2, max_job_batch_size=1)
 	educated_guess.output_initial = f'{tmp_path}/'
 	educated_guess.output_interpolated = f'{tmp_path}/'
 	educated_guess.output = f'{tmp_path}/'
 	backend = QiskitBackend('local_simulator')
-	launcher = QLauncher(pr, educated_guess, backend)
+	launcher = QLauncher(problem, educated_guess, backend)
 
 	# inform = launcher.process(save_pickle=True)
 	inform = launcher.run()

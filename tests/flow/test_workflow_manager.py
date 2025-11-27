@@ -1,8 +1,8 @@
 from qlauncher import QLauncher
 from qlauncher.base import Algorithm
 from qlauncher.base.problem_like import QUBO, ProblemLike
-from qlauncher.problems import MaxCut
 from qlauncher.workflow import WorkflowManager
+from tests.utils.problem import get_qubo
 
 
 def task1() -> int:
@@ -59,5 +59,5 @@ def test_workflow_format() -> None:
 
 	workflow = wm.to_workflow()
 	assert workflow.get_input_format() is QUBO
-	launcher = QLauncher(MaxCut.from_preset(instance_name='default'), workflow)
+	launcher = QLauncher(get_qubo(), workflow)
 	assert launcher.run()
