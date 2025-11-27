@@ -1,5 +1,4 @@
-from collections.abc import Callable, Sequence
-from typing import Any
+from collections.abc import Sequence
 
 import numpy as np
 from qiskit.circuit import Parameter, QuantumCircuit
@@ -10,7 +9,8 @@ from qiskit_machine_learning.kernels import FidelityQuantumKernel, TrainableFide
 from qiskit_machine_learning.kernels.algorithms import QuantumKernelTrainer
 from qiskit_machine_learning.state_fidelities import BaseStateFidelity, ComputeUncompute
 
-from qlauncher.base.base import Algorithm, Backend, Problem, Result
+from qlauncher.base.base import Algorithm, Result
+from qlauncher.problems.other.tabular_ml import TabularML
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
@@ -42,19 +42,19 @@ class ComputeUncomputeCustom(ComputeUncompute):
 		BaseStateFidelity.__init__(self)  # pylint: disable=non-parent-init-called
 
 
-class TrainQSVCKernel(Algorithm):
+class TrainQSVCKernel(Algorithm[TabularML, QiskitBackend]):
 	"""
 	Train a quantum kernel with additional parameters to be optimized.
 	The kernel will be optimized to provide maximum accuracy with a support vector classifier on the provided dataset.
 	If no trainable parameters are provided, the algorithm will return
-	    a :class:`qiskit_machine_learning.kernels.FidelityQuantumKernel` kernel with a sampler assigned to the provided backend.
-	    Otherwise an instance of :class:`qiskit_machine_learning.kernels.TrainableFidelityQuantumKernel` with optimal
-	    parameters and a sampler assigned to the provided backend will be returned.
+		a :class:`qiskit_machine_learning.kernels.FidelityQuantumKernel` kernel with a sampler assigned to the provided backend.
+		Otherwise an instance of :class:`qiskit_machine_learning.kernels.TrainableFidelityQuantumKernel` with optimal
+		parameters and a sampler assigned to the provided backend will be returned.
 
 	Args:
-	    kernel_circuit(QuantumCircuit): A parametrizable quantum circuit. The measurements will be used to produce kernel output.
-	    trainable_params(Sequence[Parameter] | None, optional):
-	        The parameters to be optimized during training. If None no optimization will be done. Defaults to None.
+		kernel_circuit(QuantumCircuit): A parametrizable quantum circuit. The measurements will be used to produce kernel output.
+		trainable_params(Sequence[Parameter] | None, optional):
+			The parameters to be optimized during training. If None no optimization will be done. Defaults to None.
 	"""
 
 	_algorithm_format = 'tabular_ml'
@@ -64,8 +64,9 @@ class TrainQSVCKernel(Algorithm):
 		self.kernel = kernel_circuit
 		self.trainable = trainable_params if trainable_params is not None else []
 
-	def run(self, problem: Problem, backend: Backend, formatter: Callable[..., Any]) -> Result:
-		X, y = formatter(problem)
+	def run(self, problem: TabularML, backend: QiskitBackend) -> Result:
+		X = problem.X
+		y = problem.y
 
 		if not isinstance(X, np.ndarray):
 			raise ValueError(f'X is not of type np.ndarray: received {type(X)}')
