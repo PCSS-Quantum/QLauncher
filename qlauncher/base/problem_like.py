@@ -125,12 +125,13 @@ class Hamiltonian(ProblemLike):
 		qp = from_ising(self.hamiltonian)
 		conv = QuadraticProgramToQubo()
 		qubo = conv.convert(qp).objective
-		return QUBO(qubo.quadratic.to_array(), 0)
+		return QUBO(qubo.quadratic.to_array(), qubo.constant)
 
 
 class BQM(ProblemLike):
 	def __init__(self, bqm: Any, model: Any = None) -> None:  # noqa: ANN401
 		self.bqm = bqm
+		self.model = model
 
 
 class Molecule(ProblemLike):

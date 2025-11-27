@@ -10,9 +10,9 @@ from qiskit_ibm_runtime import Session
 from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 
 from qlauncher import QLauncher
-from qlauncher.problems import EC
 from qlauncher.routines.qiskit import FALQON, QAOA, AerBackend, AQTBackend, IBMBackend, QiskitBackend
 from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
+from tests.utils.problem import get_hamiltonian
 
 
 class DummyAQTProvider(AQTProvider):
@@ -29,15 +29,14 @@ class DummyAQTProvider(AQTProvider):
 		return offline_no_noise
 
 
-def run_backend_qaoa(backend) -> None:
-	problem = EC.from_preset('micro')
-	launcher = QLauncher(problem, QAOA(p=1), backend)
+def run_backend_qaoa(backend: QiskitBackend) -> None:
+	launcher = QLauncher(get_hamiltonian(), QAOA(p=1), backend)
 
 	res = launcher.run()
 	assert res is not None
 
 
-def run_backend_vqe(backend) -> None:
+def run_backend_vqe(backend: QiskitBackend) -> None:
 	pr = Molecule.from_preset('H2')
 	vqe = VQE(optimizer=COBYLA(maxiter=2))
 	launcher = QLauncher(pr, vqe, backend)
@@ -46,9 +45,8 @@ def run_backend_vqe(backend) -> None:
 	assert results is not None
 
 
-def run_backend_falqon(backend) -> None:
-	problem = EC.from_preset('micro')
-	launcher = QLauncher(problem, FALQON(max_reps=1), backend)
+def run_backend_falqon(backend: QiskitBackend) -> None:
+	launcher = QLauncher(get_hamiltonian(), FALQON(max_reps=1), backend)
 
 	res = launcher.run()
 	assert res is not None
