@@ -127,7 +127,7 @@ class QLauncher:
 
 		self.result: Result | None = None
 
-	def run(self, **kwargs) -> Result:
+	def run(self) -> Result:
 		"""
 		Finds proper formatter, and runs the algorithm on the problem with given backends.
 
