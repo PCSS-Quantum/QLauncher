@@ -12,6 +12,7 @@ class Equation:
 	def __init__(self, sparse_list: list[tuple], size: int, /): ...
 
 	def __init__(self, argument, *args):
+		self.size: int
 		if isinstance(argument, int):
 			self.size = argument
 			self._hamiltonian = SparsePauliOp.from_sparse_list([('I', [], 0)], argument)
@@ -25,7 +26,8 @@ class Equation:
 			raise TypeError('Wrong arguments!')
 
 	def get_variable(self, index: int) -> 'Variable':
-		assert isinstance(index, int), 'Index needs to be an integer'
+		if not isinstance(index, int):
+			raise TypeError('Index needs to be an integer')
 		return Variable(index, self)
 
 	@property
@@ -67,14 +69,14 @@ class Equation:
 		return Equation(self.hamiltonian + other.hamiltonian - (2 * self.hamiltonian.compose(other.hamiltonian)))
 
 	def __invert__(self) -> 'Equation':
-		I = ('I', [], 1)
-		identity = SparsePauliOp.from_sparse_list([I], self.size)
+		I_term = ('I', [], 1)
+		identity = SparsePauliOp.from_sparse_list([I_term], self.size)
 		return Equation(identity - self.hamiltonian)
 
 	def __getitem__(self, variable_number: int):
 		return self.get_variable(variable_number)
 
-	def __eq__(self, other: 'Equation') -> bool:
+	def __eq__(self, other: 'Equation | Variable') -> bool:
 		if isinstance(other, Variable):
 			other = other.to_equation()
 
@@ -117,13 +119,13 @@ class Variable:
 		self.index = index
 		self.size = parent.size
 
-	def __xor__(self, other: 'Equation | float', /) -> Equation:
+	def __xor__(self, other: 'Equation | Variable', /) -> Equation:
 		if isinstance(other, Equation):
 			return self.to_equation() ^ other
 
-		I = ('I', [], 0.5)
+		I_term = ('I', [], 0.5)
 		Z_term = ('ZZ', [self.index, other.index], -0.5)
-		return Equation(SparsePauliOp.from_sparse_list([I, Z_term], self.size))
+		return Equation(SparsePauliOp.from_sparse_list([I_term, Z_term], self.size))
 
 	def __or__(self, other: 'Variable | Equation', /) -> Equation:
 		if isinstance(other, Equation):

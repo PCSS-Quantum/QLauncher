@@ -120,7 +120,7 @@ class EC(Problem):
 			equation += part
 
 		return Hamiltonian(
-			equation.hamiltonian.simplify(),
+			equation.hamiltonian,
 			mixer_hamiltonian=self.get_mixer_hamiltonian(),
 		)
 

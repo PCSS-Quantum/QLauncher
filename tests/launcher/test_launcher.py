@@ -40,7 +40,7 @@ def test_save(tmp_path: str) -> None:
 		launcher.save(tmp / 'save.pckl', 'pickle')
 	launcher.run()
 	with pytest.raises(ValueError):
-		launcher.save(tmp / 'save.pckl', 'pickel')
+		launcher.save(tmp / 'save.pckl', 'pickel')  # type: ignore
 	launcher.save(tmp / 'save.pkl', 'pickle')
 	launcher.save(tmp / 'save.txt', 'txt')
 	launcher.save(tmp / 'save.json', 'json')
