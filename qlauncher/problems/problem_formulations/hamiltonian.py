@@ -64,11 +64,11 @@ def ring_ham(ring: set, n):
 	return SparsePauliOp(total)
 
 
-@formatter(problems.JSSP, 'hamiltonian')
-def get_qiskit_hamiltonian(problem: problems.JSSP) -> SparsePauliOp:
-	if problem.optimization_problem:
-		return problem.h_o
-	return problem.h_d
+# @formatter(problems.JSSP, 'hamiltonian')
+# def get_qiskit_hamiltonian(problem: problems.JSSP) -> SparsePauliOp:
+# 	if problem.optimization_problem:
+# 		return problem.h_o
+# 	return problem.h_d
 
 
 @formatter(problems.Raw, 'hamiltonian')

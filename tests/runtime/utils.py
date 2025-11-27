@@ -7,6 +7,7 @@ PROBLEM_MAP = {
 	'tsp': TSP.generate_tsp_instance(3),
 	'gc': GraphColoring.from_preset('small'),
 	'knapsack': Knapsack.from_preset('small'),
+	'JSSP':JSSP.from_preset('default')
 }
 
 ALL_PROBLEMS = list(PROBLEM_MAP.keys())

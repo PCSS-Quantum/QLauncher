@@ -8,12 +8,7 @@ from qlauncher.hampy import Variable
 from .scheduler import JobShopScheduler, Task
 
 
-def get_jss_hamiltonian(job_dict, max_time, onehot):
-	scheduler = QiskitScheduler(job_dict, max_time, onehot)
-	return scheduler.get_hamiltonian(1, 1, 1)
-
-
-class QiskitScheduler(JobShopScheduler):
+class HamPyScheduler(JobShopScheduler):
 	def __init__(self, job_dict: dict, max_time: int | None = None, onehot: Literal['exact', 'quadratic'] = 'exact'):
 		super().__init__(job_dict, max_time)
 		self.equation = hampy.Equation(self.n)
