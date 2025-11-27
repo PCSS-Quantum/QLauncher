@@ -39,6 +39,8 @@ class HamPyScheduler(JobShopScheduler):
 		self._add_share_machine_constraint(lagrange_share)
 		assert isinstance(self.H, SparsePauliOp)
 
+		base = len(self.tasks_by_job)
+
 		# Get BQM
 		if version == 'decision':
 			return self.H.simplify().copy()
@@ -47,11 +49,13 @@ class HamPyScheduler(JobShopScheduler):
 			task = tasks[-1]
 
 			for t in range(self.max_time):
+				end_time = t + task.duration
+				bias = 2 * base ** (end_time - self.max_time)
 				if not self.valid(task, t):
 					continue
 
 				var = self._get_variable(task, t)
-				self.H += var.to_equation().hamiltonian
+				self.H += var.to_equation().hamiltonian * bias
 
 		# Get BQM
 		return self.H.simplify().copy()
