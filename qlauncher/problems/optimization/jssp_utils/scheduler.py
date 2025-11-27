@@ -130,7 +130,7 @@ class JobShopScheduler(ABC):
 		pass
 
 	@abstractmethod
-	def _get_final(self) -> SparsePauliOp | BinaryQuadraticModel | None:
+	def _get_final(self) -> SparsePauliOp | tuple[dict[tuple[str, str], float], float, int] | None:
 		pass
 
 	def _add_one_start_constraint(self, lagrange_one_hot: float = 1) -> None:
@@ -182,7 +182,7 @@ class JobShopScheduler(ABC):
 		lagrange_precedence: float,
 		lagrange_share: float,
 		version: Literal['decision', 'optimization'] = 'optimization',
-	) -> SparsePauliOp | BinaryQuadraticModel:
+	) -> SparsePauliOp | tuple[dict[tuple[str, str], float], float, int]:
 		self._add_one_start_constraint(lagrange_one_hot)
 		self._add_precedence_constraint(lagrange_precedence)
 		self._add_share_machine_constraint(lagrange_share)
@@ -192,7 +192,8 @@ class JobShopScheduler(ABC):
 		# Get BQM
 		if version == 'decision':
 			final = self._get_final()
-			assert final is not None
+			if final is None:
+				raise TypeError
 			return final
 
 		for tasks in self.tasks_by_job.values():
@@ -209,5 +210,6 @@ class JobShopScheduler(ABC):
 
 		# Get BQM
 		final = self._get_final()
-		assert final is not None
+		if final is None:
+			raise TypeError
 		return final
