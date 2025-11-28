@@ -1,18 +1,18 @@
-from qlauncher.launcher.profiling_launcher import ProfilingLauncher
 from qlauncher import problems
-from qlauncher.routines.dwave import SimulatedAnnealingBackend, DwaveSolver
+from qlauncher.launcher.profiling_launcher import ProfilingLauncher
+from qlauncher.routines.dwave import DwaveSolver, SimulatedAnnealingBackend
 
 
-def main():
-    alg = DwaveSolver()
-    backend = SimulatedAnnealingBackend()
-    pr = problems.MaxCut(instance_name='default')
-    launcher = ProfilingLauncher(pr, alg, backend)
-    res = launcher.run()
-    # You should see at the console many informations about number of calls of each function, time and etc.
-    # Great tool if writing your own function to check if classical part is well optimized
-    print(res)
+def main() -> None:
+	alg = DwaveSolver()
+	backend = SimulatedAnnealingBackend()
+	pr = problems.MaxCut(instance_name='default')
+	launcher = ProfilingLauncher(pr, alg, backend)
+	res = launcher.run()
+	# You should see at the console many informations about number of calls of each function, time and etc.
+	# Great tool if writing your own function to check if classical part is well optimized
+	print(res)
 
 
 if __name__ == '__main__':
-    main()
+	main()
