@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Literal
 
-from dimod import BinaryQuadraticModel
 from pyqubo import Binary
 from qiskit.quantum_info import SparsePauliOp
 
@@ -86,14 +85,16 @@ class JobShopScheduler(ABC):
 			predecessor_time = 0
 			for task in tasks:
 				for t in range(predecessor_time):
-					self.valid_assignments.remove((task, t))
+					if (task, t) in self.valid_assignments:
+						self.valid_assignments.remove((task, t))
 				predecessor_time += task.duration
 
 			successor_time = -1
 			for task in tasks[::-1]:
 				successor_time += task.duration
 				for t in range(successor_time):
-					self.valid_assignments.remove((task, t))
+					if (task, t) in self.valid_assignments:
+						self.valid_assignments.remove((task, t))
 
 	def _exclude_on_demand(
 		self, disable_till: dict[str, int], disable_since: dict[str, int], disabled_variables: list[tuple[str, int, int]]
