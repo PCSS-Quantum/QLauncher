@@ -54,7 +54,7 @@ class JSSP(Problem):
 		return f'{self.name}@{self.instance_name}@{self.max_time}@{"optimization" if self.optimization_problem else "decision"}'
 
 	@staticmethod
-	def from_preset(instance_name: str, **kwargs) -> 'JSSP':
+	def from_preset(instance_name: Literal['default'], **kwargs) -> 'JSSP':
 		match instance_name:
 			case 'default':
 				max_time = 3

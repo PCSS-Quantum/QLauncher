@@ -3,6 +3,7 @@
 import pickle
 from itertools import product
 from random import randint
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -39,7 +40,7 @@ class GraphColoring(Problem):
 		return {'instance_name': self.instance_name}
 
 	@staticmethod
-	def from_preset(instance_name: str, **kwargs) -> 'GraphColoring':
+	def from_preset(instance_name: Literal['default', 'small'], **kwargs) -> 'GraphColoring':
 		match instance_name:
 			case 'default':
 				graph = nx.petersen_graph()

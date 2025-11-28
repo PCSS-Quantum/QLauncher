@@ -1,6 +1,7 @@
 """This module contains the Knapsack class."""
 
 from collections.abc import Sequence
+from typing import Literal
 
 import numpy as np
 from pyqubo import Array, Binary
@@ -29,7 +30,7 @@ class Knapsack(Problem):
 		self.capacity = capacity
 
 	@staticmethod
-	def from_preset(instance_name: str, **kwargs) -> 'Knapsack':
+	def from_preset(instance_name: Literal['default', 'small'], **kwargs) -> 'Knapsack':
 		values, weights, capacity = None, None, None
 		match instance_name:
 			case 'default':
