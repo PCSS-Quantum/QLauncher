@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from pyqubo import Spin
+from pyqubo import Model, Spin
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_nature.second_q.drivers import PySCFDriver
@@ -81,9 +81,7 @@ class QUBO(ProblemLike):
 			else:
 				H += value * qubits[x] * qubits[y]
 		model = H.compile()
-		bqm = model.to_bqm()
-		bqm.offset += self.offset
-		return BQM(bqm, model)
+		return BQM(model)
 
 
 class FN(ProblemLike):
@@ -129,9 +127,12 @@ class Hamiltonian(ProblemLike):
 
 
 class BQM(ProblemLike):
-	def __init__(self, bqm: Any, model: Any = None) -> None:  # noqa: ANN401
-		self.bqm = bqm
+	def __init__(self, model: Model) -> None:  # noqa: ANN401
 		self.model = model
+
+	@property
+	def bqm(self) -> int:
+		return self.model.to_bqm()
 
 
 class Molecule(ProblemLike):
