@@ -155,7 +155,7 @@ class TSP(Problem):
 			self._visualize_solution(solution)
 
 	@staticmethod
-	def from_preset(instance_name: str = 'default', **kwargs) -> 'TSP':
+	def from_preset(instance_name: Literal['default'] = 'default', **kwargs) -> 'TSP':
 		"""
 		Generate TSP instance from a preset name.
 

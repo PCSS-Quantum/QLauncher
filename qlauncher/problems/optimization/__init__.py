@@ -6,4 +6,4 @@ from .maxcut import MaxCut
 from .qatm import QATM
 from .tsp import TSP
 
-__all__ = ['EC', 'MaxCut', 'QATM', 'GraphColoring', 'Knapsack', 'TSP', 'JSSP']
+__all__ = ['EC', 'MaxCut', 'QATM', "JSSP", "GraphColoring", "TSP", "Knapsack"]
