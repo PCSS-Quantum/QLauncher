@@ -63,21 +63,14 @@ class VertexCover(Problem):
 		vertices = self.instance.nodes()
 		edges = self.instance.edges()
 		x = Array.create('x', shape=(len(vertices),), vartype='BINARY')
-		qubo: Binary | None = None
 
 		# penalty for number of vertices used
-		for v in vertices:
-			if qubo is None:
-				qubo = cost_weight * x[v]
-			else:
-				qubo += cost_weight * x[v]
+		qubo: Binary = sum(cost_weight * x[v] for v in vertices)
 
 		# penalty for violating constraint, not covering all edges
 		for e in edges:
 			qubo += constraint_weight * (1 - x[e[0]] - x[e[1]] + x[e[0]] * x[e[1]])
 
-		if qubo is None:
-			raise TypeError
 		qubo_dict, offset = qubo.compile().to_qubo()
 
 		# turn qubo dict into qubo matrix

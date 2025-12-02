@@ -10,7 +10,7 @@ class PyQuboScheduler(JobShopScheduler):
 	def __init__(self, job_dict: dict, max_time: int | None = None):
 		super().__init__(job_dict, max_time)
 		self.array = Array.create('variables', self.n, vartype='BINARY')
-		self.qubo = 0
+		self.qubo: Binary = 0
 
 	def _get_variable(self, task: Task, time: int) -> Binary:
 		return self.array[self.assignment_index[(task, time)]]

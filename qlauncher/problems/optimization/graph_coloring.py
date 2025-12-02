@@ -150,18 +150,13 @@ class GraphColoring(Problem):
 		"""Returns Qubo function"""
 		num_qubits = self.instance.number_of_nodes() * self.num_colors
 		x = Array.create('x', shape=(self.instance.number_of_nodes(), self.num_colors), vartype='BINARY')
-		qubo: Binary | None = None
+		qubo: Binary = 0
 		for node in self.instance.nodes:
 			expression: Binary = 1 - sum(x[node, i] for i in range(self.num_colors))
-			if qubo is None:
-				qubo = expression * expression
-			else:
-				qubo += expression * expression
+			qubo += expression * expression
 		for n1, n2 in self.instance.edges:
 			for c in range(self.num_colors):
 				qubo += x[n1, c] * x[n2, c]
-		if qubo is None:
-			raise TypeError
 		model = qubo.compile()
 		qubo_dict, offset = model.to_qubo()
 		Q_matrix = np.zeros((num_qubits, num_qubits))
