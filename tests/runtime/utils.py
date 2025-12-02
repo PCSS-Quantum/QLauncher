@@ -1,4 +1,4 @@
-from qlauncher.problems import EC, JSSP, QATM, TSP, GraphColoring, Knapsack, MaxCut
+from qlauncher.problems import EC, JSSP, QATM, TSP, GraphColoring, Knapsack, MaxCut, VertexCover
 
 PROBLEM_MAP = {
 	'ec': EC.from_preset('micro'),
@@ -7,7 +7,8 @@ PROBLEM_MAP = {
 	'tsp': TSP.generate_tsp_instance(3),
 	'gc': GraphColoring.from_preset('small'),
 	'knapsack': Knapsack.from_preset('small'),
-	'JSSP':JSSP.from_preset('default')
+	'JSSP': JSSP.from_preset('default'),
+	'VertexCover': VertexCover.from_preset('default'),
 }
 
 ALL_PROBLEMS = list(PROBLEM_MAP.keys())
