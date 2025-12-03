@@ -2,11 +2,10 @@ from typing import Literal
 
 import matplotlib.pyplot as plt
 import networkx as nx
-import numpy as np
 from pyqubo import Array, Binary
 
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import QUBO
+from qlauncher.base.problem_like import BQM
 
 
 class VertexCover(Problem):
@@ -59,10 +58,10 @@ class VertexCover(Problem):
 		graph = nx.gnp_random_graph(num_vertices, edge_probability)
 		return VertexCover(graph)
 
-	def to_qubo(self, constraint_weight: int = 5, cost_weight: int = 1) -> QUBO:
+	def to_bqm(self, constraint_weight: int = 5, cost_weight: int = 1) -> BQM:
 		vertices = self.instance.nodes()
 		edges = self.instance.edges()
-		x = Array.create('x', shape=(len(vertices),), vartype='BINARY')
+		x = Array.create('x', shape=len(vertices), vartype='BINARY')
 
 		# penalty for number of vertices used
 		qubo: Binary = sum(cost_weight * x[v] for v in vertices)
@@ -71,14 +70,4 @@ class VertexCover(Problem):
 		for e in edges:
 			qubo += constraint_weight * (1 - x[e[0]] - x[e[1]] + x[e[0]] * x[e[1]])
 
-		qubo_dict, offset = qubo.compile().to_qubo()
-
-		# turn qubo dict into qubo matrix
-		Q_matrix = np.zeros((len(vertices), len(vertices)))
-		var_labels = [f'x[{k}]' for k in range(len(vertices))]
-		for i, vi in enumerate(var_labels):
-			for j, vj in enumerate(var_labels):
-				key = (vi, vj)
-				if key in qubo_dict:
-					Q_matrix[i, j] = qubo_dict[key]
-		return QUBO(Q_matrix, offset)
+		return BQM(qubo.compile())

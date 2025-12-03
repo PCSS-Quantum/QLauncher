@@ -3,11 +3,10 @@
 from collections import defaultdict
 from typing import Literal
 
-import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import QUBO, Hamiltonian
+from qlauncher.base.problem_like import BQM, Hamiltonian
 from qlauncher.problems.optimization.jssp_utils import HamPyScheduler, PyQuboScheduler
 
 
@@ -80,26 +79,18 @@ class JSSP(Problem):
 				)
 		return JSSP(instance=job_dict, **kwargs)
 
-	def to_qubo(
+	def to_bqm(
 		self,
 		lagrange_one_hot: float = 1,
 		lagrange_precedence: float = 2,
 		lagrange_share: float = 5,
-	) -> QUBO:
+	) -> BQM:
 		# Define the matrix Q used for QUBO
 		scheduler = PyQuboScheduler(self.instance, self.max_time)
 		result = scheduler.get_result(lagrange_one_hot, lagrange_precedence, lagrange_share)
 		if isinstance(result, SparsePauliOp):
 			raise TypeError
-		qubo_dict, offset, num_vars = result
-		var_labels = [f'variables[{k}]' for k in range(num_vars)]
-		Q_matrix = np.zeros((num_vars, num_vars))
-		for i, vi in enumerate(var_labels):
-			for j, vj in enumerate(var_labels):
-				key = (vi, vj)
-				if key in qubo_dict:
-					Q_matrix[i, j] = qubo_dict[key]
-		return QUBO(Q_matrix, offset)
+		return BQM(result)
 
 	def to_hamiltonian(
 		self,

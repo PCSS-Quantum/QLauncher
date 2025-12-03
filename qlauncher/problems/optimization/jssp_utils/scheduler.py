@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Literal
 
-from pyqubo import Binary
+from pyqubo import Binary, Model
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import hampy
@@ -131,7 +131,7 @@ class JobShopScheduler(ABC):
 		pass
 
 	@abstractmethod
-	def _get_final(self) -> SparsePauliOp | tuple[dict[tuple[str, str], float], float, int] | None:
+	def _get_final(self) -> SparsePauliOp | tuple[Model, int] | None:
 		pass
 
 	def _add_one_start_constraint(self, lagrange_one_hot: float = 1) -> None:
@@ -183,7 +183,7 @@ class JobShopScheduler(ABC):
 		lagrange_precedence: float,
 		lagrange_share: float,
 		version: Literal['decision', 'optimization'] = 'optimization',
-	) -> SparsePauliOp | tuple[dict[tuple[str, str], float], float, int]:
+	) -> SparsePauliOp | Model:
 		self._add_one_start_constraint(lagrange_one_hot)
 		self._add_precedence_constraint(lagrange_precedence)
 		self._add_share_machine_constraint(lagrange_share)

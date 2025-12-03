@@ -2,7 +2,8 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from pyqubo import Model, Spin
+from dimod import BinaryQuadraticModel
+from pyqubo import Model, Spin  # type: ignore
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_nature.second_q.drivers import PySCFDriver
@@ -131,8 +132,21 @@ class BQM(ProblemLike):
 		self.model = model
 
 	@property
-	def bqm(self) -> int:
+	def bqm(self) -> BinaryQuadraticModel:
 		return self.model.to_bqm()
+
+	def to_qubo(self) -> QUBO:
+		"""Returns Qubo function"""
+		model = self.model
+		variables = sorted(model.variables)
+		num_qubits = len(variables)
+		Q_matrix = np.zeros((num_qubits, num_qubits))
+		inv_map = {v: i for i, v in enumerate(variables)}
+		qubo_dict, offset = model.to_qubo()
+		for key, value in qubo_dict.items():
+			var1, var2 = key
+			Q_matrix[inv_map[var1], inv_map[var2]] = value
+		return QUBO(Q_matrix, offset)
 
 
 class Molecule(ProblemLike):

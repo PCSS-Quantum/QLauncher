@@ -1,4 +1,4 @@
-from pyqubo import Array, Binary
+from pyqubo import Array, Binary, Model
 
 from .scheduler import JobShopScheduler, Task
 
@@ -9,7 +9,7 @@ class PyQuboScheduler(JobShopScheduler):
 
 	def __init__(self, job_dict: dict, max_time: int | None = None):
 		super().__init__(job_dict, max_time)
-		self.array = Array.create('variables', self.n, vartype='BINARY')
+		self.array = Array.create('x', self.n, vartype='BINARY')
 		self.qubo: Binary = 0
 
 	def _get_variable(self, task: Task, time: int) -> Binary:
@@ -24,5 +24,5 @@ class PyQuboScheduler(JobShopScheduler):
 	def _add_variable(self, var: Binary, bias: float) -> None:
 		self.qubo += var * bias
 
-	def _get_final(self) -> tuple[dict[tuple[str, str], float], float, int]:
-		return *self.qubo.compile().to_qubo(), self.n
+	def _get_final(self) -> Model:
+		return self.qubo.compile()
