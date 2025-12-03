@@ -11,5 +11,9 @@ try:
 	from .educated_guess import EducatedGuess
 except ImportError:
 	EducatedGuess = None
+try:
+	from .quantum_walk import DiscreteTimeQuantumWalk
+except ImportError:
+	DiscreteTimeQuantumWalk = None
 
-__all__ = ['QAOA', 'FALQON', 'EducatedGuess', 'TrainQSVCKernel', '_CircuitRunner']
+__all__ = ['QAOA', 'FALQON', 'EducatedGuess', 'TrainQSVCKernel', 'DiscreteTimeQuantumWalk', '_CircuitRunner']
