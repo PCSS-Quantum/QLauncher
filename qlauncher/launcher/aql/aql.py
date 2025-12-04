@@ -133,15 +133,11 @@ class AQL:
 			self._classical_tasks.append(task)
 			return task
 
-		def gen_task():
-			launcher.formatter.set_run_params(kwargs)
-			return launcher.formatter(launcher.problem)
-
 		# Split real device task into generation and actual run on a QC
-		t_gen = AQLTask(gen_task, dependencies=[dep for dep in dependencies_list if dep not in self._quantum_tasks])
+		t_gen = AQLTask(launcher._get_compatible_problem, dependencies=[dep for dep in dependencies_list if dep not in self._quantum_tasks])
 
 		def quantum_task(formatted, *_):
-			ql = QLauncher(Raw(formatted, launcher.problem.instance_name), launcher.algorithm, launcher.backend)
+			ql = QLauncher(formatted, launcher.algorithm, launcher.backend)
 			return ql.run()
 
 		t_quant = AQLTask(
