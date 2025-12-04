@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit
-from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
+from qiskit_ibm_runtime.fake_provider import FakeAthensV2  # Small 5qb backend for tests
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
@@ -25,9 +25,9 @@ def test_circuit() -> None:
 
 
 def test_falqon() -> None:
-	qaoa = FALQON(max_reps=1)
+	falqon = FALQON(max_reps=1)
 	backend = QiskitBackend('local_simulator')
-	launcher = QLauncher(get_hamiltonian(), qaoa, backend)
+	launcher = QLauncher(get_hamiltonian(), falqon, backend)
 
 	results = launcher.run()
 	assert isinstance(results, Result)
@@ -55,10 +55,13 @@ def test_VQE() -> None:
 @pytest.mark.parametrize('mitigation_name', ALL_MITIGATION_STRATEGIES)
 def test_mitigation(mitigation_name: str) -> None:
 	backend = QiskitBackend(
-		'backendv1v2', backendv1v2=FakeAlmadenV2(), error_mitigation_strategy=MITIGATION_MAP[mitigation_name], auto_transpile_level=0
+		'backendv1v2', backendv1v2=FakeAthensV2(), error_mitigation_strategy=MITIGATION_MAP[mitigation_name], auto_transpile_level=0
 	)
-	algorithm = QAOA(p=1, max_evaluations=10)
-	QLauncher(get_hamiltonian(), algorithm, backend).run()
+	qaoa = QAOA(p=1, max_evaluations=10)
+	QLauncher(get_hamiltonian(), qaoa, backend).run()
+
+	falqon = FALQON(max_reps=1)
+	QLauncher(get_hamiltonian(), falqon, backend).run()
 
 
 #! We use FALQON for problem tests as it is very fast to execute
