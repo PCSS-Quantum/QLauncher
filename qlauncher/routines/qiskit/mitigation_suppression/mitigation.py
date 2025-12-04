@@ -204,18 +204,18 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
 		result = []
 		meas_ops = [inst for inst in circuit.data if inst.operation.name == 'measure']
 
-		meas_circ = QuantumCircuit(circuit.num_qubits, circuit.num_clbits)
+		meas_circ = QuantumCircuit(*circuit.qregs, *circuit.cregs)
 		for inst, qargs, cargs in meas_ops:
 			meas_circ.append(inst, qargs, cargs)
 
 		mod_circuit: QuantumCircuit = circuit.remove_final_measurements(inplace=False)
-		circuit_gate = mod_circuit.to_gate()
+		circuit_gate = mod_circuit.decompose(reps=2).to_gate(label='og-circuit')
 		inv_gate = circuit_gate.inverse()
 		for _ in range(1, self.num_extrapolations + 1):
 			mod_circuit.append(inv_gate, qargs=range(mod_circuit.num_qubits))
 			mod_circuit.append(circuit_gate, qargs=range(mod_circuit.num_qubits))
 
-			result.append(mod_circuit.compose(meas_circ, qubits=mod_circuit.qubits))
+			result.append(meas_circ.compose(mod_circuit, front=True))
 		return result
 
 	def _get_zero_estimate(self, y_values: np.ndarray) -> float:

@@ -1,6 +1,7 @@
 """Base backend class for Qiskit routines."""
 
 from typing import Literal
+from warnings import warn
 
 from qiskit import QuantumCircuit
 from qiskit.primitives import BackendEstimatorV2, BackendSamplerV2, Sampler, StatevectorEstimator, StatevectorSampler
@@ -64,7 +65,14 @@ class QiskitBackend(Backend):
 		self._auto_transpile_level = auto_transpile_level
 		self._auto_assign = False
 		self._samplerV1: Sampler | None = None
-		self._mitigation_strategy = error_mitigation_strategy if error_mitigation_strategy is not None else NoMitigation()
+		if error_mitigation_strategy is None:
+			self._mitigation_strategy = NoMitigation()
+		else:
+			if backendv1v2 is None:
+				warn('Running mitigation without a set backendv1v2 is not supported, ignoring.')
+				self._mitigation_strategy = NoMitigation()
+			else:
+				self._mitigation_strategy = error_mitigation_strategy
 		self._set_primitives_on_backend_name()
 
 	@property

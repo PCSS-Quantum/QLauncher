@@ -150,6 +150,7 @@ class CirqBackend(Backend):
 		self.sampler = CirqSamplerV2()
 		self.samplerV1 = CirqSampler()
 		self._mitigation_strategy = error_mitigation_strategy if error_mitigation_strategy is not None else NoMitigation()
+		self.backendv1v2 = None
 		super().__init__(name)
 
 	def sample_circuit(self, circuit: qiskit.QuantumCircuit, shots: int = 1024) -> dict[str, int]:

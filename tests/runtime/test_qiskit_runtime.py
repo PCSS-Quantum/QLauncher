@@ -1,13 +1,14 @@
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit
+from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
 from qlauncher.routines.qiskit import FALQON, QAOA, QiskitBackend  # , AQTBackend
 from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
 from qlauncher.utils import int_to_bitstring
-from tests.runtime.utils import ALL_PROBLEMS, PROBLEM_MAP
+from tests.runtime.utils import ALL_PROBLEMS, PROBLEM_MAP, MITIGATION_MAP, ALL_MITIGATION_STRATEGIES
 from tests.utils.problem import get_hamiltonian
 
 
@@ -49,6 +50,15 @@ def test_VQE() -> None:
 
 	results = launcher.run()
 	assert isinstance(results, Result)
+
+
+@pytest.mark.parametrize('mitigation_name', ALL_MITIGATION_STRATEGIES)
+def test_mitigation(mitigation_name: str) -> None:
+	backend = QiskitBackend(
+		'backendv1v2', backendv1v2=FakeAlmadenV2(), error_mitigation_strategy=MITIGATION_MAP[mitigation_name], auto_transpile_level=0
+	)
+	algorithm = QAOA(p=1, max_evaluations=10)
+	QLauncher(get_hamiltonian(), algorithm, backend).run()
 
 
 #! We use FALQON for problem tests as it is very fast to execute
