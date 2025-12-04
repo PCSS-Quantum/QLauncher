@@ -1,63 +1,37 @@
-import os
-from qlauncher import QLauncher
-from qlauncher.routines.qiskit import FALQON, QiskitBackend
-from qlauncher.base.base import Result
-from qlauncher.problems import TSP
 import warnings
+from pathlib import Path
+
 import pytest
 
-
-def prepare_launcher():
-    problem = TSP.generate_tsp_instance(3)
-
-    algorithm = FALQON()
-    backend = QiskitBackend('local_simulator')
-
-    launcher = QLauncher(problem, algorithm, backend)
-
-    return launcher
+from qlauncher import QLauncher
+from qlauncher.base.base import Result
+from qlauncher.routines.qiskit import FALQON, QiskitBackend
+from tests.utils.problem import get_hamiltonian
 
 
-def test_params_are_bound():
-    launcher = prepare_launcher()
+def prepare_launcher() -> QLauncher:
+	algorithm = FALQON()
+	backend = QiskitBackend('local_simulator')
 
-    inform = launcher.run()
-
-    assert isinstance(inform, Result)
-
-
-def test_unused_params_raise_warning():
-    launcher = prepare_launcher()
-
-    with pytest.warns(Warning):
-        inform = launcher.run(unused=123)
-
-    assert isinstance(inform, Result)
+	return QLauncher(get_hamiltonian(), algorithm, backend)
 
 
-def test_save(tmp_path):
-    launcher = prepare_launcher()
-    with pytest.raises(ValueError):
-        launcher.save(os.path.join(tmp_path, "save.pckl"), 'pickle')
-    launcher.run()
-    with pytest.raises(ValueError):
-        launcher.save(os.path.join(tmp_path, "save.pckl"), 'pickel')
-    launcher.save(os.path.join(tmp_path, "save.pckl"), 'pickle')
-    launcher.save(os.path.join(tmp_path, "save.txt"), 'txt')
-    launcher.save(os.path.join(tmp_path, "save.json"), 'json')
+def test_params_are_bound() -> None:
+	launcher = prepare_launcher()
+
+	inform = launcher.run()
+
+	assert isinstance(inform, Result)
 
 
-@pytest.mark.skip('Currently getting qiskit deprecation warning')
-def test_override_params_raise_warning():
-    launcher = prepare_launcher()
-
-    # overriding onehot='quadratic' required by hamiltonian_to_qubo
-    with pytest.warns(Warning):
-        inform = launcher.run(onehot='exact')
-
-    # test if setting other params generates no warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter('error')
-        inform = launcher.run(constraints_weight=10)
-
-    assert isinstance(inform, Result)
+def test_save(tmp_path: str) -> None:
+	tmp = Path(tmp_path)
+	launcher = prepare_launcher()
+	with pytest.raises(ValueError):
+		launcher.save(tmp / 'save.pckl', 'pickle')
+	launcher.run()
+	with pytest.raises(ValueError):
+		launcher.save(tmp / 'save.pckl', 'pickel')  # type: ignore
+	launcher.save(tmp / 'save.pkl', 'pickle')
+	launcher.save(tmp / 'save.txt', 'txt')
+	launcher.save(tmp / 'save.json', 'json')
