@@ -4,7 +4,6 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import hampy
 from qlauncher.base.base import Problem
@@ -32,22 +31,18 @@ class QATM(Problem):
 	def from_preset(instance_name: Literal['rcp-3'], **kwargs) -> 'QATM':
 		match instance_name:
 			case 'rcp-3':
-				cm = np.array(
-					[
-						[1, 0, 1, 0, 0, 0],
-						[0, 1, 0, 0, 0, 1],
-						[1, 0, 1, 0, 1, 0],
-						[0, 0, 0, 1, 0, 0],
-						[0, 0, 1, 0, 1, 0],
-						[0, 1, 0, 0, 0, 1],
-					]
-				)
-				aircrafts = pd.DataFrame(
-					{
-						'manouver': ['A0', 'A1', 'A2', 'A0_a=10', 'A1_a=10', 'A2_a=10'],
-						'aircraft': ['A0', 'A1', 'A2', 'A0', 'A1', 'A2'],
-					}
-				)
+				cm = np.array([
+					[1, 0, 1, 0, 0, 0],
+					[0, 1, 0, 0, 0, 1],
+					[1, 0, 1, 0, 1, 0],
+					[0, 0, 0, 1, 0, 0],
+					[0, 0, 1, 0, 1, 0],
+					[0, 1, 0, 0, 0, 1],
+				])
+				aircrafts = pd.DataFrame({
+					'manouver': ['A0', 'A1', 'A2', 'A0_a=10', 'A1_a=10', 'A2_a=10'],
+					'aircraft': ['A0', 'A1', 'A2', 'A0', 'A1', 'A2'],
+				})
 			case _:
 				raise KeyError
 		return QATM(cm, aircrafts)
@@ -101,17 +96,17 @@ class QATM(Problem):
 			hamiltonian += goal_hamiltonian / cm.sum().sum()
 
 		return Hamiltonian(
-			hamiltonian.hamiltonian,
+			hamiltonian,
 			mixer_hamiltonian=self.get_mixer_hamiltonian(),
 			initial_state=self.get_initial_state(),
 		)
 
-	def get_mixer_hamiltonian(self) -> SparsePauliOp:
+	def get_mixer_hamiltonian(self) -> Equation:
 		mixer_hamiltonian = Equation(self.size)
 		for _, manouvers in self.aircrafts.groupby(by='aircraft'):
 			h = ring_ham(manouvers.index.values.tolist(), self.size)
 			mixer_hamiltonian += h
-		return mixer_hamiltonian.hamiltonian
+		return mixer_hamiltonian
 
 	def get_initial_state(self) -> QuantumCircuit:
 		qc = QuantumCircuit(self.size)

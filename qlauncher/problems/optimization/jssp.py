@@ -7,6 +7,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.base import Problem
 from qlauncher.base.problem_like import BQM, Hamiltonian
+from qlauncher.hampy import Equation
 from qlauncher.problems.optimization.jssp_utils import HamPyScheduler, PyQuboScheduler
 
 
@@ -101,6 +102,6 @@ class JSSP(Problem):
 	) -> Hamiltonian:
 		scheduler = HamPyScheduler(self.instance, self.max_time, onehot)
 		result = scheduler.get_result(lagrange_one_hot, lagrange_precedence, lagrange_share, self.variant)
-		if not isinstance(result, SparsePauliOp):
+		if not isinstance(result, Equation):
 			raise TypeError
 		return Hamiltonian(result)

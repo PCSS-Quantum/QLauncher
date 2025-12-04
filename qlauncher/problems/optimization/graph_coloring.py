@@ -136,7 +136,7 @@ class GraphColoring(Problem):
 		eq = self._color_duplication_hamiltonian(num_qubits, color_bit_length)
 		eq2 = self._excessive_colors_use_hamiltonian(num_qubits, color_bit_length)
 
-		return Hamiltonian((eq * costs_weight + eq2 * constraints_weight).hamiltonian.simplify())
+		return Hamiltonian(eq * costs_weight + eq2 * constraints_weight)
 
 	def to_bqm(self) -> BQM:
 		"""Returns BQM"""

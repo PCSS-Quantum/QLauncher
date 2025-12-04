@@ -74,4 +74,4 @@ class MaxCut(Problem):
 			hamiltonian += ~hampy.one_in_n(list(edge), size)
 		if hamiltonian is None:
 			raise TypeError
-		return Hamiltonian(hamiltonian.hamiltonian)
+		return Hamiltonian(hamiltonian)
