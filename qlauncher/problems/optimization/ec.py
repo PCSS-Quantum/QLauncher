@@ -124,7 +124,7 @@ class EC(Problem):
 			mixer_hamiltonian=self.get_mixer_hamiltonian(),
 		)
 
-	def get_mixer_hamiltonian(self, amount_of_rings=None) -> hampy.Equation:
+	def get_mixer_hamiltonian(self, amount_of_rings: int | None = None) -> hampy.Equation:
 		"""generates mixer hamiltonian"""
 
 		# looking for all rings in a data and creating a list with them

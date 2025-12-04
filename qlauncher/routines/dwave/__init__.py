@@ -1,4 +1,12 @@
-from .algorithms import DwaveSolver
+from .algorithms import SimulatedAnnealing, SteepestDescent, Tabu
 from .backends import DwaveBackend, SimulatedAnnealingBackend, SteepestDescentBackend, TabuBackend
 
-__all__ = ['DwaveSolver', 'TabuBackend', 'DwaveBackend', 'SimulatedAnnealingBackend', 'SteepestDescentBackend']
+__all__ = [
+	'Tabu',
+	'SimulatedAnnealing',
+	'SteepestDescent',
+	'TabuBackend',
+	'DwaveBackend',
+	'SimulatedAnnealingBackend',
+	'SteepestDescentBackend',
+]
