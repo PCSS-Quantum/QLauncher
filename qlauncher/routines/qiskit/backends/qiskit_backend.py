@@ -2,9 +2,12 @@
 
 from typing import Literal
 
+from qiskit import QuantumCircuit
 from qiskit.primitives import BackendEstimatorV2, BackendSamplerV2, Sampler, StatevectorEstimator, StatevectorSampler
 from qiskit.providers import BackendV1, BackendV2
 from qiskit_ibm_runtime import Options
+from qiskit.quantum_info import SparsePauliOp
+
 
 from qlauncher.base import Backend
 from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter
@@ -14,6 +17,9 @@ from qlauncher.routines.qiskit.backends.utils import (
 	set_estimator_auto_run_behavior,
 	set_sampler_auto_run_behavior,
 )
+
+from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
+from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation
 
 
 class QiskitBackend(Backend):
@@ -34,6 +40,7 @@ class QiskitBackend(Backend):
 		options: Options | None = None,
 		backendv1v2: BackendV1 | BackendV2 | None = None,
 		auto_transpile_level: Literal[0, 1, 2, 3] | None = None,
+		error_mitigation_strategy: CircuitExecutionMethod | None = None,
 	) -> None:
 		"""
 		Args:
@@ -57,6 +64,7 @@ class QiskitBackend(Backend):
 		self._auto_transpile_level = auto_transpile_level
 		self._auto_assign = False
 		self._samplerV1: Sampler | None = None
+		self._mitigation_strategy = error_mitigation_strategy if error_mitigation_strategy is not None else NoMitigation()
 		self._set_primitives_on_backend_name()
 
 	@property
@@ -96,3 +104,9 @@ class QiskitBackend(Backend):
 			self.sampler = set_sampler_auto_run_behavior(
 				self.sampler, auto_transpile=do_transpile, auto_transpile_level=level, auto_assign=self._auto_assign
 			)
+
+	def sample_circuit(self, circuit: QuantumCircuit, shots: int = 1024) -> dict[str, int]:
+		return self._mitigation_strategy.sample(circuit, self, shots)
+
+	def estimate_energy(self, circuit: QuantumCircuit, observable: SparsePauliOp) -> float:
+		return self._mitigation_strategy.estimate(circuit, observable, self)
