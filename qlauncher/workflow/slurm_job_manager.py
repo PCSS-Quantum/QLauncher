@@ -5,15 +5,17 @@ import shutil
 import subprocess
 import sys
 import time
+from pathlib import Path
 from typing import Any
 
-from qlauncher.base.base import Algorithm, Backend, Problem, Result
+from qlauncher.base import Algorithm, Backend, Problem, Result, ProblemLike
 from qlauncher.exceptions import DependencyError
+from qlauncher.launcher import QLauncher
 
 try:
 	import dill
 except ImportError as e:
-	raise DependencyError(e, install_hint='dill') from e
+	raise DependencyError(e, install_hint='pilotjob') from e
 
 
 class SlurmJobManager:
@@ -23,8 +25,28 @@ class SlurmJobManager:
 		slurm_options: dict[str, Any] | None = None,
 		env_setup: list[str] | None = None,
 	) -> None:
+		"""
+		Job manager that submits QLauncher jobs to Slurm via ``sbatch``.
+
+		Args:
+		    sbatch_exe (str, optional): Name or path of the ``sbatch`` executable
+		        used to submit jobs to Slurm. Defaults to ``"sbatch"``.
+		    slurm_options (dict[str, Any] | None, optional): Mapping of Slurm
+		        options to their values (e.g. ``{"time": "00:02:00"}``).
+		        Keys are used as option names after ``--`` in the generated
+		        ``#SBATCH`` lines. Defaults to an empty dict.
+		    env_setup (list[str] | None, optional): List of shell commands that
+		        will be written into the Slurm script before the ``srun`` line,
+		        e.g. module loads or virtual environment activation commands.
+		        Defaults to an empty list.
+
+		Raises:
+		    DependencyError: If the ``sbatch_exe`` executable cannot be found
+		        in ``PATH``.
+		"""
 		self.jobs: dict[str, dict[str, Any]] = {}
-		self.code_path = os.path.join(os.path.dirname(__file__), 'pilotjob_task.py')
+
+		self.code_path = Path(__file__).with_name('pilotjob_task.py')
 
 		self.sbatch_exe = sbatch_exe
 		self.slurm_options = slurm_options or {}
@@ -38,17 +60,48 @@ class SlurmJobManager:
 
 	def submit(
 		self,
-		problem: Problem,
+		problem: Problem | ProblemLike,
 		algorithm: Algorithm,
 		backend: Backend,
 		cores: int = 1,
 	) -> str:
-		from qlauncher.launcher.qlauncher import QLauncher
+		"""
+		Creates a :class:`QLauncher`
+		instance from ``problem``, ``algorithm`` and ``backend`` and forwards
+		it to :meth:`submit_launcher`.
 
+		Args:
+			problem (Problem | ProblemLike): Problem to be solved.
+			algorithm (Algorithm): Algorithm to be used.
+			backend (Backend): Backend on which the algorithm will be executed.
+			cores (int, optional): Number of CPU cores per task requested from
+				Slurm (mapped to ``--cpus-per-task``). Defaults to 1.
+
+		Returns:
+			str: Slurm job ID returned by ``sbatch``.
+
+		Raises:
+			RuntimeError: If ``sbatch`` returns a non-zero exit code.
+		"""
 		launcher = QLauncher(problem, algorithm, backend)
 		return self.submit_launcher(launcher, cores=cores)
 
-	def submit_launcher(self, launcher, cores: int = 1) -> str:
+	def submit_launcher(self, launcher: QLauncher, cores: int = 1) -> str:
+		"""
+		Submits a prepared :class:`QLauncher` instance to Slurm.
+
+		Args:
+		    launcher (QLauncher): Prepared launcher object.
+		    cores (int, optional): Number of CPU cores per task requested from
+		        Slurm (mapped to ``--cpus-per-task``). Defaults to 1.
+
+		Returns:
+		    str: Slurm job ID returned by ``sbatch``.
+
+		Raises:
+		    RuntimeError: If ``sbatch`` returns a non-zero exit code or its
+		        standard output does not contain a job ID.
+		"""
 		job_uid = self._make_job_uid()
 
 		input_file = f'input.{job_uid}.pkl'
@@ -88,6 +141,20 @@ class SlurmJobManager:
 		return job_id
 
 	def read_results(self, job_id: str) -> Result:
+		"""
+		Reads the result of a finished job from its output file.
+
+		Args:
+		    job_id (str): Slurm job ID returned by :meth:`submit` or
+		        :meth:`submit_launcher`.
+
+		Raises:
+		    KeyError: If ``job_id`` is not known to this manager.
+		    FileNotFoundError: If the expected output file does not exist.
+
+		Returns:
+		    Result: Deserialized result object produced by the worker process.
+		"""
 		job = self.jobs[job_id]
 		output_file = job['output_file']
 		if not os.path.exists(output_file):
@@ -98,6 +165,26 @@ class SlurmJobManager:
 		return result
 
 	def wait_for_a_job(self, job_id: str | None = None, timeout: float | None = None) -> str | None:
+		"""
+		Waits until a Slurm job finishes and returns its ID.
+
+		Args:
+		    job_id (str | None, optional): ID of the job to wait for. If
+		        ``None``, the first job in :attr:`jobs` that is not yet marked
+		        as finished is selected. Defaults to ``None``.
+		    timeout (float | None, optional): Maximum time to wait in seconds.
+		        If ``None``, wait indefinitely. Defaults to ``None``.
+
+		Raises:
+		    ValueError: If ``job_id`` is ``None`` and there are no jobs left.
+		    TimeoutError: If the timeout is exceeded before the job finishes.
+		    RuntimeError: If the job disappears from ``squeue`` without
+		        producing a result file, or if it finishes in a non-successful
+		        state.
+
+		Returns:
+		    str | None: ID of the finished job.
+		"""
 		if job_id is None:
 			not_finished = [jid for jid, j in self.jobs.items() if not j['finished']]
 			if not not_finished:
@@ -133,6 +220,9 @@ class SlurmJobManager:
 			raise RuntimeError(f'Job {job_id} finished in bad state: {state}')
 
 	def clean_up(self) -> None:
+		"""
+		Removes temporary files created for all tracked jobs.
+		"""
 		for job in self.jobs.values():
 			for key in ('script_path', 'input_file'):
 				path = job.get(key)
@@ -176,7 +266,8 @@ class SlurmJobManager:
 
 			sh.write(f'srun {sys.executable} {self.code_path} {input_file} {output_file}\n')
 
-	def _get_slurm_state(self, job_id: str) -> str | None:
+	@staticmethod
+	def _get_slurm_state(job_id: str) -> str | None:
 		try:
 			res = subprocess.run(
 				['squeue', '-h', '-j', job_id, '-o', '%T'],
@@ -195,3 +286,24 @@ class SlurmJobManager:
 			return None
 
 		return out.splitlines()[0].strip()
+
+
+if __name__ == '__main__':
+	from qlauncher.problems import MaxCut
+	from qlauncher.routines.qiskit import QAOA, QiskitBackend
+
+	problem = MaxCut.from_preset('default')
+	algorithm = QAOA(p=3)
+	backend = QiskitBackend('local_simulator')
+
+	mgr = SlurmJobManager(
+		slurm_options={'licenses': 'orca1:1'},
+		env_setup=['module load Python/python-3.11.0', 'source ~/venv/bin/activate'],
+	)
+
+	job_id = mgr.submit(problem, algorithm, backend, cores=1)
+
+	finished_id = mgr.wait_for_a_job(job_id)
+
+	result = mgr.read_results(job_id)
+	print(result)

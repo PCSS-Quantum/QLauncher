@@ -6,7 +6,7 @@ import pytest
 from qlauncher import QLauncher, Result
 from qlauncher.routines.qiskit import FALQON, QiskitBackend
 from qlauncher.routines.qiskit.algorithms import EducatedGuess
-from qlauncher.workflow.pilotjob_scheduler import JobManager
+from qlauncher.workflow.pilotjob_scheduler import PilotJobManager
 from tests.utils.problem import get_hamiltonian
 
 # TODO: address event loop problem (To @dsiera: what was the problem?)
@@ -22,8 +22,8 @@ def clean_env():
 
 
 def test_job_manager(tmp_path) -> None:
-	manager = JobManager()
-	assert isinstance(manager, JobManager)
+	manager = PilotJobManager()
+	assert isinstance(manager, PilotJobManager)
 
 	problem = get_hamiltonian()
 	algorithm = FALQON(max_reps=1)

@@ -14,7 +14,7 @@ except ImportError as e:
 	raise DependencyError(e, install_hint='pilotjob') from e
 
 
-class JobManager:
+class PilotJobManager:
 	def __init__(self, manager: Manager | None = None):
 		"""
 		Job manager is QLauncher's wrapper for process management system, current version works on top of qcg-pilotjob
