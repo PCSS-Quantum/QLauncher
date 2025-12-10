@@ -56,6 +56,15 @@ class MaxCut(Problem):
 		graph = nx.gnp_random_graph(num_vertices, edge_probability)
 		return MaxCut(graph, instance_name='Generated')
 
+	def to_hamiltonian(self) -> Hamiltonian:
+		size = self.instance.number_of_nodes()
+		hamiltonian = hampy.Equation(size)
+		for edge in self.instance.edges():
+			hamiltonian += ~hampy.one_in_n(list(edge), size)
+		if hamiltonian is None:
+			raise TypeError
+		return Hamiltonian(hamiltonian)
+
 	def to_qubo(self) -> QUBO:
 		n = len(self.instance)
 		Q = np.zeros((n, n))
@@ -66,12 +75,3 @@ class MaxCut(Problem):
 			Q[j, i] += 1
 
 		return QUBO(Q, 0)
-
-	def to_hamiltonian(self) -> Hamiltonian:
-		size = self.instance.number_of_nodes()
-		hamiltonian = hampy.Equation(size)
-		for edge in self.instance.edges():
-			hamiltonian += ~hampy.one_in_n(list(edge), size)
-		if hamiltonian is None:
-			raise TypeError
-		return Hamiltonian(hamiltonian)

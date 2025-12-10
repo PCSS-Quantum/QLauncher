@@ -149,6 +149,3 @@ class GraphColoring(Problem):
 			expression: Binary = 1 - sum(x[node, i] for i in range(self.num_colors))
 			qubo += expression * expression
 		return BQM(qubo.compile())
-
-	def to_qubo(self) -> QUBO:
-		return self.to_bqm().to_qubo()

@@ -196,3 +196,8 @@ class Molecule(ProblemLike):
 			case _:
 				raise ValueError(f"Molecule {instance_name} not supported, currently you can use: 'H2'")
 		return Molecule(instance)
+
+
+def higher_order(to_hamiltonian: Callable[..., ProblemLike]) -> Callable[..., ProblemLike]:
+	to_hamiltonian.quadratic = False
+	return to_hamiltonian

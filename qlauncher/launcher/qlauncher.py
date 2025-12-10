@@ -165,6 +165,8 @@ class QLauncher:
 			for child, method in current._mapping.items():
 				if isinstance(child, str):
 					child = ProblemLike._all_problems[child]
+				if current.__name__ == 'Hamiltonian' and child.__name__ == 'QUBO' and not getattr(parents[-1], 'quadratic', True):
+					continue
 				if child in visited:
 					continue
 				to_check.append((parents + [method], child))

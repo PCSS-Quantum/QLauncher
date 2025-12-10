@@ -6,7 +6,7 @@ from typing import Literal
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import BQM, Hamiltonian
+from qlauncher.base.problem_like import BQM, Hamiltonian, higher_order
 from qlauncher.hampy import Equation
 from qlauncher.problems.optimization.jssp_utils import HamPyScheduler, PyQuboScheduler
 
@@ -80,19 +80,7 @@ class JSSP(Problem):
 				)
 		return JSSP(instance=job_dict, **kwargs)
 
-	def to_bqm(
-		self,
-		lagrange_one_hot: float = 1,
-		lagrange_precedence: float = 2,
-		lagrange_share: float = 5,
-	) -> BQM:
-		# Define the matrix Q used for QUBO
-		scheduler = PyQuboScheduler(self.instance, self.max_time)
-		result = scheduler.get_result(lagrange_one_hot, lagrange_precedence, lagrange_share)
-		if isinstance(result, SparsePauliOp):
-			raise TypeError
-		return BQM(result)
-
+	@higher_order
 	def to_hamiltonian(
 		self,
 		lagrange_one_hot: float = 1,
@@ -105,3 +93,16 @@ class JSSP(Problem):
 		if not isinstance(result, Equation):
 			raise TypeError
 		return Hamiltonian(result)
+
+	def to_bqm(
+		self,
+		lagrange_one_hot: float = 1,
+		lagrange_precedence: float = 2,
+		lagrange_share: float = 5,
+	) -> BQM:
+		# Define the matrix Q used for QUBO
+		scheduler = PyQuboScheduler(self.instance, self.max_time)
+		result = scheduler.get_result(lagrange_one_hot, lagrange_precedence, lagrange_share)
+		if isinstance(result, SparsePauliOp):
+			raise TypeError
+		return BQM(result)
