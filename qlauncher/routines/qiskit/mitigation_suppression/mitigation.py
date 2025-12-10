@@ -1,22 +1,28 @@
+from __future__ import annotations
+
 from itertools import chain
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from qiskit import QuantumCircuit, transpile
 from qiskit._accelerate.circuit import CircuitInstruction as AccelerateInstruction
 from qiskit.circuit import Instruction, Operation
-from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.utils import sum_counts
 
 from .base import CircuitExecutionMethod
 
+if TYPE_CHECKING:
+	from qiskit.quantum_info import SparsePauliOp
+
+	from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
+
 
 class NoMitigation(CircuitExecutionMethod):
-	def sample(self, circuit: QuantumCircuit, backend: 'QiskitBackend', shots: int = 1024) -> dict[str, int]:
+	def sample(self, circuit: QuantumCircuit, backend: QiskitBackend, shots: int = 1024) -> dict[str, int]:
 		return backend.sampler.run([circuit], shots=shots).result()[0].join_data().get_counts()
 
-	def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: 'QiskitBackend') -> float:
+	def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: QiskitBackend) -> float:
 		return backend.estimator.run([(circuit, observable)]).result()[0].data.evs
 
 
@@ -142,11 +148,11 @@ class PauliTwirling(CircuitExecutionMethod):
 
 		return circuit
 
-	def _get_workable_circuit(self, circuit: QuantumCircuit, backend: 'QiskitBackend') -> QuantumCircuit:
+	def _get_workable_circuit(self, circuit: QuantumCircuit, backend: QiskitBackend) -> QuantumCircuit:
 		"""Get either transpiled circuit if do_transpile is set or copy of circuit you can change as you wish."""
 		return transpile(circuit, basis_gates=list(backend.backendv1v2.target.operation_names)) if self.do_transpile else circuit.copy()
 
-	def sample(self, circuit: QuantumCircuit, backend: 'QiskitBackend', shots: int = 1024) -> dict[str, int]:
+	def sample(self, circuit: QuantumCircuit, backend: QiskitBackend, shots: int = 1024) -> dict[str, int]:
 		input_circ = self._get_workable_circuit(circuit, backend)
 		results = backend.sampler.run(
 			[transpile(self._twirl_circuit(input_circ), backend.backendv1v2) for _ in range(self.num_random_circuits)],
@@ -157,7 +163,7 @@ class PauliTwirling(CircuitExecutionMethod):
 
 		return sum_counts(*counts)
 
-	def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: 'QiskitBackend') -> float:
+	def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: QiskitBackend) -> float:
 		input_circ = self._get_workable_circuit(circuit, backend)
 
 		results = backend.estimator.run(
@@ -227,7 +233,7 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
 			result[value] = counts
 		return result
 
-	def sample(self, circuit: QuantumCircuit, backend: 'QiskitBackend', shots: int = 1024) -> dict[str, int]:
+	def sample(self, circuit: QuantumCircuit, backend: QiskitBackend, shots: int = 1024) -> dict[str, int]:
 		counts = np.array(
 			[
 				self._get_np_array_from_counts_dict(res.join_data().get_int_counts(), circuit.num_clbits)
@@ -247,7 +253,7 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
 
 		return counts_dict
 
-	def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: 'QiskitBackend') -> float:
+	def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: QiskitBackend) -> float:
 		evs = np.array(
 			[res.data.evs for res in backend.estimator.run([(x, observable) for x in self._get_repeated_circuits(circuit)]).result()]
 		)
