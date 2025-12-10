@@ -116,7 +116,7 @@ class QLauncher:
 			problem, algorithm, backend = self._build_from_circuit(args[0], args[1], kwargs.get('shots', 1024))
 		else:
 			raise TypeError
-		self.problem = problem
+		self.problem: Problem | ProblemLike = problem
 		self.algorithm = algorithm
 		self.backend = backend
 
@@ -127,13 +127,7 @@ class QLauncher:
 
 		self.result: Result | None = None
 
-	def run(self) -> Result:
-		"""
-		Finds proper formatter, and runs the algorithm on the problem with given backends.
-
-		Returns:
-			dict: The results of the algorithm execution.
-		"""
+	def _get_compatible_problem(self) -> ProblemLike:
 		input_format = self.algorithm.get_input_format()
 		if input_format is None:
 			raise TypeError
@@ -141,10 +135,20 @@ class QLauncher:
 		methods = self._bfs_search(problem, input_format)
 		if methods is None:
 			raise TypeError
+
 		for method in methods:
 			problem = method(problem)
 
-		self.result = self.algorithm.run(problem, self.backend)
+		return problem
+
+	def run(self) -> Result:
+		"""
+		Finds proper formatter, and runs the algorithm on the problem with given backends.
+
+		Returns:
+			dict: The results of the algorithm execution.
+		"""
+		self.result = self.algorithm.run(self._get_compatible_problem(), self.backend)
 		self.logger.info('Algorithm ended successfully!')
 		return self.result
 
