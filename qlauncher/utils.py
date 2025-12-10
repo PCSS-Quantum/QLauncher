@@ -1,18 +1,20 @@
 """Utility functions for QLauncher"""
 
-import numpy as np
-from typing import TypeVar
+from collections import defaultdict
 from itertools import chain
+from typing import TypeVar
 
-T = TypeVar("T")
+import numpy as np
+
+T = TypeVar('T')
 
 
 def sum_counts(*counts: dict[T, int]) -> dict[T, int]:
-    """Sum up counts from multiple count dicts into one count dict"""
-    result = {}
-    for key, value in chain(*(c.items() for c in counts)):
-        result[key] = result.get(key, 0) + value
-    return result
+	"""Sum up counts from multiple count dicts into one count dict"""
+	result = defaultdict(int)
+	for key, value in chain(*(c.items() for c in counts)):
+		result[key] += value
+	return result
 
 
 def int_to_bitstring(number: int, total_bits: int):

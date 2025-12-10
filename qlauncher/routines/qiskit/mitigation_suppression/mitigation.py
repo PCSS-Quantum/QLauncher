@@ -1,13 +1,14 @@
-from typing import Literal
 from itertools import chain
-import numpy as np
+from typing import Literal
 
+import numpy as np
 from qiskit import QuantumCircuit, transpile
-from qiskit.circuit import Operation, Instruction
 from qiskit._accelerate.circuit import CircuitInstruction as AccelerateInstruction
+from qiskit.circuit import Instruction, Operation
 from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.utils import sum_counts
+
 from .base import CircuitExecutionMethod
 
 
@@ -71,7 +72,7 @@ class PauliTwirling(CircuitExecutionMethod):
 							operation=Instruction(name='z', num_qubits=1, num_clbits=0, params=[]), qubits=[inst.qubits[0]]
 						),
 					],
-				][int(np.random.randint(0, 3))]
+				][int(np.random.default_rng().integers(0, 3))]
 
 			case 'ecr':
 				return [
@@ -114,7 +115,7 @@ class PauliTwirling(CircuitExecutionMethod):
 							operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=[inst.qubits[1]]
 						),
 					],
-				][int(np.random.randint(0, 3))]
+				][int(np.random.default_rng().integers(0, 3))]
 			case _:
 				return [inst]
 
@@ -126,7 +127,7 @@ class PauliTwirling(CircuitExecutionMethod):
 			(i, x) for i, x in enumerate(circuit.data) if x.operation.num_qubits == 2
 		]
 
-		choice_idxs = np.random.choice(
+		choice_idxs = np.random.default_rng().choice(
 			range(len(double_gates_with_indices)),
 			size=min(self.max_substitute_gates_per_circuit, len(double_gates_with_indices)),
 			replace=False,
@@ -183,39 +184,35 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
 	def __init__(self, num_extrapolations: int = 4, polynomial_degree: int = 3, mode: Literal['linear', 'exponential'] = 'linear') -> None:
 		"""
 		Args:
-		    num_extrapolations (int, optional): Number of times the whole circuit is repeated for the largest X. Defaults to 4.
-		    polynomial_degree (int, optional): Degree of fitted polynomial. Defaults to 3.
-		    mode (Literal[&quot;linear&quot;, &quot;exponential&quot;], optional):
-		        Scaling method. "linear" keeps the original values as is,
-		        "exponential" applies log before fitting model then applies exp to the model prediction.
-		        Defaults to "linear".
+			num_extrapolations (int, optional): Number of times the whole circuit is repeated for the largest X. Defaults to 4.
+			polynomial_degree (int, optional): Degree of fitted polynomial. Defaults to 3.
+			mode (Literal[&quot;linear&quot;, &quot;exponential&quot;], optional):
+				Scaling method. "linear" keeps the original values as is,
+				"exponential" applies log before fitting model then applies exp to the model prediction.
+				Defaults to "linear".
 
 		Raises:
-		    ValueError: If the polynomial degree is larger or equal to the number of data points (num_extrapolations)
+			ValueError: If the polynomial degree is larger or equal to the number of data points (num_extrapolations)
 		"""
 		super().__init__()
 		if polynomial_degree >= num_extrapolations:
 			raise ValueError('Degree must be lower than number of data points.')
 		self.num_extrapolations = num_extrapolations
 		self.degree = polynomial_degree
-		self.mode = mode
+		self.mode: Literal['linear', 'exponential'] = mode
 
 	def _get_repeated_circuits(self, circuit: QuantumCircuit) -> list[QuantumCircuit]:
 		result = []
-		meas_ops = [inst for inst in circuit.data if inst.operation.name == 'measure']
-
-		meas_circ = QuantumCircuit(*circuit.qregs, *circuit.cregs)
-		for inst, qargs, cargs in meas_ops:
-			meas_circ.append(inst, qargs, cargs)
+		meas_circ = circuit.copy()
 
 		mod_circuit: QuantumCircuit = circuit.remove_final_measurements(inplace=False)
-		circuit_gate = mod_circuit.decompose(reps=2).to_gate(label='og-circuit')
-		inv_gate = circuit_gate.inverse()
-		for _ in range(1, self.num_extrapolations + 1):
-			mod_circuit.append(inv_gate, qargs=range(mod_circuit.num_qubits))
-			mod_circuit.append(circuit_gate, qargs=range(mod_circuit.num_qubits))
+		inv = mod_circuit.inverse(annotated=True)
 
-			result.append(meas_circ.compose(mod_circuit, front=True))
+		for _ in range(1, self.num_extrapolations + 1):
+			meas_circ.compose(inv, front=True, inplace=True)
+			meas_circ.compose(mod_circuit, front=True, inplace=True)
+			result.append(meas_circ.copy())
+
 		return result
 
 	def _get_zero_estimate(self, y_values: np.ndarray) -> float:
