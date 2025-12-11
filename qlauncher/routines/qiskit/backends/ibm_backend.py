@@ -6,6 +6,7 @@ from qiskit.providers import BackendV1, BackendV2
 from qiskit_ibm_runtime import EstimatorV2, Options, SamplerV2, Session
 
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
+from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
 
 
 class IBMBackend(QiskitBackend):
@@ -22,10 +23,17 @@ class IBMBackend(QiskitBackend):
 		options: Options | None = None,
 		backendv1v2: BackendV1 | BackendV2 | None = None,
 		auto_transpile_level: Literal[0, 1, 2, 3] | None = None,
+		error_mitigation_strategy: CircuitExecutionMethod | None = None,
 		session: Session | None = None,
 	) -> None:
 		self.session = session
-		super().__init__(name, options, backendv1v2, auto_transpile_level)
+		super().__init__(
+			name,
+			options=options,
+			backendv1v2=backendv1v2,
+			auto_transpile_level=auto_transpile_level,
+			error_mitigation_strategy=error_mitigation_strategy,
+		)
 
 	@property
 	def setup(self) -> dict:

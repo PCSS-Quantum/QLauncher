@@ -17,9 +17,13 @@ from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.result import QuasiDistribution
 
+from qiskit.quantum_info import SparsePauliOp
+
 from qlauncher.base import Backend
 from qlauncher.base.translator import Translation
 from qlauncher.exceptions import DependencyError
+from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
+from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation
 
 try:
 	import cirq
@@ -60,7 +64,6 @@ def cirq_result_to_probabilities(result: cirq.Result, integer_keys: bool = False
 
 	total_shots = sum(counts.values())
 	return {int(k, 2): v / total_shots for k, v in counts.items()} if integer_keys else {k: v / total_shots for k, v in counts.items()}
-
 
 
 class _CirqRunner:
@@ -139,7 +142,19 @@ class CirqBackend(Backend):
 	    Backend (_type_): _description_
 	"""
 
-	def __init__(self, name: Literal['local_simulator'] = 'local_simulator'):
+	def __init__(
+		self,
+		name: Literal['local_simulator'] = 'local_simulator',
+		error_mitigation_strategy: CircuitExecutionMethod | None = None,
+	):
 		self.sampler = CirqSamplerV2()
 		self.samplerV1 = CirqSampler()
+		self._mitigation_strategy = error_mitigation_strategy if error_mitigation_strategy is not None else NoMitigation()
+		self.backendv1v2 = None
 		super().__init__(name)
+
+	def sample_circuit(self, circuit: qiskit.QuantumCircuit, shots: int = 1024) -> dict[str, int]:
+		return self._mitigation_strategy.sample(circuit, self, shots)
+
+	def estimate_energy(self, circuit: qiskit.QuantumCircuit, observable: SparsePauliOp) -> float:
+		raise NotImplementedError

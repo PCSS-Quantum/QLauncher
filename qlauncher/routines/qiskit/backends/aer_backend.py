@@ -9,6 +9,7 @@ from qiskit_aer.noise import NoiseModel
 from qiskit_ibm_runtime import Options
 
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
+from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
 
 
 class AerBackend(QiskitBackend):
@@ -22,12 +23,19 @@ class AerBackend(QiskitBackend):
 		options: Options | None = None,
 		backendv1v2: BackendV1 | BackendV2 | None = None,
 		auto_transpile_level: Literal[0, 1, 2, 3] | None = None,
+		error_mitigation_strategy: CircuitExecutionMethod | None = None,
 		simulation_method: str = 'automatic',
 		simulation_device: Literal['CPU', 'GPU'] = 'CPU',
 	) -> None:
 		self.method = simulation_method
 		self.device = simulation_device
-		super().__init__(name, options, backendv1v2, auto_transpile_level)
+		super().__init__(
+			name,
+			options=options,
+			backendv1v2=backendv1v2,
+			auto_transpile_level=auto_transpile_level,
+			error_mitigation_strategy=error_mitigation_strategy,
+		)
 
 	def _set_primitives_on_backend_name(self) -> None:
 		if self.name == 'local_simulator':

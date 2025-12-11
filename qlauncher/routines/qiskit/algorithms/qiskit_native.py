@@ -23,7 +23,6 @@ from qlauncher.base.base import _ProblemLike
 from qlauncher.base.problem_like import Hamiltonian, Molecule
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
-from qlauncher.utils import int_to_bitstring
 
 if TYPE_CHECKING:
 	from qiskit.primitives.containers import BitArray
@@ -142,11 +141,12 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 		costs = []
 
 		def cost_fn(params: np.ndarray):
-			job = backend.sampler.run([(circuit, params)])
-			results = job.result()[0].data.meas.get_int_counts()
+			results = backend.sample_circuit(circuit.assign_parameters(params))
 			shots = sum(results.values())
 
-			probs_with_costs = {state: (count / shots, np.real(evaluate_energy(state, hamiltonian))) for state, count in results.items()}
+			probs_with_costs = {
+				state: (count / shots, np.real(evaluate_energy(int(state, 2), hamiltonian))) for state, count in results.items()
+			}
 
 			cost = (
 				sum(prob * cost for prob, cost in probs_with_costs.values())
@@ -166,11 +166,8 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 
 		return res.x, costs
 
-	def run(self, problem: Hamiltonian, backend: QiskitBackend) -> Result:
+	def run(self, problem: Hamiltonian, backend: QiskitBackend | CirqBackend) -> Result:
 		"""Runs the QAOA algorithm"""
-
-		if not (isinstance(backend, (QiskitBackend, CirqBackend))):
-			raise ValueError('Backend should be CirqBackend, QiskitBackend or subclass.')
 
 		# problem.hamiltonian: SparsePauliOp = formatter(problem)
 
@@ -188,11 +185,10 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 
 		opt_params, costs = self._get_optimized_circuit_params(circuit, problem.hamiltonian, backend)
 
-		job = backend.sampler.run([(circuit, opt_params)])
-		results = job.result()[0].data.meas.get_int_counts()
+		results = backend.sample_circuit(circuit.assign_parameters(opt_params))
 
-		final_energies = {int_to_bitstring(k, circuit.num_qubits): np.real(evaluate_energy(k, problem.hamiltonian)) for k in results.keys()}
-		final_counts = {int_to_bitstring(k, circuit.num_qubits): v for k, v in results.items()}
+		final_energies = {k: np.real(evaluate_energy(int(k, 2), problem.hamiltonian)) for k in results.keys()}
+		final_counts = {k: v for k, v in results.items()}
 
 		depth = circuit.decompose(reps=10).depth()
 		cx_count = circuit.decompose(reps=10).count_ops().get('cx', 0)
@@ -298,9 +294,7 @@ class FALQON(QiskitOptimizationAlgorithm[Hamiltonian]):
 
 		best_sample, betas, energies, depths, cnot_counts = self._falqon_subroutine(problem.hamiltonian, backend)
 
-		best_data: BitArray = best_sample[0].data.meas
-		counts: dict = best_data.get_counts()
-		shots = best_data.num_shots
+		shots = sum(best_sample.values())
 
 		result = {
 			'betas': betas,
@@ -314,9 +308,9 @@ class FALQON(QiskitOptimizationAlgorithm[Hamiltonian]):
 		}
 
 		return Result(
-			best_bitstring=max(counts, key=lambda x: counts.get(x, 0)),
-			most_common_bitstring=max(counts, key=lambda x: counts.get(x, 0)),
-			distribution={k: v / shots for k, v in counts.items()},
+			best_bitstring=max(best_sample, key=lambda x: best_sample.get(x, 0)),
+			most_common_bitstring=max(best_sample, key=lambda x: best_sample.get(x, 0)),
+			distribution={k: v / shots for k, v in best_sample.items()},
 			energies=energies,
 			energy_std=float(np.std(energies)),
 			best_energy=min(energies),
@@ -350,7 +344,7 @@ class FALQON(QiskitOptimizationAlgorithm[Hamiltonian]):
 
 	def _falqon_subroutine(
 		self, cost_hamiltonian: SparsePauliOp, backend: QiskitBackend
-	) -> tuple[PrimitiveResult[SamplerPubResult], list[float], list[float], list[int], list[int]]:
+	) -> tuple[dict[str, int], list[float], list[float], list[int], list[int]]:
 		"""
 		Run the 'meat' of the algorithm.
 
@@ -364,8 +358,7 @@ class FALQON(QiskitOptimizationAlgorithm[Hamiltonian]):
 		"""
 
 		if self.driver_h is None:
-			self.driver_h = SparsePauliOp.from_sparse_list([('X', [i], 1) for i in range(self.n_qubits)], num_qubits=self.n_qubits)
-			driver_hamiltonian = self.driver_h
+			driver_hamiltonian = SparsePauliOp.from_sparse_list([('X', [i], 1) for i in range(self.n_qubits)], num_qubits=self.n_qubits)
 		else:
 			driver_hamiltonian = self.driver_h
 
@@ -381,13 +374,13 @@ class FALQON(QiskitOptimizationAlgorithm[Hamiltonian]):
 
 		self._add_ansatz_part(cost_hamiltonian, driver_hamiltonian, self.beta_0, circuit)
 
-		for i in range(self.max_reps):
-			beta = -1 * backend.estimator.run([(circuit, hamiltonian_commutator)]).result()[0].data.evs
+		for _ in range(self.max_reps):
+			beta = -1 * backend.estimate_energy(circuit, hamiltonian_commutator)
 			betas.append(beta)
 
 			self._add_ansatz_part(cost_hamiltonian, driver_hamiltonian, beta, circuit)
 
-			energy = backend.estimator.run([(circuit, cost_hamiltonian)]).result()[0].data.evs
+			energy = backend.estimate_energy(circuit, cost_hamiltonian)
 			# print(i, energy)
 			energies.append(energy)
 			circuit_depths.append(circuit.depth())
@@ -398,7 +391,7 @@ class FALQON(QiskitOptimizationAlgorithm[Hamiltonian]):
 		sampling_circuit = self._build_ansatz(cost_hamiltonian, driver_hamiltonian, betas[:argmin])
 		sampling_circuit.measure_all()
 
-		best_sample = backend.sampler.run([(sampling_circuit)]).result()
+		best_sample = backend.sample_circuit(sampling_circuit)
 
 		return best_sample, betas, energies, circuit_depths, cnot_counts
 

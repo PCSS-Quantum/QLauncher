@@ -1,4 +1,5 @@
 from qlauncher.problems import EC, JSSP, QATM, TSP, GraphColoring, Knapsack, MaxCut, VertexCover
+from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation, PauliTwirling, ZeroNoiseExtrapolation
 
 PROBLEM_MAP = {
 	'ec': EC.from_preset('micro'),
@@ -12,3 +13,11 @@ PROBLEM_MAP = {
 }
 
 ALL_PROBLEMS = list(PROBLEM_MAP.keys())
+
+MITIGATION_MAP = {
+	'zne': ZeroNoiseExtrapolation(),
+	'pauli-twirl': PauliTwirling(4),
+	'none': NoMitigation(),
+}
+
+ALL_MITIGATION_STRATEGIES = list(MITIGATION_MAP.keys())
