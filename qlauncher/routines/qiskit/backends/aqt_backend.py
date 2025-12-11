@@ -10,6 +10,7 @@ from qiskit_ibm_runtime import Options
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.qiskit.adapters import EstimatorV1ToEstimatorV2Adapter, SamplerV1ToSamplerV2Adapter
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
+from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
 
 try:
 	from qiskit_aqt_provider import AQTProvider
@@ -55,6 +56,7 @@ class AQTBackend(QiskitBackend):
 		options: Options | None = None,
 		backendv1v2: BackendV1 | BackendV2 | None = None,
 		auto_transpile_level: Literal[0, 1, 2, 3] | None = None,
+		error_mitigation_strategy: CircuitExecutionMethod | None = None,
 		token: str | None = None,
 		direct_access_url: str | None = None,
 		dotenv_path: str | None = None,
@@ -64,7 +66,13 @@ class AQTBackend(QiskitBackend):
 			self.provider = AQTProvider(token if token is not None else 'DEFAULT_TOKEN', load_dotenv=False)
 		else:
 			self.provider = AQTProvider(load_dotenv=True, dotenv_path=dotenv_path)
-		super().__init__(name, options=options, backendv1v2=backendv1v2, auto_transpile_level=auto_transpile_level)
+		super().__init__(
+			name,
+			options=options,
+			backendv1v2=backendv1v2,
+			auto_transpile_level=auto_transpile_level,
+			error_mitigation_strategy=error_mitigation_strategy,
+		)
 
 	@override
 	def _set_primitives_on_backend_name(self) -> None:
