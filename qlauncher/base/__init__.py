@@ -1,4 +1,4 @@
-from .base import Algorithm, Backend, Problem, Result
+from .base import Algorithm, Backend, GateCircuitBackend, Problem, Result
 from .problem_like import ProblemLike
 
-__all__ = ['Problem', 'Algorithm', 'Backend', 'Result', 'ProblemLike']
+__all__ = ['Problem', 'Algorithm', 'Backend', 'GateCircuitBackend', 'Result', 'ProblemLike']

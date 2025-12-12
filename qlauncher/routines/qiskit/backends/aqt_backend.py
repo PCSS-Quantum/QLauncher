@@ -24,26 +24,26 @@ class AQTBackend(QiskitBackend):
 	An extension of QiskitBackend providing support for Alpine Quantum Technologies (AQT) devices.
 
 	Attributes:
-	    token (str, optional): AQT token, used for authorization when using real device backends.
-	    dotenv_path (str,optional): (recommended) Path to a .env file containing the AQT token. If dotenv_path is not None, the token will be ignored and the token from the .env file will be used.
+		token (str, optional): AQT token, used for authorization when using real device backends.
+		dotenv_path (str,optional): (recommended) Path to a .env file containing the AQT token. If dotenv_path is not None, the token will be ignored and the token from the .env file will be used.
 
 	Usage Example
 	-------------
 	::
 
-	    backend = AQTBackend(token='valid_token', name='device')
+		backend = AQTBackend(token='valid_token', name='device')
 
 	or
 
 	::
 
-	    backend = AQTBackend(dotenv_path='./.env', name='device')
+		backend = AQTBackend(dotenv_path='./.env', name='device')
 
 	with a .env file:
 
 	::
 
-	    AQT_TOKEN = valid_token
+		AQT_TOKEN = valid_token
 
 	"""
 
@@ -90,12 +90,10 @@ class AQTBackend(QiskitBackend):
 			self.name = available_online_backends[0].name
 		else:
 			raise ValueError(
-				' '.join(
-					[
-						f"Unsupported mode for this backend:'{self.name}'."
-						"Please use one of the following: ['local_simulator', 'backendv1v2', 'device']"
-					]
-				)
+				' '.join([
+					f"Unsupported mode for this backend:'{self.name}'."
+					"Please use one of the following: ['local_simulator', 'backendv1v2', 'device']"
+				])
 			)
 
 		if self.backendv1v2 is None:

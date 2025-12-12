@@ -15,18 +15,18 @@ from qiskit.primitives.containers.primitive_result import PrimitiveResult
 from qiskit.primitives.containers.sampler_pub import SamplerPubLike
 from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 from qiskit.primitives.primitive_job import PrimitiveJob
+from qiskit.quantum_info import SparsePauliOp
 from qiskit.result import QuasiDistribution
 
-from qiskit.quantum_info import SparsePauliOp
-
 from qlauncher.base import Backend
-from qlauncher.base.translator import Translation
+from qlauncher.base.base import GateCircuitBackend
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
 from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation
 
 try:
 	import cirq
+	from cirq.contrib.qasm_import.qasm import circuit_from_qasm
 	from cirq.sim.sparse_simulator import Simulator
 except ImportError as e:
 	raise DependencyError(e, install_hint='cirq') from e
@@ -77,7 +77,7 @@ class _CirqRunner:
 		if circuit.num_clbits == 0:
 			circuit = circuit.measure_all(inplace=False)
 
-		cirq_circ = Translation.get_translation(circuit, 'cirq')
+		cirq_circ = GateCircuitBackend.get_translation(circuit, 'cirq')
 
 		result = cls.simulator.run(cirq_circ, repetitions=cls.repetitions if shots is None else shots)
 
@@ -135,12 +135,16 @@ class CirqSamplerV2(BaseSamplerV2):
 		return job
 
 
-class CirqBackend(Backend):
+class CirqBackend(GateCircuitBackend):
 	"""
 
 	Args:
-	    Backend (_type_): _description_
+		Backend (_type_): _description_
 	"""
+
+	basis_gates = ['x', 'y', 'z', 'cx', 'h', 'rx', 'ry', 'rz']
+	compatible_circuit = cirq.Circuit
+	language = 'cirq'
 
 	def __init__(
 		self,
@@ -153,7 +157,15 @@ class CirqBackend(Backend):
 		self.backendv1v2 = None
 		super().__init__(name)
 
-	def sample_circuit(self, circuit: qiskit.QuantumCircuit, shots: int = 1024) -> dict[str, int]:
+	@staticmethod
+	def to_qasm(circuit: cirq.Circuit) -> str:
+		return circuit.to_qasm()
+
+	@staticmethod
+	def from_qasm(qasm: str) -> cirq.Circuit:
+		return circuit_from_qasm(qasm)
+
+	def sample_circuit(self, circuit: qiskit.QuantumCircuit | cirq.Circuit, shots: int = 1024) -> dict[str, int]:
 		return self._mitigation_strategy.sample(circuit, self, shots)
 
 	def estimate_energy(self, circuit: qiskit.QuantumCircuit, observable: SparsePauliOp) -> float:

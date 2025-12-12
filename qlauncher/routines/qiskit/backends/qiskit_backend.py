@@ -3,14 +3,14 @@
 from typing import Literal
 from warnings import warn
 
-from qiskit import QuantumCircuit
+import qiskit
+from qiskit import QuantumCircuit, qasm2
 from qiskit.primitives import BackendEstimatorV2, BackendSamplerV2, Sampler, StatevectorEstimator, StatevectorSampler
 from qiskit.providers import BackendV1, BackendV2
-from qiskit_ibm_runtime import Options
 from qiskit.quantum_info import SparsePauliOp
+from qiskit_ibm_runtime import Options
 
-
-from qlauncher.base import Backend
+from qlauncher.base.base import GateCircuitBackend
 from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter
 from qlauncher.routines.qiskit.backends.utils import (
 	AUTO_TRANSPILE_ESTIMATOR_TYPE,
@@ -18,12 +18,11 @@ from qlauncher.routines.qiskit.backends.utils import (
 	set_estimator_auto_run_behavior,
 	set_sampler_auto_run_behavior,
 )
-
 from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
 from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation
 
 
-class QiskitBackend(Backend):
+class QiskitBackend(GateCircuitBackend):
 	"""
 	Base class for backends compatible with qiskit.
 
@@ -34,6 +33,10 @@ class QiskitBackend(Backend):
 		sampler (BaseSamplerV2): The sampler used for sampling.
 		estimator (BaseEstimatorV2): The estimator used for estimation.
 	"""
+
+	basis_gates = ['x', 'y', 'z', 'cx', 'h', 'rx', 'ry', 'rz', 'u']
+	compatible_circuit = QuantumCircuit
+	language = 'qiskit'
 
 	def __init__(
 		self,
@@ -112,6 +115,15 @@ class QiskitBackend(Backend):
 			self.sampler = set_sampler_auto_run_behavior(
 				self.sampler, auto_transpile=do_transpile, auto_transpile_level=level, auto_assign=self._auto_assign
 			)
+
+	@staticmethod
+	def to_qasm(circuit: qiskit.QuantumCircuit) -> str:
+		return qasm2.dumps(circuit)
+
+	@staticmethod
+	def from_qasm(qasm: str) -> qiskit.QuantumCircuit:
+		return qiskit.QuantumCircuit.from_qasm_str(qasm)
+
 
 	def sample_circuit(self, circuit: QuantumCircuit, shots: int = 1024) -> dict[str, int]:
 		return self._mitigation_strategy.sample(circuit, self, shots)
