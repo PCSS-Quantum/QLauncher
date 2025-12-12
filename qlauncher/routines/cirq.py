@@ -18,8 +18,7 @@ from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.result import QuasiDistribution
 
-from qlauncher.base import Backend
-from qlauncher.base.base import GateCircuitBackend
+from qlauncher.base import Backend, GateCircuitBackend
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
 from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation
