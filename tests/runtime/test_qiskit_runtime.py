@@ -8,7 +8,7 @@ from qlauncher.base import Result
 from qlauncher.routines.qiskit import FALQON, QAOA, QiskitBackend  # , AQTBackend
 from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
 from qlauncher.utils import int_to_bitstring
-from tests.runtime.utils import ALL_PROBLEMS, PROBLEM_MAP, MITIGATION_MAP, ALL_MITIGATION_STRATEGIES
+from tests.runtime.utils import ALL_MITIGATION_STRATEGIES, ALL_PROBLEMS, MITIGATION_MAP, PROBLEM_MAP
 from tests.utils.problem import get_hamiltonian
 
 

@@ -6,9 +6,8 @@ from warnings import warn
 from qiskit import QuantumCircuit
 from qiskit.primitives import BackendEstimatorV2, BackendSamplerV2, Sampler, StatevectorEstimator, StatevectorSampler
 from qiskit.providers import BackendV1, BackendV2
-from qiskit_ibm_runtime import Options
 from qiskit.quantum_info import SparsePauliOp
-
+from qiskit_ibm_runtime import Options
 
 from qlauncher.base import Backend
 from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter
@@ -18,7 +17,6 @@ from qlauncher.routines.qiskit.backends.utils import (
 	set_estimator_auto_run_behavior,
 	set_sampler_auto_run_behavior,
 )
-
 from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
 from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation
 

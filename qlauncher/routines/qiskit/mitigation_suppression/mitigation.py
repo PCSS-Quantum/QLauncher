@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from itertools import chain
 from typing import TYPE_CHECKING, Literal
 
@@ -24,6 +25,32 @@ class NoMitigation(CircuitExecutionMethod):
 
 	def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: QiskitBackend) -> float:
 		return backend.estimator.run([(circuit, observable)]).result()[0].data.evs
+
+
+class WeighedMitigation(CircuitExecutionMethod):
+	def __init__(self, mitigation_methods: list[CircuitExecutionMethod], method_weights: list[float] | None = None) -> None:
+		if method_weights is None:
+			method_weights = [1.0] * len(mitigation_methods)
+		if len(method_weights) != len(mitigation_methods):
+			raise ValueError(
+				f'You must provide as many weights as there are methods! Expected {len(mitigation_methods)}, got {len(method_weights)}'
+			)
+		self.weights = method_weights
+		self.methods = mitigation_methods
+		super().__init__()
+
+	def sample(self, circuit: QuantumCircuit, backend: QiskitBackend, shots: int = 1024) -> dict[str, int]:
+		counts = (m.sample(circuit, backend, shots) for m in self.methods)
+		result = defaultdict(int)
+		for count, weight in zip(counts, self.weights, strict=True):
+			for k, v in count.items():
+				result[k] += int(round(v * weight, 0))
+		return result
+
+	def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: QiskitBackend) -> float:
+		return sum(m.estimate(circuit, observable, backend) * w for m, w in zip(self.methods, self.weights, strict=True)) / len(
+			self.weights
+		)
 
 
 class PauliTwirling(CircuitExecutionMethod):

@@ -8,7 +8,6 @@ from qlauncher.base.base import Algorithm, Backend, Problem, Result
 from qlauncher.base.problem_like import ProblemLike
 from qlauncher.launcher.aql.aql_task import AQLTask, get_timeout
 from qlauncher.launcher.qlauncher import QLauncher
-from qlauncher.problems import Raw
 
 
 class AQL:
