@@ -8,9 +8,10 @@ import time
 from pathlib import Path
 from typing import Any
 
-from qlauncher.base import Algorithm, Backend, Problem, Result, ProblemLike
+from qlauncher.base import Algorithm, Backend, Problem, ProblemLike, Result
 from qlauncher.exceptions import DependencyError
 from qlauncher.launcher import QLauncher
+from qlauncher.workflow.base_job_manager import BaseJobManager
 
 try:
 	import dill
@@ -18,7 +19,7 @@ except ImportError as e:
 	raise DependencyError(e, install_hint='pilotjob') from e
 
 
-class SlurmJobManager:
+class SlurmJobManager(BaseJobManager):
 	def __init__(
 		self,
 		sbatch_exe: str = 'sbatch',
@@ -44,10 +45,8 @@ class SlurmJobManager:
 		    DependencyError: If the ``sbatch_exe`` executable cannot be found
 		        in ``PATH``.
 		"""
-		self.jobs: dict[str, dict[str, Any]] = {}
-
+		super().__init__()
 		self.code_path = Path(__file__).with_name('pilotjob_task.py')
-
 		self.sbatch_exe = sbatch_exe
 		self.slurm_options = slurm_options or {}
 		self.env_setup = env_setup or []
@@ -64,6 +63,7 @@ class SlurmJobManager:
 		algorithm: Algorithm,
 		backend: Backend,
 		cores: int = 1,
+		**kwargs,
 	) -> str:
 		"""
 		Creates a :class:`QLauncher`
@@ -140,31 +140,11 @@ class SlurmJobManager:
 		}
 		return job_id
 
-	def read_results(self, job_id: str) -> Result:
-		"""
-		Reads the result of a finished job from its output file.
-
-		Args:
-		    job_id (str): Slurm job ID returned by :meth:`submit` or
-		        :meth:`submit_launcher`.
-
-		Raises:
-		    KeyError: If ``job_id`` is not known to this manager.
-		    FileNotFoundError: If the expected output file does not exist.
-
-		Returns:
-		    Result: Deserialized result object produced by the worker process.
-		"""
-		job = self.jobs[job_id]
-		output_file = job['output_file']
-		if not os.path.exists(output_file):
-			raise FileNotFoundError(f'Result file for job {job_id} not found: {output_file}')
-		with open(output_file, 'rb') as rt:
-			result: Result = pickle.load(rt)
-		job['finished'] = True
-		return result
-
-	def wait_for_a_job(self, job_id: str | None = None, timeout: float | None = None) -> str | None:
+	def wait_for_a_job(
+		self,
+		job_id: str | None = None,
+		timeout: float | None = None,
+	) -> str | None:
 		"""
 		Waits until a Slurm job finishes and returns its ID.
 
@@ -204,7 +184,8 @@ class SlurmJobManager:
 			state = self._get_slurm_state(job_id)
 
 			if state is None:
-				if os.path.exists(output_file):
+				if Path(output_file).exists():
+					job['finished'] = True
 					return job_id
 				raise RuntimeError(f'Job {job_id} disappeared from squeue but result file does not exist: {output_file}')
 
@@ -212,12 +193,43 @@ class SlurmJobManager:
 				time.sleep(2.0)
 				continue
 
-			if state in ('COMPLETED', 'COMPLETING', 'CG'):
-				if not os.path.exists(output_file):
+			if state in ('COMPLETED', 'CG'):
+				if not Path(output_file).exists():
 					raise RuntimeError(f'Job {job_id} finished with state {state}, but result file not found: {output_file}')
+				job['finished'] = True
 				return job_id
 
 			raise RuntimeError(f'Job {job_id} finished in bad state: {state}')
+
+	def read_results(self, job_id: str) -> Result:
+		"""
+		Reads the result of a finished job from its output file.
+
+		Args:
+		    job_id (str): Slurm job ID returned by :meth:`submit` or
+		        :meth:`submit_launcher`.
+
+		Raises:
+		    KeyError: If ``job_id`` is not known to this manager.
+		    FileNotFoundError: If the expected output file does not exist.
+
+		Returns:
+		    Result: Deserialized result object produced by the worker process.
+		"""
+		if job_id not in self.jobs:
+			raise KeyError(f'Job {job_id} not found')
+
+		job = self.jobs[job_id]
+		output_file = job['output_file']
+
+		if not Path(output_file).exists():
+			raise FileNotFoundError(f'Result file for job {job_id} not found: {output_file}')
+
+		with open(output_file, 'rb') as rt:
+			result: Result = pickle.load(rt)
+
+		job['finished'] = True
+		return result
 
 	def clean_up(self) -> None:
 		"""
@@ -226,16 +238,9 @@ class SlurmJobManager:
 		for job in self.jobs.values():
 			for key in ('script_path', 'input_file'):
 				path = job.get(key)
-				if path and os.path.exists(path):
+				if path and Path(path).exists():
 					with contextlib.suppress(OSError):
 						os.remove(path)
-
-	def __del__(self) -> None:
-		with contextlib.suppress(Exception):
-			self.clean_up()
-
-	def _make_job_uid(self) -> str:
-		return f'{len(self.jobs):05d}'
 
 	def _write_sbatch_script(
 		self,
@@ -286,24 +291,3 @@ class SlurmJobManager:
 			return None
 
 		return out.splitlines()[0].strip()
-
-
-if __name__ == '__main__':
-	from qlauncher.problems import MaxCut
-	from qlauncher.routines.qiskit import QAOA, QiskitBackend
-
-	problem = MaxCut.from_preset('default')
-	algorithm = QAOA(p=3)
-	backend = QiskitBackend('local_simulator')
-
-	mgr = SlurmJobManager(
-		slurm_options={'licenses': 'orca1:1'},
-		env_setup=['module load Python/python-3.11.0', 'source ~/venv/bin/activate'],
-	)
-
-	job_id = mgr.submit(problem, algorithm, backend, cores=1)
-
-	finished_id = mgr.wait_for_a_job(job_id)
-
-	result = mgr.read_results(job_id)
-	print(result)

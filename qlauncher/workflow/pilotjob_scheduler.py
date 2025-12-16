@@ -1,10 +1,13 @@
 import os
 import pickle
 import sys
+from pathlib import Path
+import contextlib
 
-from qlauncher.base.base import Algorithm, Backend, Result
-from qlauncher.base.problem_like import ProblemLike
+
+from qlauncher.base import Algorithm, Backend, Problem, ProblemLike, Result
 from qlauncher.exceptions import DependencyError
+from qlauncher.workflow.base_job_manager import BaseJobManager
 
 try:
 	import dill
@@ -14,25 +17,28 @@ except ImportError as e:
 	raise DependencyError(e, install_hint='pilotjob') from e
 
 
-class PilotJobManager:
+class PilotJobManager(BaseJobManager):
 	def __init__(self, manager: Manager | None = None):
 		"""
-		Job manager is QLauncher's wrapper for process management system, current version works on top of qcg-pilotjob
+		PilotJob manager is QLauncher's wrapper for process management system, current version works on top of qcg-pilotjob
 
 		Args:
 			manager (Manager | None, optional): Manager system to schedule jobs, if set to None, the pilotjob's LocalManager is set.
 			Defaults to None.
 		"""
-		self.jobs = {}
+		super().__init__()
 		self.code_path = os.path.join(os.path.dirname(__file__), 'pilotjob_task.py')
-		if manager is None:
-			manager = LocalManager()
-		self.manager = manager
+		self.manager = manager if manager is not None else LocalManager()
 
-	def _count_not_finished(self) -> int:
-		return len([job for job in self.jobs.values() if job.get('finished') is False])
-
-	def submit(self, problem: ProblemLike, algorithm: Algorithm, backend: Backend, output_path: str, cores: int | None = None) -> str:
+	def submit(
+		self,
+		problem: Problem | ProblemLike,
+		algorithm: Algorithm,
+		backend: Backend,
+		cores: int = 1,
+		output_path: str | None = None,
+		**kwargs,
+	) -> str:
 		"""
 		Submits QLauncher job to the scheduler
 
@@ -46,10 +52,17 @@ class PilotJobManager:
 		Returns:
 			str: Job Id.
 		"""
-		if cores is None:
-			cores = 1
-		job = self._prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path, cores=cores)
-		return self.manager.submit(Jobs().add(**job.get('qcg_args')))[0]
+		if output_path is None:
+			raise ValueError('output_path is required for PilotJobManager')
+
+		job = self._prepare_ql_dill_job(
+			problem=problem,
+			algorithm=algorithm,
+			backend=backend,
+			output=output_path,
+			cores=cores,
+		)
+		return self.manager.submit(Jobs().add(**job['qcg_args']))[0]
 
 	def submit_many(
 		self,
@@ -77,13 +90,27 @@ class PilotJobManager:
 		free_cores = self.manager.resources()['free_cores']
 		if free_cores == 0:
 			return []
+
 		qcg_jobs = Jobs()
-		for _ in range(n_jobs if n_jobs is not None else free_cores // cores_per_job):
-			job = self._prepare_ql_dill_job(problem=problem, algorithm=algorithm, backend=backend, output=output_path, cores=cores_per_job)
-			qcg_jobs.add(**job.get('qcg_args'))
+		num_jobs = n_jobs if n_jobs is not None else free_cores // cores_per_job
+
+		for _ in range(num_jobs):
+			job = self._prepare_ql_dill_job(
+				problem=problem,
+				algorithm=algorithm,
+				backend=backend,
+				output=output_path,
+				cores=cores_per_job,
+			)
+			qcg_jobs.add(**job['qcg_args'])
+
 		return self.manager.submit(qcg_jobs)
 
-	def wait_for_a_job(self, job_id: str | None = None, timeout: int | float | None = None) -> tuple[str, str]:
+	def wait_for_a_job(
+		self,
+		job_id: str | None = None,
+		timeout: float | None = None,
+	) -> str:
 		"""
 		Waits for a job to finish and returns it's id and status.
 
@@ -107,30 +134,50 @@ class PilotJobManager:
 			raise ValueError(f"Job {job_id} not found in {self.__class__.__name__}'s jobs")
 
 		self.jobs[job_id]['finished'] = True
-		return job_id, state
+		return job_id
 
-	def _prepare_ql_dill_job(self, problem: ProblemLike, algorithm: Algorithm, backend: Backend, output: str, cores: int = 1) -> dict:
-		# circular import fix
-		from qlauncher.launcher.qlauncher import QLauncher  # pylint:disable = import-outside-toplevel
+	def _prepare_ql_dill_job(
+			self,
+			problem: ProblemLike,
+			algorithm: Algorithm,
+			backend: Backend,
+			output: str,
+			cores: int = 1,
+	) -> dict:
+		from qlauncher.launcher.qlauncher import QLauncher
 
-		job_uid = f'{len(self.jobs):05d}'
-		output_file = os.path.abspath(f'{output}output.{job_uid}')
+		job_uid = self._make_job_uid()
+
+		out_dir = Path(output).expanduser().resolve()
+		out_dir.mkdir(parents=True, exist_ok=True)
+
+		output_file = (out_dir / f'output.{job_uid}.pkl')
+		input_file = (out_dir / f'input.{job_uid}.pkl')
+		stdout_file = (out_dir / f'stdout.{job_uid}')
+		stderr_file = (out_dir / f'stderr.{job_uid}')
+
 		launcher = QLauncher(problem, algorithm, backend)
-		input_file = os.path.abspath(f'{output}output.{job_uid}')
+
 		with open(input_file, 'wb') as f:
 			dill.dump(launcher, f)
 
-		in_args = [self.code_path, input_file, output_file]
+		in_args = [self.code_path, str(input_file), str(output_file)]
 		qcg_args = {
 			'name': job_uid,
 			'exec': sys.executable,
 			'args': in_args,
 			'model': 'openmpi',
-			'stdout': f'{output}stdout.{job_uid}',
-			'stderr': f'{output}stderr.{job_uid}',
+			'stdout': str(stdout_file),
+			'stderr': str(stderr_file),
 			'numCores': cores,
 		}
-		job = {'name': job_uid, 'qcg_args': qcg_args, 'output_file': output_file, 'finished': False}
+
+		job = {
+			'name': job_uid,
+			'qcg_args': qcg_args,
+			'output_file': str(output_file),
+			'finished': False,
+		}
 		self.jobs[job_uid] = job
 		return job
 
@@ -144,26 +191,35 @@ class PilotJobManager:
 		Returns:
 			Result: Result of selected Job.
 		"""
+		if job_id not in self.jobs:
+			raise KeyError(f'Job {job_id} not found')
+
 		output_path = self.jobs[job_id]['output_file']
 		with open(output_path, 'rb') as rt:
 			return pickle.load(rt)
 
 	def clean_up(self) -> None:
-		"""
-		Removes all output files generated in the process and calls self.manager.cleanup().
-		"""
 		for job in self.jobs.values():
-			os.remove(job['output_file'])
+			if os.path.exists(job["output_file"]):
+				os.remove(job["output_file"])
+
 		if isinstance(self.manager, LocalManager):
-			self.manager.cleanup()
+			with contextlib.suppress(Exception):
+				self.manager.cleanup()
+
+		self.stop()
 
 	def stop(self) -> None:
-		"""
-		Stops the manager process.
-		"""
-		self.manager.cancel(self.jobs)
-		if isinstance(self.manager, LocalManager):
-			self.manager.finish()
+		mgr = getattr(self, "manager", None)
+		if mgr is None:
+			return
+
+		if isinstance(mgr, LocalManager):
+			with contextlib.suppress(Exception):
+				mgr.finish()
+
+		self.manager = None
 
 	def __del__(self):
-		self.stop()
+		with contextlib.suppress(Exception):
+			self.stop()
