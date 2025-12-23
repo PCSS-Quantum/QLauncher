@@ -133,13 +133,12 @@ class DiscreteTimeQuantumWalk(Algorithm[_ProblemLike, QiskitBackend]):
         prep = StatePreparation(initial_state)
         quantum_circuit.append(prep, q_ids)
 
-        #TODO Sanity check this BC
-        qubits = list(range(0, problem.no_pos_qubits))
-        qubits = [problem.no_pos_qubits, *qubits]
+        # qubits = list(range(0, problem.no_pos_qubits))
+        # qubits = [problem.no_pos_qubits, *qubits]
 
         for _ in range(problem.no_steps):
             self.__apply_coin(quantum_circuit, problem.no_pos_qubits)
-            self.__apply_shift(quantum_circuit, problem, qubits)
+            self.__apply_shift(quantum_circuit, problem, q_ids)
         return quantum_circuit
 
     def __apply_coin(self, quantum_circuit: QuantumCircuit, coin_id: int) -> None:

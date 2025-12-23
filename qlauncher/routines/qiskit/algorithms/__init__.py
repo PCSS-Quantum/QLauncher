@@ -12,8 +12,8 @@ try:
 except ImportError:
 	EducatedGuess = None
 try:
-	from .quantum_walk import DiscreteTimeQuantumWalk
+	from .quantum_walk import DiscreteTimeQuantumWalk, QW_Helper
 except ImportError:
 	DiscreteTimeQuantumWalk = None
 
-__all__ = ['QAOA', 'FALQON', 'EducatedGuess', 'TrainQSVCKernel', 'DiscreteTimeQuantumWalk', '_CircuitRunner']
+__all__ = ['QAOA', 'FALQON', 'EducatedGuess', 'TrainQSVCKernel', 'DiscreteTimeQuantumWalk', 'QW_Helper', '_CircuitRunner']
