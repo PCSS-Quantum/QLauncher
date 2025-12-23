@@ -149,9 +149,9 @@ class Hamiltonian(ProblemLike):
 
 	def to_qubo(self) -> QUBO:
 		qp = from_ising(self.hamiltonian)
-		conv = QuadraticProgramToQubo()
-		qubo = conv.convert(qp).objective
-		return QUBO(qubo.quadratic.to_array(), qubo.constant)
+		objective = QuadraticProgramToQubo().convert(qp).objective
+		qubo = objective.quadratic.to_array()
+		return QUBO((qubo + qubo.T) / 2, objective.constant)
 
 
 class BQM(ProblemLike):

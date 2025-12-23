@@ -188,7 +188,6 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 		results = backend.sample_circuit(circuit.assign_parameters(opt_params))
 
 		final_energies = {k: np.real(evaluate_energy(int(k, 2), problem.hamiltonian)) for k in results.keys()}
-		final_counts = {k: v for k, v in results.items()}
 
 		depth = circuit.decompose(reps=10).depth()
 		cx_count = circuit.decompose(reps=10).count_ops().get('cx', 0)
@@ -201,7 +200,7 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 				'qpu_time': 0,
 				'training_costs': costs,
 				'final_sample_energies': final_energies,
-				'final_sample_counts': final_counts,
+				'final_sample_counts': results,
 				'optimal_point': opt_params,  # needed for educated_guess
 			}
 		)
@@ -287,8 +286,6 @@ class FALQON(QiskitOptimizationAlgorithm[Hamiltonian]):
 
 		if problem.hamiltonian is None:
 			raise ValueError('Formatter returned None')
-
-		problem.hamiltonian.num_qubits
 
 		self.n_qubits = problem.hamiltonian.num_qubits
 

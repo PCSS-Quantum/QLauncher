@@ -38,6 +38,7 @@ ml = ["qiskit-machine-learning","scikit_learn"]
 orca = ["numba==0.60.0", "torch"]
 dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
 cirq = ["cirq>=1.4.1", "ply"]
+pasqal = ["qoolqit==0.3.1", "emu_sv"]
 dev = ["pytest", "pytest-httpx>=0.35.0"]
 
 [tool.ruff]

@@ -72,7 +72,7 @@ class EC(Problem):
 			if marked is None:
 				edge_colors.append('black')
 				continue
-			if marked[node] == '1':
+			if marked[::-1][node] == '1':
 				edge_colors.append('red')
 				covered[str_node] += 1
 			else:

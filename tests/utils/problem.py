@@ -9,4 +9,4 @@ def get_hamiltonian() -> Hamiltonian:
 
 
 def get_qubo() -> QUBO:
-	return QUBO(np.array([[1, 0], [-10, 1]]), 2)
+	return QUBO(np.array([[1, 2], [2, 1]]), 2)

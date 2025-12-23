@@ -39,3 +39,6 @@ pathos
 #ML
 qiskit-machine-learning
 scikit_learn
+
+#Pasqal
+qoolqit
