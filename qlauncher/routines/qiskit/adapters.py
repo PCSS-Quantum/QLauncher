@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 from qiskit import transpile
+from qiskit.circuit import QuantumCircuit
 from qiskit.primitives import BackendSampler, BackendSamplerV2, BasePrimitiveJob, BitArray, DataBin, Sampler, SamplerResult
 from qiskit.primitives.base import BaseEstimatorV1, BaseEstimatorV2, BaseSamplerV1, BaseSamplerV2, EstimatorResult
 from qiskit.primitives.containers import PubResult
@@ -172,11 +173,12 @@ class EstimatorV1ToEstimatorV2Adapter(BaseEstimatorV2):
 
 
 class TranslatingSamplerV1(BaseSamplerV1):
-	def __init__(self, sampler_v1: BaseSamplerV1, compatible_circuit: CIRCUIT_FORMATS):
+	def __init__(self, sampler_v1: BaseSamplerV1, compatible_circuit: CIRCUIT_FORMATS, options: dict | None = None):
+		super().__init__(options=options)
 		self.sampler = sampler_v1
 		self.compatible_circuit = compatible_circuit
 
-	def _run(self, circuits, parameter_values=None, **run_options) -> PrimitiveJob:
+	def _run(self, circuits: tuple[QuantumCircuit, ...], parameter_values: tuple[tuple[float, ...], ...], **run_options) -> PrimitiveJob:
 		pubs = [
 			GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[self.compatible_circuit])
 			if not isinstance(circuit, self.compatible_circuit)
@@ -188,6 +190,7 @@ class TranslatingSamplerV1(BaseSamplerV1):
 
 class TranslatingSampler(BaseSamplerV2):
 	def __init__(self, sampler_v2: BaseSamplerV2, compatible_circuit: CIRCUIT_FORMATS):
+		super().__init__()
 		self.sampler = sampler_v2
 		self.compatible_circuit = compatible_circuit
 
