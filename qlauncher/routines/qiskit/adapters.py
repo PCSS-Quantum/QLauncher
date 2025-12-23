@@ -179,13 +179,16 @@ class TranslatingSamplerV1(BaseSamplerV1):
 		self.compatible_circuit = compatible_circuit
 
 	def _run(self, circuits: tuple[QuantumCircuit, ...], parameter_values: tuple[tuple[float, ...], ...], **run_options) -> PrimitiveJob:
+		bound_circuits = [
+			circuit.assign_parameters(params, strict=True) for circuit, params in zip(circuits, parameter_values, strict=True)
+		]
 		pubs = [
 			GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[self.compatible_circuit])
 			if not isinstance(circuit, self.compatible_circuit)
 			else circuit
-			for circuit in circuits
+			for circuit in bound_circuits
 		]
-		return self.sampler._run(pubs, parameter_values=parameter_values, **run_options)
+		return self.sampler.run(pubs, parameter_values=parameter_values, **run_options)
 
 
 class TranslatingSampler(BaseSamplerV2):
@@ -195,10 +198,16 @@ class TranslatingSampler(BaseSamplerV2):
 		self.compatible_circuit = compatible_circuit
 
 	def run(self, pubs: Iterable[SamplerPubLike], *, shots: int | None = None) -> BasePrimitiveJob[PrimitiveResult[SamplerPubResult], Any]:
+		coerced_pubs = [SamplerPub.coerce(pub, shots) for pub in pubs]
+		bound_circuits = [pub.parameter_values.bind_all(pub.circuit) for pub in coerced_pubs]
+		flatten_circuits = []
+		for circuits in bound_circuits:
+			flatten_circuits.extend(np.ravel(circuits).tolist())
+
 		pubs = [
 			GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[self.compatible_circuit])
 			if not isinstance(circuit, self.compatible_circuit)
 			else circuit
-			for circuit in pubs
+			for circuit in flatten_circuits
 		]
 		return self.sampler.run(pubs, shots=shots)
