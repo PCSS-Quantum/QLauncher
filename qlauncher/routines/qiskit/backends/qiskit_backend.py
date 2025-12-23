@@ -99,9 +99,9 @@ class QiskitBackend(GateCircuitBackend):
 
 		else:
 			raise ValueError(f"Unsupported mode for this backend:'{self.name}'")
-		self.sampler = TranslatingSampler(self.sampler, self.compatible_circuit)
 
 		self._configure_auto_behavior()
+		self.sampler = TranslatingSampler(self.sampler, self.compatible_circuit)
 
 	def _configure_auto_behavior(self) -> None:
 		"""
