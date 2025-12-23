@@ -3,6 +3,8 @@ Routine file for Cirq library
 """
 
 import math
+import types
+import typing
 from collections.abc import Iterable, Sequence
 from typing import Any, Literal
 
@@ -18,8 +20,10 @@ from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.result import QuasiDistribution
 
-from qlauncher.base import Backend, GateCircuitBackend
 from qlauncher.exceptions import DependencyError
+from qlauncher.routines.circuits import CIRCUIT_FORMATS
+from qlauncher.routines.qiskit.adapters import TranslatingSampler, TranslatingSamplerV1
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
 from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation
 
@@ -71,12 +75,10 @@ class _CirqRunner:
 
 	@classmethod
 	def calculate_circuit(
-		cls, circuit: qiskit.QuantumCircuit, return_type: Literal['counts', 'dist', 'raw'] = 'counts', shots: int | None = None
+		cls, cirq_circ: cirq.Circuit, return_type: Literal['counts', 'dist', 'raw'] = 'counts', shots: int | None = None
 	) -> dict | list[str]:
-		if circuit.num_clbits == 0:
-			circuit = circuit.measure_all(inplace=False)
-
-		cirq_circ = GateCircuitBackend.get_translation(circuit, 'cirq')
+		if not cirq_circ.all_measurement_key_names():
+			cirq_circ.append(cirq.measure_each(*cirq_circ.all_qubits()))
 
 		result = cls.simulator.run(cirq_circ, repetitions=cls.repetitions if shots is None else shots)
 
@@ -118,9 +120,9 @@ class CirqSamplerV2(BaseSamplerV2):
 	def run(self, pubs: Iterable[SamplerPubLike], *, shots: int | None = None) -> BasePrimitiveJob[PrimitiveResult[SamplerPubResult], Any]:
 		bound_circuits = []
 		for pub in pubs:
-			if isinstance(pub, qiskit.QuantumCircuit):
+			if isinstance(pub, cirq.Circuit):
 				bound_circuits.append(pub)
-			elif len(pub) == 1 and isinstance(pub[0], qiskit.QuantumCircuit):
+			elif len(pub) == 1 and isinstance(pub[0], cirq.Circuit):
 				bound_circuits.append(pub[0])
 			elif len(pub) == 2:
 				bound_circuits.append(pub[0].assign_parameters(pub[1]))
@@ -150,8 +152,8 @@ class CirqBackend(GateCircuitBackend):
 		name: Literal['local_simulator'] = 'local_simulator',
 		error_mitigation_strategy: CircuitExecutionMethod | None = None,
 	):
-		self.sampler = CirqSamplerV2()
-		self.samplerV1 = CirqSampler()
+		self.sampler =TranslatingSampler(CirqSamplerV2(),self.compatible_circuit)
+		self.samplerV1 = TranslatingSamplerV1(CirqSampler(),self.compatible_circuit)
 		self._mitigation_strategy = error_mitigation_strategy if error_mitigation_strategy is not None else NoMitigation()
 		self.backendv1v2 = None
 		super().__init__(name)
@@ -164,8 +166,30 @@ class CirqBackend(GateCircuitBackend):
 	def from_qasm(qasm: str) -> cirq.Circuit:
 		return circuit_from_qasm(qasm)
 
-	def sample_circuit(self, circuit: qiskit.QuantumCircuit | cirq.Circuit, shots: int = 1024) -> dict[str, int]:
+	def sample_circuit(self, circuit: CIRCUIT_FORMATS, shots: int = 1024) -> dict[str, int]:
+		compatible_circuit = self._mitigation_strategy.compatible_circuit
+		if not isinstance(circuit, compatible_circuit):
+			if isinstance(compatible_circuit, types.UnionType):
+				compatible_circuit = typing.get_args(compatible_circuit)[0]
+			circuit = GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[compatible_circuit])
 		return self._mitigation_strategy.sample(circuit, self, shots)
 
 	def estimate_energy(self, circuit: qiskit.QuantumCircuit, observable: SparsePauliOp) -> float:
 		raise NotImplementedError
+
+
+if __name__ == '__main__':
+	from qlauncher.routines.qiskit import QiskitBackend
+
+	qiskit_circuit = qiskit.QuantumCircuit(2)
+	qiskit_circuit.h(0)
+	qiskit_circuit.cx(0, 1)
+	qiskit_circuit.x(0)
+	qiskit_circuit.measure_all()
+	cirq_circuit = GateCircuitBackend.get_translation(qiskit_circuit, 'cirq')
+	qiskit_backend = QiskitBackend()
+	cirq_backend = CirqBackend()
+	print(qiskit_backend.sample_circuit(qiskit_circuit))
+	print(cirq_backend.sample_circuit(cirq_circuit))
+	print(qiskit_backend.sample_circuit(cirq_circuit))
+	print(cirq_backend.sample_circuit(qiskit_circuit))

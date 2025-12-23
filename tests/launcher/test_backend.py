@@ -10,7 +10,9 @@ from qiskit_ibm_runtime import Session
 from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 
 from qlauncher import QLauncher
+from qlauncher.routines.cirq import TranslatingSamplerV1
 from qlauncher.routines.qiskit import FALQON, QAOA, AerBackend, AQTBackend, IBMBackend, QiskitBackend
+from qlauncher.routines.qiskit.adapters import TranslatingSampler
 from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
 from tests.utils.problem import get_hamiltonian
 
@@ -62,8 +64,10 @@ def test_AQT_backend_backendv1v2_simulator() -> None:
 
 	assert isinstance(backend.backendv1v2, FakeAlmadenV2)
 	assert isinstance(backend._estimatorv1, AQTEstimator)
-	assert isinstance(backend.samplerV1, AQTSampler)
-	assert isinstance(backend.sampler, BaseSamplerV2)
+	assert isinstance(backend.samplerV1, TranslatingSamplerV1)
+	assert isinstance(backend.sampler, TranslatingSampler)
+	assert isinstance(backend.samplerV1.sampler, AQTSampler)
+	assert isinstance(backend.sampler.sampler, BaseSamplerV2)
 
 	run_backend_qaoa(backend)
 
@@ -74,7 +78,8 @@ def test_AQT_backend_local_simulator() -> None:
 	assert backend.name == 'offline_simulator_no_noise'
 	assert isinstance(backend.backendv1v2, OfflineSimulatorResource)
 	assert isinstance(backend._estimatorv1, AQTEstimator)
-	assert isinstance(backend.samplerV1, AQTSampler)
+	assert isinstance(backend.samplerV1, TranslatingSamplerV1)
+	assert isinstance(backend.samplerV1.sampler, AQTSampler)
 	assert isinstance(backend.sampler, BaseSamplerV2)
 
 	run_backend_qaoa(backend)

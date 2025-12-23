@@ -8,6 +8,7 @@ from qiskit import QuantumCircuit, transpile
 from qiskit._accelerate.circuit import CircuitInstruction as AccelerateInstruction
 from qiskit.circuit import Instruction, Operation
 
+from qlauncher.routines.circuits import CIRCUIT_FORMATS
 from qlauncher.utils import sum_counts
 
 from .base import CircuitExecutionMethod
@@ -15,11 +16,14 @@ from .base import CircuitExecutionMethod
 if TYPE_CHECKING:
 	from qiskit.quantum_info import SparsePauliOp
 
+	from qlauncher.routines.qiskit.adapters import GateCircuitBackend
 	from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
 class NoMitigation(CircuitExecutionMethod):
-	def sample(self, circuit: QuantumCircuit, backend: QiskitBackend, shots: int = 1024) -> dict[str, int]:
+	compatible_circuit = CIRCUIT_FORMATS
+
+	def sample(self, circuit: CIRCUIT_FORMATS, backend: GateCircuitBackend, shots: int = 1024) -> dict[str, int]:
 		return backend.sampler.run([circuit], shots=shots).result()[0].join_data().get_counts()
 
 	def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: QiskitBackend) -> float:
@@ -31,6 +35,8 @@ class PauliTwirling(CircuitExecutionMethod):
 	Error mitigation technique based on averaging the results of running multiple "twirled" versions of the initial circuit.
 	The method appends additional gates on both sides of random 2 qubit gates (cx, ecr).
 	"""
+
+	compatible_circuit = QuantumCircuit
 
 	def __init__(self, num_random_circuits: int, max_substitute_gates_per_circuit: int = 4, do_transpile: bool = True) -> None:
 		self.num_random_circuits = num_random_circuits
@@ -187,6 +193,8 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
 	then predicting the values at x=0 (original circuit)
 	"""
 
+	compatible_circuit = QuantumCircuit
+
 	def __init__(self, num_extrapolations: int = 4, polynomial_degree: int = 3, mode: Literal['linear', 'exponential'] = 'linear') -> None:
 		"""
 		Args:
@@ -233,13 +241,11 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
 			result[value] = counts
 		return result
 
-	def sample(self, circuit: QuantumCircuit, backend: QiskitBackend, shots: int = 1024) -> dict[str, int]:
-		counts = np.array(
-			[
-				self._get_np_array_from_counts_dict(res.join_data().get_int_counts(), circuit.num_clbits)
-				for res in backend.sampler.run(self._get_repeated_circuits(circuit), shots=shots).result()
-			]
-		)
+	def sample(self, circuit: QuantumCircuit, backend: GateCircuitBackend, shots: int = 1024) -> dict[str, int]:
+		counts = np.array([
+			self._get_np_array_from_counts_dict(res.join_data().get_int_counts(), circuit.num_clbits)
+			for res in backend.sampler.run(self._get_repeated_circuits(circuit), shots=shots).result()
+		])
 
 		if self.mode == 'exponential':
 			counts = np.log(counts)
@@ -254,9 +260,9 @@ class ZeroNoiseExtrapolation(CircuitExecutionMethod):
 		return counts_dict
 
 	def estimate(self, circuit: QuantumCircuit, observable: SparsePauliOp, backend: QiskitBackend) -> float:
-		evs = np.array(
-			[res.data.evs for res in backend.estimator.run([(x, observable) for x in self._get_repeated_circuits(circuit)]).result()]
-		)
+		evs = np.array([
+			res.data.evs for res in backend.estimator.run([(x, observable) for x in self._get_repeated_circuits(circuit)]).result()
+		])
 		if self.mode == 'exponential':
 			evs = np.log(evs)
 			return np.exp(self._get_zero_estimate(evs))

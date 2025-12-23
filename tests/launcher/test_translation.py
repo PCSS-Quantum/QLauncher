@@ -1,7 +1,7 @@
 import cirq
 import qiskit
 
-from qlauncher.base import GateCircuitBackend
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 
 
 def test_auto_translation() -> None:

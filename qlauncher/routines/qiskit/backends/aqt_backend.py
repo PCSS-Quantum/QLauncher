@@ -8,7 +8,12 @@ from qiskit.providers import BackendV1, BackendV2
 from qiskit_ibm_runtime import Options
 
 from qlauncher.exceptions import DependencyError
-from qlauncher.routines.qiskit.adapters import EstimatorV1ToEstimatorV2Adapter, SamplerV1ToSamplerV2Adapter
+from qlauncher.routines.qiskit.adapters import (
+	EstimatorV1ToEstimatorV2Adapter,
+	SamplerV1ToSamplerV2Adapter,
+	TranslatingSampler,
+	TranslatingSamplerV1,
+)
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
 
@@ -31,19 +36,19 @@ class AQTBackend(QiskitBackend):
 	-------------
 	::
 
-		backend = AQTBackend(token='valid_token', name='device')
+	backend = AQTBackend(token='valid_token', name='device')
 
 	or
 
 	::
 
-		backend = AQTBackend(dotenv_path='./.env', name='device')
+	backend = AQTBackend(dotenv_path='./.env', name='device')
 
 	with a .env file:
 
 	::
 
-		AQT_TOKEN = valid_token
+	AQT_TOKEN = valid_token
 
 	"""
 
@@ -101,7 +106,7 @@ class AQTBackend(QiskitBackend):
 
 		self._estimatorv1 = AQTEstimator(self.backendv1v2)
 		self.estimator = EstimatorV1ToEstimatorV2Adapter(self._estimatorv1)
-		self._samplerV1 = AQTSampler(self.backendv1v2)
-		self.sampler = SamplerV1ToSamplerV2Adapter(self._samplerV1)
+		self._samplerV1 = TranslatingSamplerV1(AQTSampler(self.backendv1v2), self.compatible_circuit)
+		self.sampler = TranslatingSampler(SamplerV1ToSamplerV2Adapter(self._samplerV1), self.compatible_circuit)
 
 		self._configure_auto_behavior()

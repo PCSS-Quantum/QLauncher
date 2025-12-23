@@ -1,5 +1,7 @@
 """Base backend class for Qiskit routines."""
 
+import types
+import typing
 from typing import Literal
 from warnings import warn
 
@@ -10,8 +12,9 @@ from qiskit.providers import BackendV1, BackendV2
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_ibm_runtime import Options
 
-from qlauncher.base import GateCircuitBackend
-from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter
+from qlauncher.routines.circuits import CIRCUIT_FORMATS
+from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter, TranslatingSampler, TranslatingSamplerV1
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 from qlauncher.routines.qiskit.backends.utils import (
 	AUTO_TRANSPILE_ESTIMATOR_TYPE,
 	AUTO_TRANSPILE_SAMPLER_TYPE,
@@ -96,6 +99,7 @@ class QiskitBackend(GateCircuitBackend):
 
 		else:
 			raise ValueError(f"Unsupported mode for this backend:'{self.name}'")
+		self.sampler = TranslatingSampler(self.sampler, self.compatible_circuit)
 
 		self._configure_auto_behavior()
 
@@ -124,8 +128,13 @@ class QiskitBackend(GateCircuitBackend):
 	def from_qasm(qasm: str) -> qiskit.QuantumCircuit:
 		return qiskit.QuantumCircuit.from_qasm_str(qasm)
 
+	def sample_circuit(self, circuit: CIRCUIT_FORMATS, shots: int = 1024) -> dict[str, int]:
+		compatible_circuit = self._mitigation_strategy.compatible_circuit
+		if not isinstance(circuit, compatible_circuit):
+			if isinstance(compatible_circuit, types.UnionType):
+				compatible_circuit = typing.get_args(compatible_circuit)[0]
+			circuit = GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[compatible_circuit])
 
-	def sample_circuit(self, circuit: QuantumCircuit, shots: int = 1024) -> dict[str, int]:
 		return self._mitigation_strategy.sample(circuit, self, shots)
 
 	def estimate_energy(self, circuit: QuantumCircuit, observable: SparsePauliOp) -> float:

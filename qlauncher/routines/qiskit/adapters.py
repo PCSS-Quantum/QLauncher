@@ -4,7 +4,7 @@ from typing import Any
 
 import numpy as np
 from qiskit import transpile
-from qiskit.primitives import BasePrimitiveJob, BitArray, DataBin, SamplerResult
+from qiskit.primitives import BackendSampler, BackendSamplerV2, BasePrimitiveJob, BitArray, DataBin, Sampler, SamplerResult
 from qiskit.primitives.base import BaseEstimatorV1, BaseEstimatorV2, BaseSamplerV1, BaseSamplerV2, EstimatorResult
 from qiskit.primitives.containers import PubResult
 from qiskit.primitives.containers.estimator_pub import EstimatorPub, EstimatorPubLike
@@ -14,6 +14,9 @@ from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.result import QuasiDistribution
+
+from qlauncher.routines.circuits import CIRCUIT_FORMATS
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 
 
 def _transpile_circuits(circuits, backend):
@@ -166,3 +169,33 @@ class EstimatorV1ToEstimatorV2Adapter(BaseEstimatorV2):
 		job = PrimitiveJob(self._run, coerced_pubs)
 		job._submit()
 		return job
+
+
+class TranslatingSamplerV1(BaseSamplerV1):
+	def __init__(self, sampler_v1: BaseSamplerV1, compatible_circuit: CIRCUIT_FORMATS):
+		self.sampler = sampler_v1
+		self.compatible_circuit = compatible_circuit
+
+	def _run(self, circuits, parameter_values=None, **run_options) -> PrimitiveJob:
+		pubs = [
+			GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[self.compatible_circuit])
+			if not isinstance(circuit, self.compatible_circuit)
+			else circuit
+			for circuit in circuits
+		]
+		return self.sampler._run(pubs, parameter_values=parameter_values, **run_options)
+
+
+class TranslatingSampler(BaseSamplerV2):
+	def __init__(self, sampler_v2: BaseSamplerV2, compatible_circuit: CIRCUIT_FORMATS):
+		self.sampler = sampler_v2
+		self.compatible_circuit = compatible_circuit
+
+	def run(self, pubs: Iterable[SamplerPubLike], *, shots: int | None = None) -> BasePrimitiveJob[PrimitiveResult[SamplerPubResult], Any]:
+		pubs = [
+			GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[self.compatible_circuit])
+			if not isinstance(circuit, self.compatible_circuit)
+			else circuit
+			for circuit in pubs
+		]
+		return self.sampler.run(pubs, shots=shots)

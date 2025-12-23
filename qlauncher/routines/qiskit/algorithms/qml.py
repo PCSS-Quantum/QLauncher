@@ -11,6 +11,7 @@ from qiskit_machine_learning.state_fidelities import BaseStateFidelity, ComputeU
 
 from qlauncher.base.base import Algorithm, Result
 from qlauncher.problems.other.tabular_ml import TabularML
+from qlauncher.routines.circuits import CIRCUIT_FORMATS
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
