@@ -1,12 +1,10 @@
-from enum import Enum
-
 import matplotlib.pyplot as plt
 import numpy as np
 from qiskit import QuantumCircuit, transpile
 from qiskit.circuit.library import StatePreparation
 
 from qlauncher.base.base import Algorithm, Backend, Result, _ProblemLike
-from qlauncher.problems.other.dtqw_1D import DTQW_1D
+from qlauncher.problems.other.dtqw_1D import DTQW_ND, CoinType
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
@@ -86,26 +84,18 @@ class QW_Helper:
             res = np.kron(res, next_p)
         return res
 
-
-class CoinType(Enum):
-    HADAMARD = 1
-
-
 class DiscreteTimeQuantumWalk(Algorithm[_ProblemLike, QiskitBackend]):
     def __init__(self):
-        self.coin_type = CoinType.HADAMARD
-        self.algorithm_format = "dtqw_1d"
+        self.algorithm_format = "DTQW"
 
-    def run(self, problem: DTQW_1D, backend: Backend) -> Result:
+    def run(self, problem: DTQW_ND, backend: Backend) -> Result:
         if isinstance(backend, (QiskitBackend, CirqBackend)):
             sampler = backend.samplerV1
         else:
             raise ValueError(f"The accepted backends are QiskitBackend and CirqBackend, got {type(backend)}")
 
-        self.__set_coin_type(problem.coin_type)
         qc = self.build_dtqw_circuit(problem)
         qc.measure_all()
-        #qc = transpile(qc, backend, optimization_level=3)
         result = sampler.run(qc).result()
 
         return Result(
@@ -121,33 +111,42 @@ class DiscreteTimeQuantumWalk(Algorithm[_ProblemLike, QiskitBackend]):
             result=result
         )
 
-    def build_dtqw_circuit(self, problem: DTQW_1D) -> QuantumCircuit:
-        q_ids = list(range(problem.no_coin_qubits + problem.no_pos_qubits))
-        quantum_circuit = QuantumCircuit(problem.no_coin_qubits + problem.no_pos_qubits)
+    def build_dtqw_circuit(self, problem) -> QuantumCircuit:
+        no_qubits = sum(
+            problem.no_coin_qubits_per_dim[d] + problem.no_pos_qubits_per_dim[d]
+            for d in range(problem.no_dimensions)
+        )
+
+        q_ids = list(range(no_qubits))
+        quantum_circuit = QuantumCircuit(no_qubits)
         qw_helper = QW_Helper()
 
-        coin_state = qw_helper.to_ket(problem.initial_position[0], problem.no_coin_qubits)
-        walker_state = qw_helper.to_ket(problem.initial_position[1], problem.no_pos_qubits)
+        state = None
 
-        initial_state = [q for vector in np.kron(coin_state,walker_state) for q in vector]
+        for d in range(problem.no_dimensions):
+            coin_init, pos_init = problem.initial_position_per_dim[d]
+
+            coin_state = qw_helper.to_ket(
+                coin_init,
+                problem.no_coin_qubits_per_dim[d]
+            )
+            pos_state = qw_helper.to_ket(
+                pos_init,
+                problem.no_pos_qubits_per_dim[d]
+            )
+
+            dim_state = np.kron(coin_state, pos_state)
+
+            state = dim_state if state is None else np.kron(state, dim_state)
+
+        initial_state = [q for vector in state for q in vector]
         prep = StatePreparation(initial_state)
         quantum_circuit.append(prep, q_ids)
 
-        # qubits = list(range(0, problem.no_pos_qubits))
-        # qubits = [problem.no_pos_qubits, *qubits]
+        max_steps = max(problem.no_steps_per_dim)
+        for _ in range(max_steps):
+            problem.apply_coin_op(quantum_circuit)
+            problem.apply_shift_op(quantum_circuit, q_ids)
 
-        for _ in range(problem.no_steps):
-            self.__apply_coin(quantum_circuit, problem.no_pos_qubits)
-            self.__apply_shift(quantum_circuit, problem, q_ids)
         return quantum_circuit
 
-    def __apply_coin(self, quantum_circuit: QuantumCircuit, coin_id: int) -> None:
-        match self.coin_type:
-            case CoinType.HADAMARD:
-                quantum_circuit.h(coin_id)
-
-    def __apply_shift(self, quantum_circuit: QuantumCircuit, problem: DTQW_1D, qubits: list[int]) -> None:
-        problem.apply_shift_op(quantum_circuit, qubits)
-
-    def __set_coin_type(self, coin_type: CoinType) -> None:
-        self.coin_type = coin_type

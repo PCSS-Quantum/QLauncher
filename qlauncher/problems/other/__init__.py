@@ -1,4 +1,4 @@
-from .dtqw_1D import DTQW_1D
+from .dtqw_1D import DTQW_ND
 from .tabular_ml import TabularML
 
-__all__ = ['TabularML', 'DTQW_1D']
+__all__ = ['TabularML', 'DTQW_ND']
