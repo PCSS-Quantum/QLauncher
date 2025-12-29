@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from qlauncher.base import Algorithm, Backend, Problem, ProblemLike, Result
-from qlauncher.launcher import QLauncher
 
 
 class BaseJobManager(ABC):
@@ -27,14 +26,14 @@ class BaseJobManager(ABC):
 		Submit a QLauncher job to the scheduler.
 
 		Args:
-		    problem: Problem to be solved.
-		    algorithm: Algorithm to be used.
-		    backend: Backend on which the algorithm will be executed.
-		    cores: Number of CPU cores per task.
-		    **kwargs: Manager-specific additional arguments.
+			problem: Problem to be solved.
+			algorithm: Algorithm to be used.
+			backend: Backend on which the algorithm will be executed.
+			cores: Number of CPU cores per task.
+			**kwargs: Manager-specific additional arguments.
 
 		Returns:
-		    Job ID as a string.
+			Job ID as a string.
 		"""
 		pass
 
@@ -48,15 +47,15 @@ class BaseJobManager(ABC):
 		Wait for a job to finish and return its ID.
 
 		Args:
-		    job_id: ID of the job to wait for. If None, wait for any job.
-		    timeout: Maximum time to wait in seconds. If None, wait indefinitely.
+			job_id: ID of the job to wait for. If None, wait for any job.
+			timeout: Maximum time to wait in seconds. If None, wait indefinitely.
 
 		Returns:
-		    Job ID of the finished job.
+			Job ID of the finished job.
 
 		Raises:
-		    ValueError: If no jobs are available to wait for.
-		    TimeoutError: If timeout is exceeded.
+			ValueError: If no jobs are available to wait for.
+			TimeoutError: If timeout is exceeded.
 		"""
 		pass
 
@@ -66,14 +65,14 @@ class BaseJobManager(ABC):
 		Read the result of a finished job.
 
 		Args:
-		    job_id: Job ID returned by submit().
+			job_id: Job ID returned by submit().
 
 		Returns:
-		    Result object produced by the job.
+			Result object produced by the job.
 
 		Raises:
-		    KeyError: If job_id is not known to this manager.
-		    FileNotFoundError: If the result file does not exist.
+			KeyError: If job_id is not known to this manager.
+			FileNotFoundError: If the result file does not exist.
 		"""
 		pass
 
@@ -98,14 +97,14 @@ class BaseJobManager(ABC):
 		This method handles the complete lifecycle of a job execution.
 
 		Args:
-		    problem: Problem to be solved.
-		    algorithm: Algorithm to be used.
-		    backend: Backend on which the algorithm will be executed.
-		    cores: Number of CPU cores per task.
-		    **kwargs: Manager-specific additional arguments.
+			problem: Problem to be solved.
+			algorithm: Algorithm to be used.
+			backend: Backend on which the algorithm will be executed.
+			cores: Number of CPU cores per task.
+			**kwargs: Manager-specific additional arguments.
 
 		Returns:
-		    Result object produced by the job.
+			Result object produced by the job.
 		"""
 		try:
 			job_id = self.submit(problem, algorithm, backend, cores=cores, **kwargs)
@@ -123,112 +122,20 @@ class BaseJobManager(ABC):
 		return f'{len(self.jobs):05d}'
 
 
-class LocalJobManager(BaseJobManager):
-	"""
-	Job manager that runs jobs directly without any scheduler.
-	"""
-
-	def submit(
-		self,
-		problem: Problem | ProblemLike,
-		algorithm: Algorithm,
-		backend: Backend,
-		cores: int = 1,
-		**kwargs,
-	) -> str:
-		"""
-		Run the job immediately and store the result.
-
-		Args:
-		    problem: Problem to be solved.
-		    algorithm: Algorithm to be used.
-		    backend: Backend on which the algorithm will be executed.
-		    cores: Ignored for local execution.
-		    **kwargs: Ignored for local execution.
-
-		Returns:
-		    Job ID as a string.
-		"""
-		job_id = self._make_job_uid()
-		launcher = QLauncher(problem, algorithm, backend)
-		result = launcher.run()
-
-		self.jobs[job_id] = {
-			'result': result,
-			'finished': True,
-		}
-		return job_id
-
-	def wait_for_a_job(
-		self,
-		job_id: str | None = None,
-		timeout: float | None = None,
-	) -> str:
-		"""
-		Return immediately since local jobs are synchronous.
-
-		Args:
-		    job_id: ID of the job to wait for. If None, return first unfinished job.
-		    timeout: Ignored for local execution.
-
-		Returns:
-		    Job ID of the finished job.
-
-		Raises:
-		    ValueError: If no jobs are available.
-		"""
-		if job_id is None:
-			not_finished = [jid for jid, j in self.jobs.items() if not j['finished']]
-			if not not_finished:
-				raise ValueError('There are no jobs left')
-			job_id = not_finished[0]
-		elif job_id not in self.jobs:
-			raise ValueError(f'Job {job_id} not found')
-
-		return job_id
-
-	def read_results(self, job_id: str) -> Result:
-		"""
-		Read the result of a finished job.
-
-		Args:
-		    job_id: Job ID returned by submit().
-
-		Returns:
-		    Result object produced by the job.
-
-		Raises:
-		    KeyError: If job_id is not known to this manager.
-		"""
-		if job_id not in self.jobs:
-			raise KeyError(f'Job {job_id} not found')
-		return self.jobs[job_id]['result']
-
-	def clean_up(self) -> None:
-		"""
-		Clear stored results.
-		"""
-		self.jobs.clear()
-
-if __name__ == "__main__":
+if __name__ == '__main__':
 	from qlauncher.problems import MaxCut
 	from qlauncher.routines.qiskit import QAOA, QiskitBackend
 
-	problem = MaxCut.from_preset("default")
+	problem = MaxCut.from_preset('default')
 	algorithm = QAOA(p=3)
-	backend = QiskitBackend("local_simulator")
+	backend = QiskitBackend('local_simulator')
 
-	# # LocalJobManager
-	# local_mgr = LocalJobManager()
-	# local_result = local_mgr.run(problem, algorithm, backend, cores=1)
-	# print(local_result)
-
-	#SlurmJobManager
+	# SlurmJobManager
 	from qlauncher.workflow.slurm_job_manager import SlurmJobManager
 
 	slurm_mgr = SlurmJobManager(
 		slurm_options={
-			"time": "00:30:00",
+			'time': '00:30:00',
 			# "licenses": "orca1:1",
 		},
 		env_setup=[

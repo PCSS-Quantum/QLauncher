@@ -30,20 +30,20 @@ class SlurmJobManager(BaseJobManager):
 		Job manager that submits QLauncher jobs to Slurm via ``sbatch``.
 
 		Args:
-		    sbatch_exe (str, optional): Name or path of the ``sbatch`` executable
-		        used to submit jobs to Slurm. Defaults to ``"sbatch"``.
-		    slurm_options (dict[str, Any] | None, optional): Mapping of Slurm
-		        options to their values (e.g. ``{"time": "00:02:00"}``).
-		        Keys are used as option names after ``--`` in the generated
-		        ``#SBATCH`` lines. Defaults to an empty dict.
-		    env_setup (list[str] | None, optional): List of shell commands that
-		        will be written into the Slurm script before the ``srun`` line,
-		        e.g. module loads or virtual environment activation commands.
-		        Defaults to an empty list.
+			sbatch_exe (str, optional): Name or path of the ``sbatch`` executable
+				used to submit jobs to Slurm. Defaults to ``"sbatch"``.
+			slurm_options (dict[str, Any] | None, optional): Mapping of Slurm
+				options to their values (e.g. ``{"time": "00:02:00"}``).
+				Keys are used as option names after ``--`` in the generated
+				``#SBATCH`` lines. Defaults to an empty dict.
+			env_setup (list[str] | None, optional): List of shell commands that
+				will be written into the Slurm script before the ``srun`` line,
+				e.g. module loads or virtual environment activation commands.
+				Defaults to an empty list.
 
 		Raises:
-		    DependencyError: If the ``sbatch_exe`` executable cannot be found
-		        in ``PATH``.
+			DependencyError: If the ``sbatch_exe`` executable cannot be found
+				in ``PATH``.
 		"""
 		super().__init__()
 		self.code_path = Path(__file__).with_name('pilotjob_task.py')
@@ -59,9 +59,9 @@ class SlurmJobManager(BaseJobManager):
 
 	def submit(
 		self,
-		problem: Problem | ProblemLike,
-		algorithm: Algorithm,
-		backend: Backend,
+		problem,
+		algorithm,
+		backend,
 		cores: int = 1,
 		**kwargs,
 	) -> str:
@@ -86,21 +86,21 @@ class SlurmJobManager(BaseJobManager):
 		launcher = QLauncher(problem, algorithm, backend)
 		return self.submit_launcher(launcher, cores=cores)
 
-	def submit_launcher(self, launcher: QLauncher, cores: int = 1) -> str:
+	def submit_launcher(self, launcher, cores: int = 1):
 		"""
 		Submits a prepared :class:`QLauncher` instance to Slurm.
 
 		Args:
-		    launcher (QLauncher): Prepared launcher object.
-		    cores (int, optional): Number of CPU cores per task requested from
-		        Slurm (mapped to ``--cpus-per-task``). Defaults to 1.
+			launcher (QLauncher): Prepared launcher object.
+			cores (int, optional): Number of CPU cores per task requested from
+				Slurm (mapped to ``--cpus-per-task``). Defaults to 1.
 
 		Returns:
-		    str: Slurm job ID returned by ``sbatch``.
+			str: Slurm job ID returned by ``sbatch``.
 
 		Raises:
-		    RuntimeError: If ``sbatch`` returns a non-zero exit code or its
-		        standard output does not contain a job ID.
+			RuntimeError: If ``sbatch`` returns a non-zero exit code or its
+				standard output does not contain a job ID.
 		"""
 		job_uid = self._make_job_uid()
 
@@ -144,26 +144,26 @@ class SlurmJobManager(BaseJobManager):
 		self,
 		job_id: str | None = None,
 		timeout: float | None = None,
-	) -> str | None:
+	):
 		"""
 		Waits until a Slurm job finishes and returns its ID.
 
 		Args:
-		    job_id (str | None, optional): ID of the job to wait for. If
-		        ``None``, the first job in :attr:`jobs` that is not yet marked
-		        as finished is selected. Defaults to ``None``.
-		    timeout (float | None, optional): Maximum time to wait in seconds.
-		        If ``None``, wait indefinitely. Defaults to ``None``.
+			job_id (str | None, optional): ID of the job to wait for. If
+				``None``, the first job in :attr:`jobs` that is not yet marked
+				as finished is selected. Defaults to ``None``.
+			timeout (float | None, optional): Maximum time to wait in seconds.
+				If ``None``, wait indefinitely. Defaults to ``None``.
 
 		Raises:
-		    ValueError: If ``job_id`` is ``None`` and there are no jobs left.
-		    TimeoutError: If the timeout is exceeded before the job finishes.
-		    RuntimeError: If the job disappears from ``squeue`` without
-		        producing a result file, or if it finishes in a non-successful
-		        state.
+			ValueError: If ``job_id`` is ``None`` and there are no jobs left.
+			TimeoutError: If the timeout is exceeded before the job finishes.
+			RuntimeError: If the job disappears from ``squeue`` without
+				producing a result file, or if it finishes in a non-successful
+				state.
 
 		Returns:
-		    str | None: ID of the finished job.
+			str: ID of the finished job.
 		"""
 		if job_id is None:
 			not_finished = [jid for jid, j in self.jobs.items() if not j['finished']]
@@ -201,20 +201,20 @@ class SlurmJobManager(BaseJobManager):
 
 			raise RuntimeError(f'Job {job_id} finished in bad state: {state}')
 
-	def read_results(self, job_id: str) -> Result:
+	def read_results(self, job_id):
 		"""
 		Reads the result of a finished job from its output file.
 
 		Args:
-		    job_id (str): Slurm job ID returned by :meth:`submit` or
-		        :meth:`submit_launcher`.
+			job_id (str): Slurm job ID returned by :meth:`submit` or
+				:meth:`submit_launcher`.
 
 		Raises:
-		    KeyError: If ``job_id`` is not known to this manager.
-		    FileNotFoundError: If the expected output file does not exist.
+			KeyError: If ``job_id`` is not known to this manager.
+			FileNotFoundError: If the expected output file does not exist.
 
 		Returns:
-		    Result: Deserialized result object produced by the worker process.
+			Result: Deserialized result object produced by the worker process.
 		"""
 		if job_id not in self.jobs:
 			raise KeyError(f'Job {job_id} not found')
@@ -231,7 +231,7 @@ class SlurmJobManager(BaseJobManager):
 		job['finished'] = True
 		return result
 
-	def clean_up(self) -> None:
+	def clean_up(self):
 		"""
 		Removes temporary files created for all tracked jobs.
 		"""

@@ -18,7 +18,7 @@ except ImportError as e:
 
 
 class PilotJobManager(BaseJobManager):
-	def __init__(self, manager: Manager | None = None):
+	def __init__(self, manager):
 		"""
 		PilotJob manager is QLauncher's wrapper for process management system, current version works on top of qcg-pilotjob
 
@@ -33,8 +33,8 @@ class PilotJobManager(BaseJobManager):
 	def submit(
 		self,
 		problem: Problem | ProblemLike,
-		algorithm: Algorithm,
-		backend: Backend,
+		algorithm,
+		backend,
 		cores: int = 1,
 		output_path: str | None = None,
 		**kwargs,
@@ -66,13 +66,13 @@ class PilotJobManager(BaseJobManager):
 
 	def submit_many(
 		self,
-		problem: ProblemLike,
-		algorithm: Algorithm,
-		backend: Backend,
-		output_path: str,
+		problem: Problem | ProblemLike,
+		algorithm,
+		backend,
+		output_path,
 		cores_per_job: int = 1,
 		n_jobs: int | None = None,
-	) -> list[str]:
+	):
 		"""
 		Submits as many jobs as there are currently available cores.
 
@@ -110,7 +110,7 @@ class PilotJobManager(BaseJobManager):
 		self,
 		job_id: str | None = None,
 		timeout: float | None = None,
-	) -> str:
+	):
 		"""
 		Waits for a job to finish and returns it's id and status.
 
@@ -137,12 +137,12 @@ class PilotJobManager(BaseJobManager):
 		return job_id
 
 	def _prepare_ql_dill_job(
-			self,
-			problem: ProblemLike,
-			algorithm: Algorithm,
-			backend: Backend,
-			output: str,
-			cores: int = 1,
+		self,
+		problem: ProblemLike,
+		algorithm: Algorithm,
+		backend: Backend,
+		output: str,
+		cores: int = 1,
 	) -> dict:
 		from qlauncher.launcher.qlauncher import QLauncher
 
@@ -151,10 +151,10 @@ class PilotJobManager(BaseJobManager):
 		out_dir = Path(output).expanduser().resolve()
 		out_dir.mkdir(parents=True, exist_ok=True)
 
-		output_file = (out_dir / f'output.{job_uid}.pkl')
-		input_file = (out_dir / f'input.{job_uid}.pkl')
-		stdout_file = (out_dir / f'stdout.{job_uid}')
-		stderr_file = (out_dir / f'stderr.{job_uid}')
+		output_file = out_dir / f'output.{job_uid}.pkl'
+		input_file = out_dir / f'input.{job_uid}.pkl'
+		stdout_file = out_dir / f'stdout.{job_uid}'
+		stderr_file = out_dir / f'stderr.{job_uid}'
 
 		launcher = QLauncher(problem, algorithm, backend)
 
@@ -181,7 +181,7 @@ class PilotJobManager(BaseJobManager):
 		self.jobs[job_uid] = job
 		return job
 
-	def read_results(self, job_id: str) -> Result:
+	def read_results(self, job_id):
 		"""
 		Reads the result of given job_id.
 
@@ -198,27 +198,29 @@ class PilotJobManager(BaseJobManager):
 		with open(output_path, 'rb') as rt:
 			return pickle.load(rt)
 
-	def clean_up(self) -> None:
+	def clean_up(self):
+		"""
+		Removes all output files generated in the process and calls self.manager.cleanup().
+		"""
 		for job in self.jobs.values():
-			if os.path.exists(job["output_file"]):
-				os.remove(job["output_file"])
+			if os.path.exists(job['output_file']):
+				os.remove(job['output_file'])
 
 		if isinstance(self.manager, LocalManager):
 			with contextlib.suppress(Exception):
 				self.manager.cleanup()
 
-		self.stop()
-
-	def stop(self) -> None:
-		mgr = getattr(self, "manager", None)
+	def stop(self):
+		"""
+		Stops the manager process.
+		"""
+		mgr = getattr(self, 'manager', None)
 		if mgr is None:
 			return
 
 		if isinstance(mgr, LocalManager):
 			with contextlib.suppress(Exception):
 				mgr.finish()
-
-		self.manager = None
 
 	def __del__(self):
 		with contextlib.suppress(Exception):
