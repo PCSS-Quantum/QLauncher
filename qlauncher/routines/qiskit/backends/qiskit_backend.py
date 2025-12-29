@@ -25,7 +25,7 @@ from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecuti
 from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation
 
 
-class QiskitBackend(GateCircuitBackend):
+class QiskitBackend(GateCircuitBackend[QuantumCircuit]):
 	"""
 	Base class for backends compatible with qiskit.
 
@@ -38,8 +38,6 @@ class QiskitBackend(GateCircuitBackend):
 	"""
 
 	basis_gates = ['x', 'y', 'z', 'cx', 'h', 'rx', 'ry', 'rz', 'u']
-	compatible_circuit = QuantumCircuit
-	language = 'qiskit'
 
 	def __init__(
 		self,
@@ -125,15 +123,17 @@ class QiskitBackend(GateCircuitBackend):
 		return qasm2.dumps(circuit)
 
 	@staticmethod
-	def from_qasm(qasm: str) -> qiskit.QuantumCircuit:
-		return qiskit.QuantumCircuit.from_qasm_str(qasm)
+	def from_qasm(qasm: str, name: str = 'Qasm Circuit') -> qiskit.QuantumCircuit:
+		circuit = qiskit.QuantumCircuit.from_qasm_str(qasm)
+		circuit.name = name
+		return circuit
 
 	def sample_circuit(self, circuit: CIRCUIT_FORMATS, shots: int = 1024) -> dict[str, int]:
 		compatible_circuit = self._mitigation_strategy.compatible_circuit
 		if not isinstance(circuit, compatible_circuit):
 			if isinstance(compatible_circuit, types.UnionType):
 				compatible_circuit = typing.get_args(compatible_circuit)[0]
-			circuit = GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[compatible_circuit])
+			circuit = GateCircuitBackend.get_translation(circuit, compatible_circuit)
 
 		return self._mitigation_strategy.sample(circuit, self, shots)
 

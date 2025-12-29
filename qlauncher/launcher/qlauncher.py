@@ -5,14 +5,16 @@ import logging
 import pickle
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal, overload
+from typing import Literal, get_args, overload
 
 from qiskit.primitives.containers import SamplerPubLike
 
 from qlauncher.base import Algorithm, Backend, Problem, Result
 from qlauncher.base.base import ProblemLike
 from qlauncher.problems.circuit import _Circuit
+from qlauncher.routines.circuits import CIRCUIT_FORMATS
 from qlauncher.routines.qiskit.algorithms.wrapper import CircuitRunner
+from qlauncher.routines.qiskit.utils import coerce_to_circuit_list
 
 
 def _extract_args(argtypes: list[tuple[str, type]], args, kwargs) -> dict[str, object]:
@@ -81,7 +83,9 @@ class QLauncher:
 		"""
 
 	@overload
-	def __init__(self, circuit: SamplerPubLike, backend: Backend, /, *, shots: int = 1024, logger: logging.Logger | None = None) -> None:
+	def __init__(
+		self, circuit: SamplerPubLike | CIRCUIT_FORMATS, backend: Backend, /, *, shots: int = 1024, logger: logging.Logger | None = None
+	) -> None:
 		"""
 		Create a QLauncher instance that samples `circuit` on the `backend` for `shots` shots.
 
@@ -104,6 +108,7 @@ class QLauncher:
 		"""
 
 	def __init__(self, *args, **kwargs) -> None:
+		print(type(args[0]))
 		if len(args) == 3:
 			problem: Problem | ProblemLike = args[0]
 			algorithm: Algorithm = args[1]
@@ -112,7 +117,7 @@ class QLauncher:
 			problem: Problem | ProblemLike = args[0]
 			algorithm: Algorithm = args[1]
 			backend: Backend = Backend('')
-		elif len(args) == 2 and isinstance(args[0], SamplerPubLike):
+		elif len(args) == 2 and isinstance(args[0], (*get_args(CIRCUIT_FORMATS), *get_args(SamplerPubLike))):
 			problem, algorithm, backend = self._build_from_circuit(args[0], args[1], kwargs.get('shots', 1024))
 		else:
 			raise TypeError
@@ -152,8 +157,10 @@ class QLauncher:
 		self.logger.info('Algorithm ended successfully!')
 		return self.result
 
-	def _build_from_circuit(self, circuit: SamplerPubLike, backend: Backend, shots: int) -> tuple[ProblemLike, Algorithm, Backend]:
-		return (_Circuit(circuit), CircuitRunner(shots), backend)
+	def _build_from_circuit(
+		self, circuit: SamplerPubLike | CIRCUIT_FORMATS, backend: Backend, shots: int
+	) -> tuple[ProblemLike, Algorithm, Backend]:
+		return (_Circuit(coerce_to_circuit_list(circuit)[0]), CircuitRunner(shots), backend)
 
 	def _bfs_search(
 		self, problem: Problem | ProblemLike, input_format: type[ProblemLike]

@@ -43,7 +43,7 @@ class ComputeUncomputeCustom(ComputeUncompute):
 		BaseStateFidelity.__init__(self)  # pylint: disable=non-parent-init-called
 
 
-class TrainQSVCKernel(Algorithm[TabularML, QiskitBackend]):
+class TrainQSVCKernel(Algorithm[TabularML, QiskitBackend | CirqBackend]):
 	"""
 	Train a quantum kernel with additional parameters to be optimized.
 	The kernel will be optimized to provide maximum accuracy with a support vector classifier on the provided dataset.
@@ -65,7 +65,7 @@ class TrainQSVCKernel(Algorithm[TabularML, QiskitBackend]):
 		self.kernel = kernel_circuit
 		self.trainable = trainable_params if trainable_params is not None else []
 
-	def run(self, problem: TabularML, backend: QiskitBackend) -> Result:
+	def run(self, problem: TabularML, backend: QiskitBackend | CirqBackend) -> Result:
 		X = problem.X
 		y = problem.y
 

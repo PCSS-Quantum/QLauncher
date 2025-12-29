@@ -92,14 +92,16 @@ class CirqSampler(Sampler):
 	"""Sampler adapter for Cirq"""
 
 	def _call(self, circuits: Sequence[int], parameter_values: Sequence[Sequence[float]], **run_options) -> SamplerResult:
-		bound_circuits = []
-		for i, value in zip(circuits, parameter_values):
-			bound_circuits.append(
-				self._circuits[i] if len(value) == 0 else self._circuits[i].assign_parameters(dict(zip(self._parameters[i], value)))
-			)
-		distributions = [_CirqRunner.calculate_circuit(circuit, 'dist') for circuit in bound_circuits]
+		distributions = [_CirqRunner.calculate_circuit(self._circuits[i], 'dist') for i in circuits]
 		quasi_dists = list(map(QuasiDistribution, distributions))
 		return SamplerResult(quasi_dists, [{} for _ in range(len(parameter_values))])
+
+	def run(self, circuits: tuple[cirq.Circuit, ...], parameter_values: tuple[tuple[float, ...], ...], **run_options):
+		self._circuits = list(circuits)
+
+		job = PrimitiveJob(self._call, range(len(self._circuits)), parameter_values, **run_options)
+		job._submit()
+		return job
 
 
 class CirqSamplerV2(BaseSamplerV2):
@@ -136,7 +138,7 @@ class CirqSamplerV2(BaseSamplerV2):
 		return job
 
 
-class CirqBackend(GateCircuitBackend):
+class CirqBackend(GateCircuitBackend[cirq.Circuit]):
 	"""
 
 	Args:
@@ -144,16 +146,14 @@ class CirqBackend(GateCircuitBackend):
 	"""
 
 	basis_gates = ['x', 'y', 'z', 'cx', 'h', 'rx', 'ry', 'rz']
-	compatible_circuit = cirq.Circuit
-	language = 'cirq'
 
 	def __init__(
 		self,
 		name: Literal['local_simulator'] = 'local_simulator',
 		error_mitigation_strategy: CircuitExecutionMethod | None = None,
 	):
-		self.sampler =TranslatingSampler(CirqSamplerV2(),self.compatible_circuit)
-		self.samplerV1 = TranslatingSamplerV1(CirqSampler(),self.compatible_circuit)
+		self.sampler = TranslatingSampler(CirqSamplerV2(), self.compatible_circuit)
+		self.samplerV1 = TranslatingSamplerV1(CirqSampler(), self.compatible_circuit)
 		self._mitigation_strategy = error_mitigation_strategy if error_mitigation_strategy is not None else NoMitigation()
 		self.backendv1v2 = None
 		super().__init__(name)
@@ -166,12 +166,12 @@ class CirqBackend(GateCircuitBackend):
 	def from_qasm(qasm: str) -> cirq.Circuit:
 		return circuit_from_qasm(qasm)
 
-	def sample_circuit(self, circuit: CIRCUIT_FORMATS, shots: int = 1024) -> dict[str, int]:
+	def sample_circuit(self, circuit: cirq.Circuit, shots: int = 1024) -> dict[str, int]:
 		compatible_circuit = self._mitigation_strategy.compatible_circuit
 		if not isinstance(circuit, compatible_circuit):
 			if isinstance(compatible_circuit, types.UnionType):
 				compatible_circuit = typing.get_args(compatible_circuit)[0]
-			circuit = GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[compatible_circuit])
+			circuit = GateCircuitBackend.get_translation(circuit, compatible_circuit)
 		return self._mitigation_strategy.sample(circuit, self, shots)
 
 	def estimate_energy(self, circuit: qiskit.QuantumCircuit, observable: SparsePauliOp) -> float:

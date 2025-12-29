@@ -2,11 +2,14 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
+import cirq
+
 from qlauncher import QLauncher
 from qlauncher.base import Result
 from qlauncher.base.problem_like import Hamiltonian
 from qlauncher.problems import MaxCut
 from qlauncher.routines.cirq import CirqBackend
+from qlauncher.routines.qiskit import QiskitBackend
 from qlauncher.routines.qiskit import QAOA
 
 
@@ -38,4 +41,14 @@ def test_circuit() -> None:
 	qc.h(0)
 	qc.measure_all()
 	ql = QLauncher(qc, CirqBackend('local_simulator'))
+	assert np.allclose(ql.run().distribution['0'], 0.5, atol=0.05)
+
+
+def test_run_cirq_on_qiskit() -> None:
+	q0 = cirq.GridQubit(0, 0)
+	circuit = cirq.Circuit()
+	circuit.append([cirq.H(q0)])
+	circuit.append([cirq.measure(q0)])
+
+	ql = QLauncher(circuit, QiskitBackend('local_simulator'))
 	assert np.allclose(ql.run().distribution['0'], 0.5, atol=0.05)

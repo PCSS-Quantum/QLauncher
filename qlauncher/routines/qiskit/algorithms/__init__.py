@@ -1,7 +1,7 @@
 """Algorithms for qiskit"""
 
 from .qiskit_native import FALQON, QAOA
-from .wrapper import _CircuitRunner
+from .wrapper import CircuitRunner
 
 try:
 	from .qml import TrainQSVCKernel
@@ -12,4 +12,4 @@ try:
 except ImportError:
 	EducatedGuess = None
 
-__all__ = ['QAOA', 'FALQON', 'EducatedGuess', 'TrainQSVCKernel', '_CircuitRunner']
+__all__ = ['QAOA', 'FALQON', 'EducatedGuess', 'TrainQSVCKernel', 'CircuitRunner']

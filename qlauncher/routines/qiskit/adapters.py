@@ -1,11 +1,12 @@
 import math
 from collections.abc import Iterable, Sequence
+from itertools import chain
 from typing import Any
 
 import numpy as np
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
-from qiskit.primitives import BackendSampler, BackendSamplerV2, BasePrimitiveJob, BitArray, DataBin, Sampler, SamplerResult
+from qiskit.primitives import BasePrimitiveJob, BitArray, DataBin, SamplerResult
 from qiskit.primitives.base import BaseEstimatorV1, BaseEstimatorV2, BaseSamplerV1, BaseSamplerV2, EstimatorResult
 from qiskit.primitives.containers import PubResult
 from qiskit.primitives.containers.estimator_pub import EstimatorPub, EstimatorPubLike
@@ -18,6 +19,7 @@ from qiskit.result import QuasiDistribution
 
 from qlauncher.routines.circuits import CIRCUIT_FORMATS
 from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
+from qlauncher.routines.qiskit.utils import coerce_to_circuit_list
 
 
 def _transpile_circuits(circuits, backend):
@@ -183,7 +185,7 @@ class TranslatingSamplerV1(BaseSamplerV1):
 			circuit.assign_parameters(params, strict=True) for circuit, params in zip(circuits, parameter_values, strict=True)
 		]
 		pubs = [
-			GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[self.compatible_circuit])
+			GateCircuitBackend.get_translation(circuit, self.compatible_circuit)
 			if not isinstance(circuit, self.compatible_circuit)
 			else circuit
 			for circuit in bound_circuits
@@ -197,17 +199,17 @@ class TranslatingSampler(BaseSamplerV2):
 		self.sampler = sampler_v2
 		self.compatible_circuit = compatible_circuit
 
-	def run(self, pubs: Iterable[SamplerPubLike], *, shots: int | None = None) -> BasePrimitiveJob[PrimitiveResult[SamplerPubResult], Any]:
-		coerced_pubs = [SamplerPub.coerce(pub, shots) for pub in pubs]
-		bound_circuits = [pub.parameter_values.bind_all(pub.circuit) for pub in coerced_pubs]
-		flatten_circuits = []
-		for circuits in bound_circuits:
-			flatten_circuits.extend(np.ravel(circuits).tolist())
-
+	def run(
+		self,
+		pubs: Iterable[SamplerPubLike | CIRCUIT_FORMATS],
+		*,
+		shots: int | None = None,
+	) -> BasePrimitiveJob[PrimitiveResult[SamplerPubResult], Any]:
+		circuits = chain(*(coerce_to_circuit_list(pub, shots) for pub in pubs))
 		pubs = [
-			GateCircuitBackend.get_translation(circuit, GateCircuitBackend.circuit_language_mapping[self.compatible_circuit])
+			GateCircuitBackend.get_translation(circuit, self.compatible_circuit)
 			if not isinstance(circuit, self.compatible_circuit)
 			else circuit
-			for circuit in flatten_circuits
+			for circuit in circuits
 		]
 		return self.sampler.run(pubs, shots=shots)
