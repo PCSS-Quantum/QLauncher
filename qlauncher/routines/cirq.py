@@ -176,20 +176,3 @@ class CirqBackend(GateCircuitBackend):
 
 	def estimate_energy(self, circuit: qiskit.QuantumCircuit, observable: SparsePauliOp) -> float:
 		raise NotImplementedError
-
-
-if __name__ == '__main__':
-	from qlauncher.routines.qiskit import QiskitBackend
-
-	qiskit_circuit = qiskit.QuantumCircuit(2)
-	qiskit_circuit.h(0)
-	qiskit_circuit.cx(0, 1)
-	qiskit_circuit.x(0)
-	qiskit_circuit.measure_all()
-	cirq_circuit = GateCircuitBackend.get_translation(qiskit_circuit, 'cirq')
-	qiskit_backend = QiskitBackend()
-	cirq_backend = CirqBackend()
-	print(qiskit_backend.sample_circuit(qiskit_circuit))
-	print(cirq_backend.sample_circuit(cirq_circuit))
-	print(qiskit_backend.sample_circuit(cirq_circuit))
-	print(cirq_backend.sample_circuit(qiskit_circuit))
