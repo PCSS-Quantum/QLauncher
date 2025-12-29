@@ -10,9 +10,8 @@ from qiskit_ibm_runtime import Session
 from qiskit_ibm_runtime.fake_provider import FakeAlmadenV2
 
 from qlauncher import QLauncher
-from qlauncher.routines.cirq import TranslatingSamplerV1
 from qlauncher.routines.qiskit import FALQON, QAOA, AerBackend, AQTBackend, IBMBackend, QiskitBackend
-from qlauncher.routines.qiskit.adapters import TranslatingSampler
+from qlauncher.routines.qiskit.adapters import TranslatingSampler, TranslatingSamplerV1
 from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
 from tests.utils.problem import get_hamiltonian
 
@@ -111,7 +110,7 @@ def test_AQT_backend_loads_env(tmp_path) -> None:
 	assert backend.provider.access_token == 'test'
 
 
-#! We use FALQON for backend tests (except AQT) as it is very fast to execute
+# ! We use FALQON for backend tests (except AQT) as it is very fast to execute
 
 
 def test_IBM_session() -> None:

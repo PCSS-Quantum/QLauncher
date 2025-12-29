@@ -10,7 +10,6 @@ from qlauncher.routines.circuits import CIRCUIT_FORMATS
 
 if TYPE_CHECKING:
 	from qlauncher.routines.qiskit import QiskitBackend
-# from qlauncher.routines.cirq import CirqBackend
 
 
 class CircuitModificationMethod(ABC):

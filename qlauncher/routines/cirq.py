@@ -21,7 +21,6 @@ from qiskit.quantum_info import SparsePauliOp
 from qiskit.result import QuasiDistribution
 
 from qlauncher.exceptions import DependencyError
-from qlauncher.routines.circuits import CIRCUIT_FORMATS
 from qlauncher.routines.qiskit.adapters import TranslatingSampler, TranslatingSamplerV1
 from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod

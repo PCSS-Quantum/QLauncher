@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar, get_args, get_origin
 
 import qiskit
-from qiskit.primitives import BaseSamplerV2
+from qiskit.primitives import BaseSamplerV1, BaseSamplerV2
 from qiskit.transpiler.passes import RemoveBarriers
 
 from qlauncher.base import Backend
@@ -13,6 +13,7 @@ _AllowedCircuit = TypeVar('_AllowedCircuit', bound=CIRCUIT_FORMATS)
 
 class GateCircuitBackend(Backend, Generic[_AllowedCircuit], ABC):
 	sampler: BaseSamplerV2
+	samplerV1: BaseSamplerV1
 
 	basis_gates: list[str] = []
 	circuit_class_mapping: dict[type, 'GateCircuitBackend'] = {}
@@ -33,7 +34,6 @@ class GateCircuitBackend(Backend, Generic[_AllowedCircuit], ABC):
 	@staticmethod
 	def get_translation(circuit: CIRCUIT_FORMATS, output_format: type[CIRCUIT_FORMATS]) -> CIRCUIT_FORMATS:
 		"""Transpiles circuit into given languages basis_gates, translates it to qasm, and from qasm into desired languages object."""
-		# print(circuit.__class__)
 		circuit_qasm_translator = GateCircuitBackend.circuit_class_mapping[circuit.__class__]
 		qasm_circuit_translator = GateCircuitBackend.circuit_class_mapping[output_format]
 

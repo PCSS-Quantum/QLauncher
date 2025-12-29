@@ -108,7 +108,6 @@ class QLauncher:
 		"""
 
 	def __init__(self, *args, **kwargs) -> None:
-		print(type(args[0]))
 		if len(args) == 3:
 			problem: Problem | ProblemLike = args[0]
 			algorithm: Algorithm = args[1]

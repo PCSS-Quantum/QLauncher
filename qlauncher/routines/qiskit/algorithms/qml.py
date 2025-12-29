@@ -11,9 +11,7 @@ from qiskit_machine_learning.state_fidelities import BaseStateFidelity, ComputeU
 
 from qlauncher.base.base import Algorithm, Result
 from qlauncher.problems.other.tabular_ml import TabularML
-from qlauncher.routines.circuits import CIRCUIT_FORMATS
-from qlauncher.routines.cirq import CirqBackend
-from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 
 
 class ComputeUncomputeCustom(ComputeUncompute):
@@ -43,7 +41,7 @@ class ComputeUncomputeCustom(ComputeUncompute):
 		BaseStateFidelity.__init__(self)  # pylint: disable=non-parent-init-called
 
 
-class TrainQSVCKernel(Algorithm[TabularML, QiskitBackend | CirqBackend]):
+class TrainQSVCKernel(Algorithm[TabularML, GateCircuitBackend]):
 	"""
 	Train a quantum kernel with additional parameters to be optimized.
 	The kernel will be optimized to provide maximum accuracy with a support vector classifier on the provided dataset.
@@ -65,7 +63,7 @@ class TrainQSVCKernel(Algorithm[TabularML, QiskitBackend | CirqBackend]):
 		self.kernel = kernel_circuit
 		self.trainable = trainable_params if trainable_params is not None else []
 
-	def run(self, problem: TabularML, backend: QiskitBackend | CirqBackend) -> Result:
+	def run(self, problem: TabularML, backend: GateCircuitBackend) -> Result:
 		X = problem.X
 		y = problem.y
 
@@ -75,7 +73,7 @@ class TrainQSVCKernel(Algorithm[TabularML, QiskitBackend | CirqBackend]):
 		if not isinstance(y, np.ndarray):
 			raise ValueError(f'y is not of type np.ndarray: received {type(y)}')
 
-		if isinstance(backend, (QiskitBackend, CirqBackend)):
+		if isinstance(backend, GateCircuitBackend):
 			sampler = backend.samplerV1
 		else:
 			raise ValueError(f'The accepted backends are QiskitBackend and CirqBackend, got {type(backend)}')
