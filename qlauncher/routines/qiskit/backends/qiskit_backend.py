@@ -13,7 +13,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qiskit_ibm_runtime import Options
 
 from qlauncher.routines.circuits import CIRCUIT_FORMATS
-from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter, TranslatingSampler, TranslatingSamplerV1
+from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter, TranslatingSampler
 from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 from qlauncher.routines.qiskit.backends.utils import (
 	AUTO_TRANSPILE_ESTIMATOR_TYPE,
