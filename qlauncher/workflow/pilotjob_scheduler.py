@@ -3,6 +3,7 @@ import pickle
 import sys
 from pathlib import Path
 import contextlib
+from typing import Any
 
 
 from qlauncher.base import Algorithm, Backend, Problem, ProblemLike, Result
@@ -18,7 +19,7 @@ except ImportError as e:
 
 
 class PilotJobManager(BaseJobManager):
-	def __init__(self, manager):
+	def __init__(self, manager: Manager | None = None):
 		"""
 		PilotJob manager is QLauncher's wrapper for process management system, current version works on top of qcg-pilotjob
 
@@ -72,7 +73,7 @@ class PilotJobManager(BaseJobManager):
 		output_path,
 		cores_per_job: int = 1,
 		n_jobs: int | None = None,
-	):
+	) -> list[str]:
 		"""
 		Submits as many jobs as there are currently available cores.
 
@@ -110,7 +111,7 @@ class PilotJobManager(BaseJobManager):
 		self,
 		job_id: str | None = None,
 		timeout: float | None = None,
-	):
+	) -> tuple[str, str]:
 		"""
 		Waits for a job to finish and returns it's id and status.
 
@@ -134,7 +135,7 @@ class PilotJobManager(BaseJobManager):
 			raise ValueError(f"Job {job_id} not found in {self.__class__.__name__}'s jobs")
 
 		self.jobs[job_id]['finished'] = True
-		return job_id
+		return job_id, state
 
 	def _prepare_ql_dill_job(
 		self,
@@ -181,7 +182,7 @@ class PilotJobManager(BaseJobManager):
 		self.jobs[job_uid] = job
 		return job
 
-	def read_results(self, job_id):
+	def read_results(self, job_id) -> Any:
 		"""
 		Reads the result of given job_id.
 
@@ -198,7 +199,24 @@ class PilotJobManager(BaseJobManager):
 		with open(output_path, 'rb') as rt:
 			return pickle.load(rt)
 
-	def clean_up(self):
+	def cancel(self, job_id: str) -> None:
+		"""
+		Cancel a given job
+
+		Args:
+			job_id (str): id of the job to cancel.
+
+		Raises:
+			KeyError: If job with a given id was not submitted by this manager.
+
+		Returns:
+			None
+		"""
+		if job_id not in self.jobs:
+			raise KeyError(f'Job {job_id} not found')
+		return self.manager.cancel(job_id)
+
+	def clean_up(self) -> None:
 		"""
 		Removes all output files generated in the process and calls self.manager.cleanup().
 		"""
@@ -210,7 +228,7 @@ class PilotJobManager(BaseJobManager):
 			with contextlib.suppress(Exception):
 				self.manager.cleanup()
 
-	def stop(self):
+	def stop(self) -> None:
 		"""
 		Stops the manager process.
 		"""

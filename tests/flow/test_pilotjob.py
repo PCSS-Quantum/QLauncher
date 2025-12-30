@@ -1,5 +1,6 @@
 import glob
 import shutil
+import time
 
 import pytest
 
@@ -29,7 +30,7 @@ def test_job_manager(tmp_path) -> None:
 	algorithm = FALQON(max_reps=1)
 	backend = QiskitBackend('local_simulator')
 
-	manager.submit(problem, algorithm, backend, f'{tmp_path}/')
+	manager.submit(problem, algorithm, backend, output_path='{tmp_path}/')
 	for _ in range(len(manager.jobs)):
 		job_id, status = manager.wait_for_a_job(timeout=60)
 		assert isinstance(job_id, str)
@@ -41,6 +42,22 @@ def test_job_manager(tmp_path) -> None:
 	with pytest.raises(ValueError):
 		manager.wait_for_a_job()
 	manager.clean_up()
+
+
+def test_job_manager_cancel(tmp_path) -> None:
+	manager = PilotJobManager()
+	assert isinstance(manager, PilotJobManager)
+
+	problem = get_hamiltonian()
+	algorithm = FALQON(max_reps=1000000000)
+	backend = QiskitBackend('local_simulator')
+
+	job_id = manager.submit(problem, algorithm, backend, output_path=f'{tmp_path}/')
+
+	time.sleep(1)
+	manager.cancel(job_id)
+	job_id, status = manager.wait_for_a_job(job_id)
+	assert status.upper() == 'CANCELLED' or status.upper() == 'CANCELED'
 
 
 def test_educated_guess(tmp_path) -> None:
