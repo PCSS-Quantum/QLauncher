@@ -42,6 +42,15 @@ def test_QAOA():
     results = launcher.run()
     assert isinstance(results, Result)
 
+def test_QAOA_plus():
+    pr = EC.from_preset(instance_name="micro")
+    qaoa = QAOA(p=1, variant="qaoa+")
+    backend = QiskitBackend("local_simulator")
+    launcher = QLauncher(pr, qaoa, backend)
+
+    results = launcher.run()
+    assert isinstance(results, Result)
+
 
 def test_VQE():
     pr = Molecule.from_preset('H2')
