@@ -47,4 +47,4 @@ class DwaveSolver(Algorithm):
             distribution[bitstring] = occ
             energies[bitstring] = energy
 
-        return Result.from_distributions(distribution, energies, result)
+        return Result.from_counts_energies(distribution, energies, result)

@@ -1,5 +1,6 @@
 """ Algorithms for qiskit """
 from .qiskit_native import QAOA, FALQON
+from .wrapper import _CircuitRunner
 try:
     from .qml import TrainQSVCKernel
 except ImportError:
@@ -9,4 +10,4 @@ try:
 except ImportError:
     EducatedGuess = None
 
-__all__ = ['QAOA', 'FALQON', 'EducatedGuess', 'TrainQSVCKernel']
+__all__ = ['QAOA', 'FALQON', 'EducatedGuess', 'TrainQSVCKernel', '_CircuitRunner']

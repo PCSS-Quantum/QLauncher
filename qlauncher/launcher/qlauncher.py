@@ -1,11 +1,35 @@
 """ File with templates """
-from typing import Literal
+from typing import Literal, overload
 import json
 import pickle
 import logging
+
+from qiskit.primitives.containers import SamplerPubLike
+
 from qlauncher.base.adapter_structure import get_formatter, ProblemFormatter
 from qlauncher.base import Problem, Algorithm, Backend, Result
-from qlauncher.problems import Raw
+from qlauncher.problems import Raw, _Circuit
+from qlauncher.routines.qiskit.algorithms.wrapper import _CircuitRunner
+
+
+def _extract_args(argtypes: list[tuple[str, type]], args, kwargs) -> dict[str, object]:
+    if len(args) > len(argtypes):
+        return {}
+    as_kwargs = []
+    for name, _ in argtypes[len(args):]:
+        if not name in kwargs:
+            return {}
+        as_kwargs.append(kwargs[name])
+
+    result = {}
+
+    for expected, received in zip(argtypes, list(args)+as_kwargs):
+        name, wanted_type = expected
+        if not isinstance(received, wanted_type):
+            return {}
+        result[name] = received
+
+    return result
 
 
 class QLauncher:
@@ -38,22 +62,88 @@ class QLauncher:
             print(result)
 
     """
+    @overload
+    def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend, logger: logging.Logger | None = None) -> None:
+        """
+        Create a QLauncher instance that solves a `problem` using a given `algorithm` on a `backend`.
 
-    def __init__(self, problem: Problem, algorithm: Algorithm, backend: Backend | None = None, logger: logging.Logger | None = None) -> None:
+        Args:
+            problem (Problem): Problem to solve.
+            algorithm (Algorithm): Algorithm to use.
+            backend (Backend | None, optional): Backend to run on.
+            logger (logging.Logger | None, optional): Logger. Defaults to None.
+        """
 
-        if not isinstance(problem, Problem):
-            problem = Raw(problem)
+    @overload
+    def __init__(self, circuit: SamplerPubLike, backend: Backend, shots: int = 1024, logger: logging.Logger | None = None) -> None:
+        """
+        Create a QLauncher instance that samples `circuit` on the `backend` for `shots` shots.
 
-        self.problem: Problem = problem
-        self.algorithm: Algorithm = algorithm
-        self.backend: Backend | None = backend
+        Args:
+            circuit (SamplerPubLike): Circuit or (circuit, params) to sample.
+            backend (Backend): Backend to run the circuit on.
+            shots (int, optional): Samples to draw. Defaults to 1024.
+            logger (logging.Logger | None, optional): Logger. Defaults to None.
+        """
+
+    @overload
+    def __init__(self, problem: Problem, algorithm: Algorithm, logger: logging.Logger | None = None) -> None:
+        """
+        Create a QLauncher instance that solves a `problem` using a given workflow `algorithm`. Backend is None.
+
+        Args:
+            problem (Problem): Problem to solve.
+            algorithm (Algorithm): Algorithm to use.
+            logger (logging.Logger | None, optional): Logger. Defaults to None.
+        """
+
+    def __init__(self, *args, **kwargs) -> None:
+        args_matched = False
+        for init_set in [
+            # Standard Problem, Algorithm, Backend
+            ([('problem', object), ('algorithm', Algorithm), ('backend', Backend)], self._build_from_PAB),
+            # Circuit running
+            ([('circuit', object), ('backend', Backend)], self._build_from_circuit),
+            # Workflows: Problem, Algorithm (workflow)
+            ([('problem', object), ('algorithm', Algorithm)], lambda parse: self._build_from_PAB(parse | {'backend': None})),
+
+        ]:
+            arg_set, build_function = init_set
+            parse = _extract_args(arg_set, args, kwargs)
+            if not parse:
+                continue
+
+            args_matched = True
+            build_function(parse | kwargs)
+            break
+
+        if not args_matched:
+            raise ValueError(
+                "Incorrect argument set to create a QLauncher instance! Expected either (Problem, Algorithm, Backend), (Problem, Algorithm) or (Qiskit sampler pub like [for example Quantum Circuit], Backend)")
+
         self.formatter: ProblemFormatter = get_formatter(self.problem._problem_id, self.algorithm._algorithm_format)
+
+        logger = kwargs.get('logger', None)
 
         if logger is None:
             logger = logging.getLogger('QLauncher')
         self.logger = logger
 
         self.result: Result | None = None
+
+    def _build_from_circuit(self, parsed: dict):
+        self.problem = _Circuit(parsed['circuit'], parsed.get("shots", 1024))
+        self.algorithm = _CircuitRunner()
+        self.backend: Backend = parsed['backend']
+
+    def _build_from_PAB(self, parsed: dict):
+        if not isinstance(parsed['problem'], Problem):
+            self.problem = Raw(parsed['problem'])
+        else:
+            self.problem: Problem = parsed['problem']
+
+        self.algorithm = parsed['algorithm']
+        self.backend: Backend = parsed['backend']
 
     def run(self, **kwargs) -> Result:
         """

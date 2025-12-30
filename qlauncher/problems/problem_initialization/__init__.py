@@ -8,6 +8,7 @@ from .graph_coloring import GraphColoring
 from .tabular_ml import TabularML
 from .molecule import Molecule
 from .knapsack import Knapsack
+from .circuit import _Circuit
 
 __all__ = ['Raw', 'QATM', 'JSSP', 'EC', 'MaxCut', 'TSP', 'GraphColoring',
-           'TabularML', 'Molecule', 'Knapsack']
+           'TabularML', 'Molecule', 'Knapsack', '_Circuit']
