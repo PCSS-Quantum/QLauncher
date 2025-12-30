@@ -3,13 +3,13 @@
 import statistics
 from collections.abc import Iterable
 from datetime import datetime
-from typing import TYPE_CHECKING, Generic, Literal
+from typing import Generic, Literal
 
 import numpy as np
 import qiskit_algorithms
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import PauliEvolutionGate, QAOAAnsatz, efficient_su2
-from qiskit.primitives import BaseEstimatorV1, BaseSamplerV1, PrimitiveResult, SamplerPubResult
+from qiskit.primitives import BaseEstimatorV1, BaseSamplerV1
 from qiskit.primitives.base.base_primitive import BasePrimitive
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_algorithms import optimizers
@@ -23,9 +23,6 @@ from qlauncher.base.base import _ProblemLike
 from qlauncher.base.problem_like import Hamiltonian, Molecule
 from qlauncher.routines.cirq import CirqBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
-
-if TYPE_CHECKING:
-	from qiskit.primitives.containers import BitArray
 
 
 class QiskitOptimizationAlgorithm(Algorithm[_ProblemLike, QiskitBackend], Generic[_ProblemLike]):
@@ -188,7 +185,6 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 		results = backend.sample_circuit(circuit.assign_parameters(opt_params))
 
 		final_energies = {k: np.real(evaluate_energy(int(k, 2), problem.hamiltonian)) for k in results.keys()}
-		final_counts = {k: v for k, v in results.items()}
 
 		depth = circuit.decompose(reps=10).depth()
 		cx_count = circuit.decompose(reps=10).count_ops().get('cx', 0)
@@ -201,7 +197,7 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 				'qpu_time': 0,
 				'training_costs': costs,
 				'final_sample_energies': final_energies,
-				'final_sample_counts': final_counts,
+				'final_sample_counts': results,
 				'optimal_point': opt_params,  # needed for educated_guess
 			}
 		)

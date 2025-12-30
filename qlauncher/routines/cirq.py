@@ -15,9 +15,8 @@ from qiskit.primitives.containers.primitive_result import PrimitiveResult
 from qiskit.primitives.containers.sampler_pub import SamplerPubLike
 from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 from qiskit.primitives.primitive_job import PrimitiveJob
-from qiskit.result import QuasiDistribution
-
 from qiskit.quantum_info import SparsePauliOp
+from qiskit.result import QuasiDistribution
 
 from qlauncher.base import Backend
 from qlauncher.base.translator import Translation

@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
+
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
-from qlauncher.base import Result
 # from qlauncher.routines.cirq import CirqBackend
 
 
