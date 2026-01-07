@@ -95,10 +95,12 @@ class AQTBackend(QiskitBackend):
 			self.name = available_online_backends[0].name
 		else:
 			raise ValueError(
-				' '.join([
-					f"Unsupported mode for this backend:'{self.name}'."
-					"Please use one of the following: ['local_simulator', 'backendv1v2', 'device']"
-				])
+				' '.join(
+					[
+						f"Unsupported mode for this backend:'{self.name}'."
+						"Please use one of the following: ['local_simulator', 'backendv1v2', 'device']"
+					]
+				)
 			)
 
 		if self.backendv1v2 is None:
@@ -107,6 +109,6 @@ class AQTBackend(QiskitBackend):
 		self._estimatorv1 = AQTEstimator(self.backendv1v2)
 		self.estimator = EstimatorV1ToEstimatorV2Adapter(self._estimatorv1)
 		self._samplerV1 = TranslatingSamplerV1(AQTSampler(self.backendv1v2), self.compatible_circuit)
-		self.sampler = TranslatingSampler(SamplerV1ToSamplerV2Adapter(self._samplerV1), self.compatible_circuit)
+		self.sampler = SamplerV1ToSamplerV2Adapter(self._samplerV1)
 
 		self._configure_auto_behavior()
