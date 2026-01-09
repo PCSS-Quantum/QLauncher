@@ -7,7 +7,7 @@ import numpy as np
 from pyqubo import Array, Binary
 
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import QUBO
+from qlauncher.base.problem_like import BQM
 
 
 class Knapsack(Problem):
@@ -45,9 +45,9 @@ class Knapsack(Problem):
 				raise ValueError(f'Preset f{instance_name} not defined')
 		return Knapsack(values, weights, capacity, instance_name)
 
-	def to_qubo(self, penalty_weight: float = 2.0, value_weight: float = 1.0) -> QUBO:
+	def to_bqm(self, penalty_weight: float = 2.0, value_weight: float = 1.0) -> BQM:
 		"""
-		Returns QUBO function for Knapsack problem.
+		Returns BQM for Knapsack problem.
 		"""
 		size = len(self.values)
 
@@ -62,15 +62,4 @@ class Knapsack(Problem):
 		penalty *= penalty
 		value_term = sum(self.values[i] * x[i] for i in range(size))
 		H: Binary = penalty_weight * penalty - value_weight * value_term
-
-		qubo_dict, offset = H.compile().to_qubo()
-		var_labels = [f'z_y[{k}]' for k in range(m)] + [f'a_x[{i}]' for i in reversed(range(size))]
-		N = len(var_labels)
-		Q = np.zeros((N, N))
-		for i, vi in enumerate(var_labels):
-			for j, vj in enumerate(var_labels):
-				key = (vi, vj)
-				if key in qubo_dict:
-					Q[i, j] = qubo_dict[key]
-
-		return QUBO(Q, float(offset))
+		return BQM(H.compile())

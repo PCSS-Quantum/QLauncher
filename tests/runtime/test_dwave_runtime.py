@@ -22,7 +22,7 @@ def _get_bqm() -> BQM:
 	H = 3 * qubits[0] - 5 * qubits[0] * qubits[1]
 	model = H.compile()
 
-	return BQM(model.to_bqm(), model)
+	return BQM(model)
 
 
 @pytest.mark.parametrize('algorithm_name', ALL_ALGORITHMS)

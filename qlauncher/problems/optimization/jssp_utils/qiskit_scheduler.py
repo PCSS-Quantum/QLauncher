@@ -1,9 +1,7 @@
 from typing import Literal
 
-from qiskit.quantum_info import SparsePauliOp
-
 from qlauncher import hampy
-from qlauncher.hampy import Variable
+from qlauncher.hampy import Equation, Variable
 
 from .scheduler import JobShopScheduler, Task
 
@@ -32,5 +30,5 @@ class HamPyScheduler(JobShopScheduler):
 	def _add_variable(self, var: Variable, bias: float) -> None:
 		self.equation += var.to_equation() * bias
 
-	def _get_final(self) -> SparsePauliOp:
-		return self.equation.hamiltonian
+	def _get_final(self) -> Equation:
+		return self.equation

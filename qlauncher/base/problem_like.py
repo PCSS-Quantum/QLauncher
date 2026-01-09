@@ -1,8 +1,9 @@
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 import numpy as np
-from pyqubo import Spin
+from dimod import BinaryQuadraticModel
+from pyqubo import Model, Spin # type: ignore
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit import Gate
 from qiskit.circuit.library import QFTGate, SwapGate, UnitaryGate, XGate
@@ -15,6 +16,8 @@ from qiskit_optimization.translators import from_ising
 
 if TYPE_CHECKING:
 	from qiskit_nature.second_q.problems import ElectronicStructureProblem
+
+from qlauncher.hampy import Equation
 
 
 class ProblemLike:
@@ -56,7 +59,7 @@ class QUBO(ProblemLike):
 						* entry
 					)
 		pauli += SparsePauliOp.from_sparse_list([('I', [], self.offset)], num_vars)
-		return Hamiltonian(pauli)
+		return Hamiltonian(Equation(pauli))
 
 	def to_fn(self) -> 'FN':
 		def function(bin_vec: np.ndarray) -> float:
@@ -83,9 +86,7 @@ class QUBO(ProblemLike):
 			else:
 				H += value * qubits[x] * qubits[y]
 		model = H.compile()
-		bqm = model.to_bqm()
-		bqm.offset += self.offset
-		return BQM(bqm, model)
+		return BQM(model)
 
 
 class FN(ProblemLike):
@@ -97,23 +98,48 @@ class FN(ProblemLike):
 
 
 class Hamiltonian(ProblemLike):
+	@overload
+	def __init__(
+		self, hamiltonian: SparsePauliOp, mixer_hamiltonian: SparsePauliOp | None = None, initial_state: QuantumCircuit | None = None
+	) -> None: ...
+	@overload
 	def __init__(
 		self,
-		hamiltonian: SparsePauliOp,
-		mixer_hamiltonian: SparsePauliOp | None = None,
+		hamiltonian: Equation,
+		mixer_hamiltonian: Equation | None = None,
+		initial_state: QuantumCircuit | None = None,
+	) -> None: ...
+	def __init__(
+		self,
+		hamiltonian: Equation | SparsePauliOp,
+		mixer_hamiltonian: Equation | SparsePauliOp | None = None,
 		initial_state: QuantumCircuit | None = None,
 	) -> None:
-		self.hamiltonian = hamiltonian
-		self._mixer_hamiltonian: SparsePauliOp | None = mixer_hamiltonian
+		if isinstance(hamiltonian, SparsePauliOp):
+			hamiltonian = Equation(hamiltonian)
+		if isinstance(mixer_hamiltonian, SparsePauliOp):
+			mixer_hamiltonian = Equation(mixer_hamiltonian)
+		self._hampy_equation = hamiltonian
+		self._hampy_mixer_equation: Equation | None = mixer_hamiltonian
 		self._initial_state: QuantumCircuit | None = initial_state
 
 	@property
 	def mixer_hamiltonian(self) -> SparsePauliOp | None:
-		return self._mixer_hamiltonian
+		if self._hampy_mixer_equation is not None:
+			return self._hampy_mixer_equation.hamiltonian
+		return None
+
+	@property
+	def hamiltonian(self) -> SparsePauliOp:
+		return self._hampy_equation.hamiltonian
+
+	@property
+	def is_quadratic(self) -> bool:
+		return self._hampy_equation.is_quadratic()
 
 	@mixer_hamiltonian.setter
 	def mixer_hamiltonian(self, mixer_hamiltonian: SparsePauliOp) -> None:
-		self._mixer_hamiltonian = mixer_hamiltonian
+		self._hampy_mixer_equation = Equation(mixer_hamiltonian)
 
 	@property
 	def initial_state(self) -> QuantumCircuit | None:
@@ -127,12 +153,29 @@ class Hamiltonian(ProblemLike):
 		qp = from_ising(self.hamiltonian)
 		conv = QuadraticProgramToQubo()
 		qubo = conv.convert(qp).objective
-		return QUBO(qubo.quadratic.to_array(), 0)
+		return QUBO(qubo.quadratic.to_array(), qubo.constant)
 
 
 class BQM(ProblemLike):
-	def __init__(self, bqm: Any, model: Any = None) -> None:  # noqa: ANN401
-		self.bqm = bqm
+	def __init__(self, model: Model) -> None:  # noqa: ANN401
+		self.model = model
+
+	@property
+	def bqm(self) -> BinaryQuadraticModel:
+		return self.model.to_bqm()
+
+	def to_qubo(self) -> QUBO:
+		"""Returns Qubo function"""
+		model = self.model
+		variables = sorted(model.variables)
+		num_qubits = len(variables)
+		Q_matrix = np.zeros((num_qubits, num_qubits))
+		inv_map = {v: i for i, v in enumerate(variables)}
+		qubo_dict, offset = model.to_qubo()
+		for key, value in qubo_dict.items():
+			var1, var2 = key
+			Q_matrix[inv_map[var1], inv_map[var2]] = value
+		return QUBO(Q_matrix, offset)
 
 
 class Molecule(ProblemLike):

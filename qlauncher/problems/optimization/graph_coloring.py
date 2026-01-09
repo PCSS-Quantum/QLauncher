@@ -11,7 +11,7 @@ import numpy as np
 from pyqubo import Array, Binary
 
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import QUBO, Hamiltonian
+from qlauncher.base.problem_like import BQM, QUBO, Hamiltonian
 from qlauncher.hampy import Equation
 
 
@@ -105,17 +105,13 @@ class GraphColoring(Problem):
 			for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
 				if ind >= self.num_colors:
 					break
-				eq_inner = None
+				eq_inner = Equation(num_qubits)
 				for i in range(color_bit_length):
 					qubit1 = eq[node1 * color_bit_length + i]
 					qubit2 = eq[node2 * color_bit_length + i]
 					exp = qubit1 & qubit2 if comb[i] else ~qubit1 & ~qubit2
-					if eq_inner is None:
-						eq_inner = exp
-					else:
-						eq_inner &= exp
-				if eq_inner is not None:
-					eq += eq_inner
+					eq_inner &= exp
+				eq += eq_inner
 		return eq
 
 	# Penalty for using excessive colors
@@ -125,16 +121,12 @@ class GraphColoring(Problem):
 			for ind, comb in enumerate(product(range(2), repeat=color_bit_length)):
 				if ind < self.num_colors:
 					continue
-				eq_inner = None
+				eq_inner = Equation(num_qubits)
 				for i in range(color_bit_length):
 					qubit = eq[node * color_bit_length + i]
 					exp = qubit if comb[i] else ~qubit
-					if eq_inner is None:
-						eq_inner = exp
-					else:
-						eq_inner &= exp
-				if eq_inner is not None:
-					eq += eq_inner
+					eq_inner &= exp
+				eq += eq_inner
 		return eq
 
 	def to_hamiltonian(self, constraints_weight: float = 1, costs_weight: float = 1) -> Hamiltonian:
@@ -144,32 +136,19 @@ class GraphColoring(Problem):
 		eq = self._color_duplication_hamiltonian(num_qubits, color_bit_length)
 		eq2 = self._excessive_colors_use_hamiltonian(num_qubits, color_bit_length)
 
-		return Hamiltonian((eq * costs_weight + eq2 * constraints_weight).hamiltonian.simplify())
+		return Hamiltonian(eq * costs_weight + eq2 * constraints_weight)
 
-	def to_qubo(self) -> QUBO:
-		"""Returns Qubo function"""
-		num_qubits = self.instance.number_of_nodes() * self.num_colors
+	def to_bqm(self) -> BQM:
+		"""Returns BQM"""
 		x = Array.create('x', shape=(self.instance.number_of_nodes(), self.num_colors), vartype='BINARY')
-		qubo: Binary | None = None
-		for node in self.instance.nodes:
-			expression: Binary = 1 - sum(x[node, i] for i in range(self.num_colors))
-			if qubo is None:
-				qubo = expression * expression
-			else:
-				qubo += expression * expression
+		qubo: Binary = 0
 		for n1, n2 in self.instance.edges:
 			for c in range(self.num_colors):
 				qubo += x[n1, c] * x[n2, c]
-		if qubo is None:
-			raise TypeError
-		model = qubo.compile()
-		qubo_dict, offset = model.to_qubo()
-		Q_matrix = np.zeros((num_qubits, num_qubits))
-		for i in range(num_qubits):
-			for j in range(num_qubits):
-				n1, c1 = i // self.num_colors, i % self.num_colors
-				n2, c2 = j // self.num_colors, j % self.num_colors
-				key = ('x[' + str(n1) + '][' + str(c1) + ']', 'x[' + str(n2) + '][' + str(c2) + ']')
-				if key in qubo_dict:
-					Q_matrix[i, j] = qubo_dict[key]
-		return QUBO(Q_matrix, offset)
+		for node in self.instance.nodes:
+			expression: Binary = 1 - sum(x[node, i] for i in range(self.num_colors))
+			qubo += expression * expression
+		return BQM(qubo.compile())
+
+	def to_qubo(self) -> QUBO:
+		return self.to_bqm().to_qubo()

@@ -4,7 +4,6 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import hampy
 from qlauncher.base.base import Problem
@@ -32,22 +31,18 @@ class QATM(Problem):
 	def from_preset(instance_name: Literal['rcp-3'], **kwargs) -> 'QATM':
 		match instance_name:
 			case 'rcp-3':
-				cm = np.array(
-					[
-						[1, 0, 1, 0, 0, 0],
-						[0, 1, 0, 0, 0, 1],
-						[1, 0, 1, 0, 1, 0],
-						[0, 0, 0, 1, 0, 0],
-						[0, 0, 1, 0, 1, 0],
-						[0, 1, 0, 0, 0, 1],
-					]
-				)
-				aircrafts = pd.DataFrame(
-					{
-						'manouver': ['A0', 'A1', 'A2', 'A0_a=10', 'A1_a=10', 'A2_a=10'],
-						'aircraft': ['A0', 'A1', 'A2', 'A0', 'A1', 'A2'],
-					}
-				)
+				cm = np.array([
+					[1, 0, 1, 0, 0, 0],
+					[0, 1, 0, 0, 0, 1],
+					[1, 0, 1, 0, 1, 0],
+					[0, 0, 0, 1, 0, 0],
+					[0, 0, 1, 0, 1, 0],
+					[0, 1, 0, 0, 0, 1],
+				])
+				aircrafts = pd.DataFrame({
+					'manouver': ['A0', 'A1', 'A2', 'A0_a=10', 'A1_a=10', 'A2_a=10'],
+					'aircraft': ['A0', 'A1', 'A2', 'A0', 'A1', 'A2'],
+				})
 			case _:
 				raise KeyError
 		return QATM(cm, aircrafts)
@@ -101,20 +96,49 @@ class QATM(Problem):
 			hamiltonian += goal_hamiltonian / cm.sum().sum()
 
 		return Hamiltonian(
-			hamiltonian.hamiltonian,
+			hamiltonian,
 			mixer_hamiltonian=self.get_mixer_hamiltonian(),
 			initial_state=self.get_initial_state(),
 		)
 
-	def get_mixer_hamiltonian(self) -> SparsePauliOp:
+	def get_mixer_hamiltonian(self) -> Equation:
 		mixer_hamiltonian = Equation(self.size)
 		for _, manouvers in self.aircrafts.groupby(by='aircraft'):
 			h = ring_ham(manouvers.index.values.tolist(), self.size)
 			mixer_hamiltonian += h
-		return mixer_hamiltonian.hamiltonian
+		return mixer_hamiltonian
 
 	def get_initial_state(self) -> QuantumCircuit:
 		qc = QuantumCircuit(self.size)
 		for _, manouvers in self.aircrafts.groupby(by='aircraft'):
 			qc.x(manouvers.index.values.tolist()[0])
 		return qc
+
+	def analyze_result(self, result: dict) -> dict[str, np.ndarray]:
+		"""
+		Analyzes the result in terms of collisions and violations of onehot constraint.
+
+		Parameters:
+			result (dict): A dictionary where keys are bitstrings and values are probabilities.
+
+		Returns:
+			dict: A dictionary containing collisions, onehot violations, and changes as ndarrays.
+		"""
+		keys = list(result.keys())
+		vectorized_result = np.fromstring(' '.join(list(''.join(keys))), 'u1', sep=' ').reshape(len(result), -1)
+		cm = self.cm.copy().astype(int)
+		np.fill_diagonal(cm, 0)
+		collisions = np.einsum('ij,ij->i', vectorized_result @ cm, vectorized_result) / 2
+
+		df = pd.DataFrame(vectorized_result.transpose())
+		df['aircraft'] = self.aircrafts['aircraft']
+		onehot_violations = (df.groupby(by='aircraft').sum() != 1).sum(axis=0).to_numpy()
+
+		df['manouver'] = self.aircrafts['manouver']
+		no_changes = df[df['aircraft'] == df['manouver']]
+		changes = (len(no_changes) - no_changes.drop(['manouver', 'aircraft'], axis=1).sum()).to_numpy().astype(int)
+		changes[onehot_violations != 0] = -1
+
+		at_least_one = (df.loc[:, df.columns != 'manouver'].groupby('aircraft').sum() > 0).all().to_numpy().astype(int)
+
+		return {'collisions': collisions, 'onehot_violations': onehot_violations, 'changes': changes, 'at_least_one': at_least_one}

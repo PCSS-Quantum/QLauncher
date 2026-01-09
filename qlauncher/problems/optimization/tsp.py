@@ -3,7 +3,6 @@ from typing import Literal
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from qiskit.quantum_info import SparsePauliOp
 from qiskit_algorithms import SamplingMinimumEigensolverResult
 
 import qlauncher.hampy as hampy
@@ -207,7 +206,7 @@ class TSP(Problem):
 
 		return TSP(instance=g, instance_name='generated')
 
-	def _make_non_collision_hamiltonian(self, node_count: int, quadratic: bool = False) -> SparsePauliOp:
+	def _make_non_collision_hamiltonian(self, node_count: int, quadratic: bool = False) -> Equation:
 		"""
 		Creates a Hamiltonian representing constraints for the TSP problem. (Each node visited only once, one node per timestep)
 		Qubit mapping: [step1:[node_1, node_2,... node_n]],[step_2],...[step_n]
@@ -242,9 +241,9 @@ class TSP(Problem):
 			shift = shift_affected_qubits(n0_op, node)
 			eq += shift
 
-		return -1 * eq.hamiltonian
+		return -1 * eq
 
-	def _make_connection_hamiltonian(self, edge_costs: np.ndarray, return_to_start: bool = True) -> SparsePauliOp:
+	def _make_connection_hamiltonian(self, edge_costs: np.ndarray, return_to_start: bool = True) -> Equation:
 		"""
 		Creates a Hamiltonian that represents the costs of picking each path.
 
@@ -270,7 +269,7 @@ class TSP(Problem):
 					eq += edge_costs[node, next_node] * and_hamiltonian
 
 		if not return_to_start:
-			return eq.hamiltonian
+			return eq
 
 		# Add cost of returning to the first node
 		for node in range(node_count):
@@ -278,7 +277,7 @@ class TSP(Problem):
 				and_hamiltonian = eq[node + (node_count - 1) * node_count] & eq[node2]
 				eq += edge_costs[node, node2] * and_hamiltonian
 
-		return eq.hamiltonian
+		return eq
 
 	def to_hamiltonian(
 		self,
@@ -311,7 +310,7 @@ class TSP(Problem):
 		constraints = self._make_non_collision_hamiltonian(node_count, quadratic=(onehot == 'quadratic'))
 		costs = self._make_connection_hamiltonian(scaled_edge_costs, return_to_start=return_to_start)
 
-		return Hamiltonian((constraints * constraints_weight + costs * costs_weight).simplify())
+		return Hamiltonian(constraints * constraints_weight + costs * costs_weight)
 
 	def to_qubo(self, constraints_weight: int = 5, costs_weight: int = 1, return_to_start: bool = True) -> QUBO:
 		return self.to_hamiltonian(constraints_weight, costs_weight, return_to_start, onehot='quadratic').to_qubo()

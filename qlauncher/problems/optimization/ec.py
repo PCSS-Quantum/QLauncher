@@ -120,11 +120,11 @@ class EC(Problem):
 			equation += part
 
 		return Hamiltonian(
-			equation.hamiltonian,
+			equation,
 			mixer_hamiltonian=self.get_mixer_hamiltonian(),
 		)
 
-	def get_mixer_hamiltonian(self, amount_of_rings=None) -> SparsePauliOp:
+	def get_mixer_hamiltonian(self, amount_of_rings: int | None = None) -> hampy.Equation:
 		"""generates mixer hamiltonian"""
 
 		# looking for all rings in a data and creating a list with them
@@ -176,7 +176,7 @@ class EC(Problem):
 		for elem in x_gate:
 			x_gate_ham += SparsePauliOp.from_sparse_list([('X', [elem], 1)], len(self.instance))
 
-		return (mix_ham + x_gate_ham).hamiltonian
+		return mix_ham + x_gate_ham
 
 	def to_qubo(self) -> QUBO:
 		n = len(self.instance)
@@ -209,7 +209,7 @@ class EC(Problem):
 		return QUBO(qubo, 0)
 
 
-def ring_ham(set_ring: set[int], n: int) -> SparsePauliOp:
+def ring_ham(set_ring: set[int], n: int) -> hampy.Equation:
 	total = hampy.Equation(n)
 	ring = list(set_ring)
 	for index in range(len(ring) - 1):
@@ -227,4 +227,4 @@ def ring_ham(set_ring: set[int], n: int) -> SparsePauliOp:
 		],
 		n,
 	)
-	return total.hamiltonian
+	return total
