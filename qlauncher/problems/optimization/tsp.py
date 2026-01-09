@@ -1,16 +1,42 @@
+import re
 from typing import Literal
 
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from qiskit.quantum_info import SparsePauliOp
 from qiskit_algorithms import SamplingMinimumEigensolverResult
 
-import qlauncher.hampy as hampy
+from qlauncher import hampy
 from qlauncher.base import Problem
 from qlauncher.base.problem_like import QUBO, Hamiltonian
-from qlauncher.hampy import Equation
+from qlauncher.hampy import Equation, Variable
 from qlauncher.hampy.utils import shift_affected_qubits
+
+
+def _vars_eq_n(variables: list[Variable], n: int) -> Equation:
+	bin_rep = np.binary_repr(n, width=len(variables))  # [::-1]
+	v = variables[0].to_equation() if bin_rep[0] == '1' else ~variables[0]
+	for i, bit in enumerate(bin_rep[1:], start=1):
+		v = v & (variables[i] if bit == '1' else ~variables[i])
+	return v
+
+
+def _limit_int_range(
+	variables: list[Variable],
+	total_bits: int,
+	min_value: int = 0,
+	max_value: int | None = None,
+) -> Equation:
+	min_value = max(0, min_value)
+	max_value = min(max_value, 2 ** len(variables) - 1) if (max_value is not None) else 2 ** len(variables) - 1
+	eq = Equation(total_bits)
+	for n in range(0, min_value):
+		eq += _vars_eq_n(variables, n)
+
+	for n in range(max_value + 1, 2 ** len(variables)):
+		eq += _vars_eq_n(variables, n)
+
+	return ~eq
 
 
 class TSP(Problem):
@@ -44,19 +70,37 @@ class TSP(Problem):
 		Returns:
 			np.ndarray: Solution chain of nodes to visit
 		"""
-		bitstring = solution[::-1] if isinstance(solution, str) else solution.best_measurement['bitstring'][::-1]  # type: ignore
+		bitstring = solution if isinstance(solution, str) else solution.best_measurement['bitstring']  # type: ignore
 
-		node_count = int(len(bitstring) ** 0.5)
+		if len(bitstring) == len(self.instance.nodes) ** 2:
+			return self._solution_to_node_chain_quadratic(bitstring)
+		return self._solution_to_node_chain_exact(bitstring)
+
+	def _solution_to_node_chain_exact(self, solution: str) -> np.ndarray:
+		"""
+		Converts the solution of the TSP problem to a chain of nodes (order of visiting)
+
+		Args:
+			solution: Solution of the TSP problem. If type is str, qiskit-style ordering is assumed (MSB first)
+
+		Returns:
+			np.ndarray: Solution chain of nodes to visit
+		"""
+		bits_per_node = int(np.ceil(np.log2(len(self.instance.nodes))))
+		return np.array([int(x, 2) for x in re.findall(f'{"." * bits_per_node}', solution)])
+
+	def _solution_to_node_chain_quadratic(self, solution: str) -> np.ndarray:
+		node_count = int(len(solution) ** 0.5)
 		chain = []
 
-		for i in range(0, len(bitstring), node_count):
-			step_string = bitstring[i : i + node_count]
+		for i in range(0, len(solution), node_count):
+			step_string = solution[i : i + node_count]
 			chosen_node = np.argmax([int(x) for x in step_string])
 			chain.append(chosen_node)
 
 		return np.array(chain)
 
-	def _calculate_solution_cost(self, solution: SamplingMinimumEigensolverResult | str | list[int]) -> float:
+	def _calculate_solution_cost(self, solution: str) -> float:
 		cost = 0
 		chain = solution if isinstance(solution, list) else self._solution_to_node_chain(solution)
 
@@ -65,7 +109,7 @@ class TSP(Problem):
 		cost += self.instance[chain[-1]][chain[0]]['weight']
 		return cost
 
-	def _visualize_solution(self, solution: SamplingMinimumEigensolverResult | str | list[int]) -> None:
+	def _visualize_solution(self, solution: str) -> None:
 		chain = solution if isinstance(solution, list) else self._solution_to_node_chain(solution)
 
 		import matplotlib.pyplot as plt
@@ -148,7 +192,7 @@ class TSP(Problem):
 		plt.title('TSP Instance Visualization')
 		plt.show()
 
-	def visualize(self, solution: SamplingMinimumEigensolverResult | str | list[int] | None = None) -> None:
+	def visualize(self, solution: str | None = None) -> None:
 		if solution is None:
 			self._visualize_problem()
 		else:
@@ -207,7 +251,71 @@ class TSP(Problem):
 
 		return TSP(instance=g, instance_name='generated')
 
-	def _make_non_collision_hamiltonian(self, node_count: int, quadratic: bool = False) -> SparsePauliOp:
+	def _make_constraint_hamiltonian(self, node_count: int) -> Equation:
+		"""
+		Creates a Hamiltonian representing constraints for the TSP problem.
+		With n log_2 n qubits, each slice of log_2 n qubits represents a node in the cycle.
+		Restrain all nodes not be equal to each other
+		Restrain all nodes to be in the range [0, n-1] for simplicity
+
+		Args:
+			node_count: Number of nodes in the TSP problem
+			quadratic: Whether to encode as a QUBO problem
+
+		Returns:
+			np.ndarray: Hamiltonian representing the constraints
+		"""
+		bits_per_node = int(np.ceil(np.log2(node_count)))
+		n = bits_per_node * node_count
+		eq = Equation(n)
+
+		# Enforce node uniqueness
+		for n1 in range(node_count):
+			for n2 in range(n1 + 1, node_count):
+				vars1 = [eq[i] for i in range(n1 * bits_per_node, n1 * bits_per_node + bits_per_node)]
+				vars2 = [eq[i] for i in range(n2 * bits_per_node, n2 * bits_per_node + bits_per_node)]
+
+				full_eq = (vars1[0] & vars2[0]) | (~vars1[0] & ~vars2[0])
+				for v1, v2 in zip(vars1[1:], vars2[1:], strict=True):
+					full_eq = full_eq & ((v1 & v2) | (~v1 & ~v2))
+				eq += ~full_eq
+
+		# Enforce node numbers to be in range [0, num_nodes - 1]
+		range_equation = _limit_int_range([eq[i] for i in range(bits_per_node)], n, 0, max_value=node_count - 1)
+		for i in range(node_count):
+			eq += shift_affected_qubits(range_equation, bits_per_node * i) * 2
+		return -1 * eq
+
+	def _make_connection_hamiltonian(self, edge_costs: np.ndarray, return_to_start: bool = True) -> Equation:
+		"""
+		Creates a Hamiltonian that represents the costs of picking each path.
+
+		Args:
+			tsp_matrix: Edge cost matrix of the TSP problem
+
+		Returns:
+			np.ndarray: Optimal chain of nodes to visit
+		"""
+		node_count = len(edge_costs)
+
+		bits_per_node = int(np.ceil(np.log2(node_count)))
+		total_bits = bits_per_node * node_count
+
+		eq_temp = Equation(total_bits)
+		vars1 = [eq_temp[i] for i in range(bits_per_node)]
+		vars2 = [eq_temp[i] for i in range(bits_per_node, 2 * bits_per_node)]
+		for n1 in range(node_count):
+			for n2 in range(n1 + 1, node_count):
+				eq_temp += (_vars_eq_n(vars1, n1) & _vars_eq_n(vars2, n2)) * float(edge_costs[n1][n2])
+				eq_temp += (_vars_eq_n(vars2, n1) & _vars_eq_n(vars1, n2)) * float(edge_costs[n2][n1])
+
+		eq = Equation(total_bits)
+		for i in range(node_count + (0 if return_to_start else -1)):
+			eq += shift_affected_qubits(eq_temp, i * bits_per_node)
+
+		return eq
+
+	def _make_constraint_hamiltonian_quadratic(self, node_count: int) -> Equation:
 		"""
 		Creates a Hamiltonian representing constraints for the TSP problem. (Each node visited only once, one node per timestep)
 		Qubit mapping: [step1:[node_1, node_2,... node_n]],[step_2],...[step_n]
@@ -229,22 +337,22 @@ class TSP(Problem):
 		# I'm pretty sure this works as intended...
 
 		# Ensure that at each timestep only one node is visited
-		t0_op = hampy.one_in_n(list(range(node_count)), eq.size, quadratic=quadratic)
+		t0_op = hampy.one_in_n(list(range(node_count)), eq.size, quadratic=True)
 
 		for timestep in range(node_count):
 			shift = shift_affected_qubits(t0_op, timestep * node_count)
 			eq += shift
 
 		# Ensure that each node is visited only once
-		n0_op = hampy.one_in_n([timestep * node_count for timestep in range(node_count)], eq.size, quadratic=quadratic)
+		n0_op = hampy.one_in_n([timestep * node_count for timestep in range(node_count)], eq.size, quadratic=True)
 
 		for node in range(node_count):
 			shift = shift_affected_qubits(n0_op, node)
 			eq += shift
 
-		return -1 * eq.hamiltonian
+		return -1 * eq
 
-	def _make_connection_hamiltonian(self, edge_costs: np.ndarray, return_to_start: bool = True) -> SparsePauliOp:
+	def _make_connection_hamiltonian_quadratic(self, edge_costs: np.ndarray, return_to_start: bool = True) -> Equation:
 		"""
 		Creates a Hamiltonian that represents the costs of picking each path.
 
@@ -270,7 +378,7 @@ class TSP(Problem):
 					eq += edge_costs[node, next_node] * and_hamiltonian
 
 		if not return_to_start:
-			return eq.hamiltonian
+			return eq
 
 		# Add cost of returning to the first node
 		for node in range(node_count):
@@ -278,11 +386,11 @@ class TSP(Problem):
 				and_hamiltonian = eq[node + (node_count - 1) * node_count] & eq[node2]
 				eq += edge_costs[node, node2] * and_hamiltonian
 
-		return eq.hamiltonian
+		return eq
 
 	def to_hamiltonian(
 		self,
-		constraints_weight: int = 5,
+		constraints_weight: int = 3,
 		costs_weight: int = 1,
 		return_to_start: bool = True,
 		onehot: Literal['exact', 'quadratic'] = 'exact',
@@ -308,10 +416,14 @@ class TSP(Problem):
 
 		node_count = len(instance_graph.nodes)
 
-		constraints = self._make_non_collision_hamiltonian(node_count, quadratic=(onehot == 'quadratic'))
-		costs = self._make_connection_hamiltonian(scaled_edge_costs, return_to_start=return_to_start)
+		if onehot == 'exact':
+			constraints = self._make_constraint_hamiltonian(node_count)
+			costs = self._make_connection_hamiltonian(scaled_edge_costs, return_to_start=return_to_start)
+		else:
+			constraints = self._make_constraint_hamiltonian_quadratic(node_count)
+			costs = self._make_connection_hamiltonian_quadratic(scaled_edge_costs, return_to_start=return_to_start)
 
-		return Hamiltonian((constraints * constraints_weight + costs * costs_weight).simplify())
+		return Hamiltonian((constraints * constraints_weight + costs * costs_weight).hamiltonian)
 
 	def to_qubo(self, constraints_weight: int = 5, costs_weight: int = 1, return_to_start: bool = True) -> QUBO:
 		return self.to_hamiltonian(constraints_weight, costs_weight, return_to_start, onehot='quadratic').to_qubo()
