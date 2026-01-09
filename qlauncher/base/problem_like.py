@@ -247,10 +247,10 @@ class GroverCircuit(ProblemLike):
 		self.num_qubits = self.oracle.num_qubits
 
 
-class ControlledModularMultiplierGates(ProblemLike):
+class ShorCircuit(ProblemLike):
 	@staticmethod
 	def create_modular_multiplier_gate_with_uncomputation(factor: int, modulo: int) -> Gate:
-		n_modulo_number_qubits = int(np.ceil(np.log2(modulo)))
+		n_modulo_number_qubits = int(np.floor(np.log2(modulo))) + 1
 
 		def create_adder_gate(factor: int, modulo: int) -> Gate:
 			phase_adder_circuit = QuantumCircuit(n_modulo_number_qubits + 1)  # + 1 to avoid overflow
@@ -342,6 +342,7 @@ class ControlledModularMultiplierGates(ProblemLike):
 		self,
 		factor: int,
 		modulo: int,
+  		n_phase_kickback_qubits: int = None,
 		circuits: list[QuantumCircuit | np.ndarray | Gate] = None,
 		eigen_state_prep: QuantumCircuit | np.ndarray | Gate = None,
 	):
@@ -349,6 +350,11 @@ class ControlledModularMultiplierGates(ProblemLike):
 		self.modulo = modulo
 		self.gates = []
 
+		if not n_phase_kickback_qubits:
+			self.n_phase_kickback_qubits = 2 * int(np.floor(np.log2(self.modulo) + 1))
+		else:
+			self.n_phase_kickback_qubits = n_phase_kickback_qubits
+  
 		conversion_map = {
 			QuantumCircuit: lambda c: c.to_gate(),
 			np.ndarray: lambda c: UnitaryGate(c),
@@ -357,9 +363,9 @@ class ControlledModularMultiplierGates(ProblemLike):
 		}
 
 		if circuits is None:
-			for exp in range(2 * int(np.ceil(np.log2(modulo)))):
-				tmp_factor = (factor * 2**exp) % modulo
-				self.gates.append(ControlledModularMultiplierGates.create_modular_multiplier_gate_with_uncomputation(tmp_factor, modulo))
+			for exp in range(2 * (int(np.floor(np.log2(modulo))) + 1)):
+				tmp_factor = (factor ** (2**exp)) % modulo
+				self.gates.append(ShorCircuit.create_modular_multiplier_gate_with_uncomputation(tmp_factor, modulo))
 		else:
 			for circuit in circuits:
 				target_type = type(circuit)
