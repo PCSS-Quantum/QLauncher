@@ -136,9 +136,15 @@ class QLauncher:
 		if methods is None:
 			raise TypeError
 
-		for i, method in enumerate(methods):
+		if len(methods) == 0:
+			return problem
+
+		if isinstance(problem, Problem):
 			# The first method is the Problem -> ProblemLike formatter.
-			problem = method(problem) if i > 0 else method(problem, **formatter_kwargs)
+			problem = methods[0](problem, **formatter_kwargs)
+
+		for method in methods[1:]:
+			problem = method(problem)
 
 		return problem
 
