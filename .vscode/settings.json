@@ -1,0 +1,21 @@
+{
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "cSpell.words": [
+        "Eigensolver",
+        "figsize",
+        "hampy",
+        "limegreen",
+        "onehot",
+        "pyqubo",
+        "qlauncher",
+        "skyblue",
+        "suptitle",
+        "timestep",
+        "timesteps",
+        "vartype"
+    ]
+}

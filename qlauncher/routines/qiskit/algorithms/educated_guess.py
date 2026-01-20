@@ -11,7 +11,7 @@ from qlauncher.base import Algorithm, Result
 from qlauncher.base.problem_like import Hamiltonian
 from qlauncher.routines.qiskit.algorithms.qiskit_native import QAOA
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
-from qlauncher.workflow.pilotjob_scheduler import JobManager
+from qlauncher.workflow.pilotjob_scheduler import PilotJobManager
 
 
 class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
@@ -33,7 +33,7 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
 		self.verbose = verbose
 		self.failed_jobs = 0
 		self.min_energy = math.inf
-		self.manager = JobManager()
+		self.manager = PilotJobManager()
 		self.best_job_id = ''
 		self.max_jobs = max_job_batch_size
 

@@ -1,12 +1,13 @@
 import glob
 import shutil
+import time
 
 import pytest
 
 from qlauncher import QLauncher, Result
 from qlauncher.routines.qiskit import FALQON, QiskitBackend
 from qlauncher.routines.qiskit.algorithms import EducatedGuess
-from qlauncher.workflow.pilotjob_scheduler import JobManager
+from qlauncher.workflow.pilotjob_scheduler import PilotJobManager
 from tests.utils.problem import get_hamiltonian
 
 # TODO: address event loop problem (To @dsiera: what was the problem?)
@@ -22,14 +23,14 @@ def clean_env():
 
 
 def test_job_manager(tmp_path) -> None:
-	manager = JobManager()
-	assert isinstance(manager, JobManager)
+	manager = PilotJobManager()
+	assert isinstance(manager, PilotJobManager)
 
 	problem = get_hamiltonian()
 	algorithm = FALQON(max_reps=1)
 	backend = QiskitBackend('local_simulator')
 
-	manager.submit(problem, algorithm, backend, f'{tmp_path}/')
+	manager.submit(problem, algorithm, backend, output_path='{tmp_path}/')
 	for _ in range(len(manager.jobs)):
 		job_id, status = manager.wait_for_a_job(timeout=60)
 		assert isinstance(job_id, str)
@@ -41,6 +42,22 @@ def test_job_manager(tmp_path) -> None:
 	with pytest.raises(ValueError):
 		manager.wait_for_a_job()
 	manager.clean_up()
+
+
+def test_job_manager_cancel(tmp_path) -> None:
+	manager = PilotJobManager()
+	assert isinstance(manager, PilotJobManager)
+
+	problem = get_hamiltonian()
+	algorithm = FALQON(max_reps=1000000000)
+	backend = QiskitBackend('local_simulator')
+
+	job_id = manager.submit(problem, algorithm, backend, output_path=f'{tmp_path}/')
+
+	time.sleep(1)
+	manager.cancel(job_id)
+	job_id, status = manager.wait_for_a_job(job_id)
+	assert status.upper() == 'CANCELLED' or status.upper() == 'CANCELED'
 
 
 def test_educated_guess(tmp_path) -> None:
