@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import Any
 
-from qlauncher.base import Algorithm, Backend, Problem, ProblemLike, Result
+from qlauncher.base import Result
 
 
 class BaseJobManager(ABC):
 	"""
-	Abstract base class for job managers that execute QLauncher jobs
+	Abstract base class for job managers that execute functions.
 	on different compute backends.
 	"""
 
@@ -16,19 +17,15 @@ class BaseJobManager(ABC):
 	@abstractmethod
 	def submit(
 		self,
-		problem: Problem | ProblemLike,
-		algorithm: Algorithm,
-		backend: Backend,
+		function: Callable,
 		cores: int = 1,
 		**kwargs,
 	) -> str:
 		"""
-		Submit a QLauncher job to the scheduler.
+		Submit a function job to the scheduler.
 
 		Args:
-			problem: Problem to be solved.
-			algorithm: Algorithm to be used.
-			backend: Backend on which the algorithm will be executed.
+			function: Function to be executed.
 			cores: Number of CPU cores per task.
 			**kwargs: Manager-specific additional arguments.
 
@@ -85,9 +82,7 @@ class BaseJobManager(ABC):
 
 	def run(
 		self,
-		problem: Problem | ProblemLike,
-		algorithm: Algorithm,
-		backend: Backend,
+		function: Callable,
 		cores: int = 1,
 		**kwargs,
 	) -> Result:
@@ -97,9 +92,7 @@ class BaseJobManager(ABC):
 		This method handles the complete lifecycle of a job execution.
 
 		Args:
-			problem: Problem to be solved.
-			algorithm: Algorithm to be used.
-			backend: Backend on which the algorithm will be executed.
+			function: Function to be executed.
 			cores: Number of CPU cores per task.
 			**kwargs: Manager-specific additional arguments.
 
@@ -107,7 +100,7 @@ class BaseJobManager(ABC):
 			Result object produced by the job.
 		"""
 		try:
-			job_id = self.submit(problem, algorithm, backend, cores=cores, **kwargs)
+			job_id = self.submit(function, cores=cores, **kwargs)
 			self.wait_for_a_job(job_id)
 			return self.read_results(job_id)
 		finally:
@@ -123,6 +116,7 @@ class BaseJobManager(ABC):
 
 
 if __name__ == '__main__':
+	from qlauncher import QLauncher
 	from qlauncher.problems import MaxCut
 	from qlauncher.routines.qiskit import QAOA, QiskitBackend
 
@@ -143,7 +137,7 @@ if __name__ == '__main__':
 			# "source ~/venv/bin/activate",
 		],
 	)
-	slurm_result = slurm_mgr.run(problem, algorithm, backend, cores=1)
+	slurm_result = slurm_mgr.run(QLauncher(problem, algorithm, backend).run, cores=1)
 	print(slurm_result)
 
 	# # PilotJobManager

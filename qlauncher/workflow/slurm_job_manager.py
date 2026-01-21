@@ -6,12 +6,13 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from qlauncher.base import Algorithm, Backend, Problem, ProblemLike, Result
 from qlauncher.exceptions import DependencyError
-from qlauncher.launcher import QLauncher
 from qlauncher.workflow.base_job_manager import BaseJobManager
+
+if TYPE_CHECKING:
+	from qlauncher.base import Result
 
 try:
 	import dill
@@ -46,7 +47,7 @@ class SlurmJobManager(BaseJobManager):
 				in ``PATH``.
 		"""
 		super().__init__()
-		self.code_path = Path(__file__).with_name('pilotjob_task.py')
+		self.code_path = Path(__file__).with_name('subprocess_fn.py')
 		self.sbatch_exe = sbatch_exe
 		self.slurm_options = slurm_options or {}
 		self.env_setup = env_setup or []
@@ -59,9 +60,7 @@ class SlurmJobManager(BaseJobManager):
 
 	def submit(
 		self,
-		problem,
-		algorithm,
-		backend,
+		function,
 		cores: int = 1,
 		**kwargs,
 	) -> str:
@@ -83,25 +82,7 @@ class SlurmJobManager(BaseJobManager):
 		Raises:
 			RuntimeError: If ``sbatch`` returns a non-zero exit code.
 		"""
-		launcher = QLauncher(problem, algorithm, backend)
-		return self.submit_launcher(launcher, cores=cores)
 
-	def submit_launcher(self, launcher, cores: int = 1):
-		"""
-		Submits a prepared :class:`QLauncher` instance to Slurm.
-
-		Args:
-			launcher (QLauncher): Prepared launcher object.
-			cores (int, optional): Number of CPU cores per task requested from
-				Slurm (mapped to ``--cpus-per-task``). Defaults to 1.
-
-		Returns:
-			str: Slurm job ID returned by ``sbatch``.
-
-		Raises:
-			RuntimeError: If ``sbatch`` returns a non-zero exit code or its
-				standard output does not contain a job ID.
-		"""
 		job_uid = self._make_job_uid()
 
 		input_file = f'input.{job_uid}.pkl'
@@ -109,7 +90,7 @@ class SlurmJobManager(BaseJobManager):
 		script_path = f'slurm_job.{job_uid}.sh'
 
 		with open(input_file, 'wb') as f:
-			dill.dump(launcher, f)
+			dill.dump(function, f)
 
 		self._write_sbatch_script(
 			script_path=script_path,

@@ -30,7 +30,7 @@ def test_job_manager(tmp_path) -> None:
 	algorithm = FALQON(max_reps=1)
 	backend = QiskitBackend('local_simulator')
 
-	manager.submit(problem, algorithm, backend, output_path='{tmp_path}/')
+	manager.submit(QLauncher(problem, algorithm, backend).run, output_path=f'{tmp_path}/')
 	for _ in range(len(manager.jobs)):
 		job_id, status = manager.wait_for_a_job(timeout=60)
 		assert isinstance(job_id, str)
@@ -52,7 +52,7 @@ def test_job_manager_cancel(tmp_path) -> None:
 	algorithm = FALQON(max_reps=1000000000)
 	backend = QiskitBackend('local_simulator')
 
-	job_id = manager.submit(problem, algorithm, backend, output_path=f'{tmp_path}/')
+	job_id = manager.submit(QLauncher(problem, algorithm, backend).run, output_path=f'{tmp_path}/')
 
 	time.sleep(1)
 	manager.cancel(job_id)
