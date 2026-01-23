@@ -74,6 +74,22 @@ class BaseJobManager(ABC):
 		pass
 
 	@abstractmethod
+	def cancel(self, job_id: str):
+		"""
+		Cancel a given job
+
+		Args:
+			job_id (str): id of the job to cancel.
+
+		Raises:
+			KeyError: If job with a given id was not submitted by this manager.
+
+		Returns:
+			None
+		"""
+		pass
+
+	@abstractmethod
 	def clean_up(self) -> None:
 		"""
 		Clean up temporary files and resources created by the manager.

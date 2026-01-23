@@ -24,6 +24,7 @@ class SlurmJobManager(BaseJobManager):
 	def __init__(
 		self,
 		sbatch_exe: str = 'sbatch',
+		scancel_exe: str = 'scancel',
 		slurm_options: dict[str, Any] | None = None,
 		env_setup: list[str] | None = None,
 	) -> None:
@@ -49,12 +50,19 @@ class SlurmJobManager(BaseJobManager):
 		super().__init__()
 		self.code_path = Path(__file__).with_name('subprocess_fn.py')
 		self.sbatch_exe = sbatch_exe
+		self.scancel_exe = scancel_exe
 		self.slurm_options = slurm_options or {}
 		self.env_setup = env_setup or []
 
 		if shutil.which(self.sbatch_exe) is None:
 			raise DependencyError(
 				ImportError(f'{self.sbatch_exe} not found in PATH'),
+				install_hint='slurm',
+			)
+
+		if shutil.which(self.scancel_exe) is None:
+			raise DependencyError(
+				ImportError(f'{self.scancel_exe} not found in PATH'),
 				install_hint='slurm',
 			)
 
@@ -153,6 +161,10 @@ class SlurmJobManager(BaseJobManager):
 			job_id = not_finished[0]
 
 		job = self.jobs[job_id]
+		if job.get('canceled', False):
+			job['finished'] = True
+			return job_id
+
 		output_file = job['output_file']
 
 		start = time.time()
@@ -180,6 +192,11 @@ class SlurmJobManager(BaseJobManager):
 				job['finished'] = True
 				return job_id
 
+			if state in ('CANCELLED', 'CANCELED'):
+				job['canceled'] = True
+				job['finished'] = True
+				return job_id
+
 			raise RuntimeError(f'Job {job_id} finished in bad state: {state}')
 
 	def read_results(self, job_id):
@@ -201,6 +218,9 @@ class SlurmJobManager(BaseJobManager):
 			raise KeyError(f'Job {job_id} not found')
 
 		job = self.jobs[job_id]
+		if job.get('canceled', False):
+			raise RuntimeError(f'Job {job_id} was canceled; no results are available')
+
 		output_file = job['output_file']
 
 		if not Path(output_file).exists():
@@ -211,6 +231,34 @@ class SlurmJobManager(BaseJobManager):
 
 		job['finished'] = True
 		return result
+
+	def cancel(self, job_id: str) -> None:
+		"""
+		Cancel a given Slurm job via scancel.
+
+		Args:
+			job_id: Slurm job id returned by submit().
+
+		Raises:
+			KeyError: If job_id is not known to this manager.
+			RuntimeError: If scancel fails.
+		"""
+		if job_id not in self.jobs:
+			raise KeyError(f'Job {job_id} not found')
+
+		res = subprocess.run(
+			[self.scancel_exe, job_id],
+			capture_output=True,
+			text=True,
+			check=False,
+		)
+
+		if res.returncode != 0:
+			raise RuntimeError(f'scancel failed ({res.returncode}): {res.stderr.strip() or res.stdout.strip()}')
+
+		job = self.jobs[job_id]
+		job['canceled'] = True
+		job['finished'] = True
 
 	def clean_up(self):
 		"""
