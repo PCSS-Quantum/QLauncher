@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -270,6 +271,9 @@ class SlurmJobManager(BaseJobManager):
 				if path and Path(path).exists():
 					with contextlib.suppress(OSError):
 						os.remove(path)
+
+	def run(self, function: Callable[..., Any], cores: int = 1, **kwargs) -> Any:
+		return super().run(function, cores=cores, **kwargs)
 
 	def _write_sbatch_script(
 		self,

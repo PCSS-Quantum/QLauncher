@@ -18,7 +18,6 @@ class BaseJobManager(ABC):
 	def submit(
 		self,
 		function: Callable,
-		cores: int = 1,
 		**kwargs,
 	) -> str:
 		"""
@@ -57,7 +56,7 @@ class BaseJobManager(ABC):
 		pass
 
 	@abstractmethod
-	def read_results(self, job_id: str) -> Result:
+	def read_results(self, job_id: str) -> Any:
 		"""
 		Read the result of a finished job.
 
@@ -99,9 +98,8 @@ class BaseJobManager(ABC):
 	def run(
 		self,
 		function: Callable,
-		cores: int = 1,
 		**kwargs,
-	) -> Result:
+	) -> Any:
 		"""
 		Convenience method: submit job, wait for completion, read results, and cleanup.
 
@@ -116,7 +114,7 @@ class BaseJobManager(ABC):
 			Result object produced by the job.
 		"""
 		try:
-			job_id = self.submit(function, cores=cores, **kwargs)
+			job_id = self.submit(function, **kwargs)
 			self.wait_for_a_job(job_id)
 			return self.read_results(job_id)
 		finally:

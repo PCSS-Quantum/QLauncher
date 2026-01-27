@@ -221,6 +221,9 @@ class PilotJobManager(BaseJobManager):
 			with contextlib.suppress(Exception):
 				mgr.finish()
 
+	def run(self, function: Callable[..., Any], cores: int = 1, **kwargs) -> Any:
+		return super().run(function, cores=cores, **kwargs)
+
 	def __del__(self):
 		with contextlib.suppress(Exception):
 			self.stop()
