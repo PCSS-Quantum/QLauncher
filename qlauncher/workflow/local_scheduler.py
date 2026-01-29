@@ -199,6 +199,7 @@ class LocalJobManager(BaseJobManager):
 	def __init__(self):
 		super().__init__()
 		self.tasks: dict[str, MPTask] = {}
+		self._poll_interval_s: float = 0.05
 
 	def submit(
 		self,
@@ -206,8 +207,11 @@ class LocalJobManager(BaseJobManager):
 		**kwargs,
 	) -> str:
 		jid = self._make_job_uid()
-		while jid in self.tasks:
+		while jid in self.tasks or jid in self.jobs:
 			jid = self._make_job_uid()
+
+		self.jobs[jid] = {'finished': False}
+
 		t = MPTask(function)
 		self.tasks[jid] = t
 		t.start()
@@ -218,20 +222,47 @@ class LocalJobManager(BaseJobManager):
 		job_id: str | None = None,
 		timeout: float | None = None,
 	) -> str | None:
-		if job_id not in self.tasks:
-			raise ValueError('No such job!')
-		self.tasks[job_id].result(timeout=timeout)
-		return job_id
+		# czekaj na konkretny job
+		if job_id is not None:
+			if job_id not in self.tasks:
+				raise KeyError('No such job!')
+			self.tasks[job_id].result(timeout=timeout)
+			if job_id in self.jobs:
+				self.jobs[job_id]['finished'] = True
+			return job_id
+
+		# czekaj na jakikolwiek job (job_id=None)
+		if not self.tasks:
+			raise ValueError('No jobs to wait for.')
+
+		start = time.time()
+		while True:
+			for jid, t in self.tasks.items():
+				# zakończony i jeszcze nieoznaczony jako finished
+				if t.done() and (jid in self.jobs) and (not self.jobs[jid].get('finished', False)):
+					self.jobs[jid]['finished'] = True
+					return jid
+
+			if timeout is not None and (time.time() - start) >= timeout:
+				raise TimeoutError
+
+			time.sleep(self._poll_interval_s)
 
 	def read_results(self, job_id: str) -> Result:
 		if job_id not in self.tasks:
-			raise ValueError('No such job!')
-		return self.tasks[job_id].result()
+			raise KeyError('No such job!')
+		res = self.tasks[job_id].result()
+		if job_id in self.jobs:
+			self.jobs[job_id]['finished'] = True
+		return res
 
 	def cancel(self, job_id: str):
 		if job_id not in self.tasks:
-			raise ValueError('No such job!')
-		return self.tasks[job_id].cancel()
+			raise KeyError('No such job!')
+		ok = self.tasks[job_id].cancel()
+		if ok and job_id in self.jobs:
+			self.jobs[job_id]['finished'] = True
+		return ok
 
 	def clean_up(self) -> None:
 		for t in self.tasks.values():

@@ -20,14 +20,20 @@ def test_job_manager() -> None:
 
 	manager.submit(QLauncher(problem, algorithm, backend).run)
 	for _ in range(len(manager.jobs)):
-		job_id = manager.wait_for_a_job(timeout=60)
+		job_id = manager.wait_for_a_job(timeout=60)  # job_id=None => wait ANY
 		assert isinstance(job_id, str)
 		results = manager.read_results(job_id)
 		assert isinstance(results, Result)
-	with pytest.raises(ValueError):
+
+	# unknown job_id
+	with pytest.raises(KeyError):
 		manager.wait_for_a_job('definitely_not_a_job_id')
+
+	# wait any on empty manager should error
+	empty = LocalJobManager()
 	with pytest.raises(ValueError):
-		manager.wait_for_a_job()
+		empty.wait_for_a_job()
+
 	manager.clean_up()
 
 
@@ -44,7 +50,10 @@ def test_job_manager_cancel() -> None:
 
 	time.sleep(1)
 	manager.cancel(job_id)
-	job_id = manager.wait_for_a_job(job_id)
+	job_id = manager.wait_for_a_job(job_id, timeout=60)
+	assert job_id is not None
+
+	manager.clean_up()
 
 
 @check_subprocesses_exit()
@@ -59,5 +68,4 @@ def test_job_manager_cancel_on_gc():
 	manager.submit(QLauncher(problem, algorithm, backend).run)
 
 	time.sleep(1)
-
-	# here we don't do anything since we just want to check if the manager cancels all its jobs when going out of scope
+	# celowo bez clean_up(): dekorator ma wykryć, czy procesy i tak się posprzątały
