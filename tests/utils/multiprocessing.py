@@ -8,8 +8,6 @@ def check_subprocesses_exit(max_timeout=5):
 	"""If a component launches processes using pathos or multiprocessing you can use this decorator to check if it correctly kills those processes when finished"""
 
 	def wrapper1(func):
-		"""Verify if test kills all its children :)"""
-
 		@functools.wraps(func)
 		def wrapper2(*args, **kwargs):
 			current_process = psutil.Process()

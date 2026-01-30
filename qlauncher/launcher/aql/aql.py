@@ -2,12 +2,15 @@
 
 import time
 from collections.abc import Callable
+from itertools import chain
 from typing import Literal
 
 from qlauncher.base.base import Algorithm, Backend, Problem, Result
 from qlauncher.base.problem_like import ProblemLike
 from qlauncher.launcher.aql.aql_task import AQLTask, get_timeout
 from qlauncher.launcher.qlauncher import QLauncher
+from qlauncher.workflow.base_job_manager import BaseJobManager
+from qlauncher.workflow.local_scheduler import LocalJobManager
 
 
 class AQL:
@@ -43,7 +46,7 @@ class AQL:
 
 	"""
 
-	def __init__(self, mode: Literal['default', 'optimize_session'] = 'default') -> None:
+	def __init__(self, mode: Literal['default', 'optimize_session'] = 'default', manager: BaseJobManager | None = None) -> None:
 		"""
 		Args:
 			mode (Literal[&#39;default&#39;, &#39;optimize_session&#39;], optional):
@@ -58,6 +61,7 @@ class AQL:
 
 		self._classical_tasks: list[AQLTask] = []
 		self._quantum_tasks: list[AQLTask] = []
+		self._manager = manager if manager is not None else LocalJobManager()
 
 	def running_task_count(self) -> int:
 		"""
@@ -68,7 +72,7 @@ class AQL:
 
 	def cancel_running_tasks(self) -> None:
 		"""Cancel all running tasks assigned to this AQL instance."""
-		for t in self._classical_tasks + self._quantum_tasks:
+		for t in chain(self._classical_tasks, self._quantum_tasks):
 			t.cancel()
 
 	def results(self, timeout: float | int | None = None, cancel_tasks_on_timeout: bool = True) -> list[Result | None]:
@@ -89,7 +93,7 @@ class AQL:
 		"""
 		try:
 			start = time.time()
-			return [t.result(timeout=get_timeout(timeout, start)) if not t.cancelled() else None for t in self.tasks]
+			return [t.result(timeout=get_timeout(timeout, start)) for t in self.tasks]
 		except TimeoutError as e:
 			if cancel_tasks_on_timeout:
 				self.cancel_running_tasks()
@@ -126,14 +130,21 @@ class AQL:
 
 		if self.mode != 'optimize_session' or not launcher.backend.is_device:
 			task = AQLTask(
-				lambda: launcher.run(**kwargs), dependencies=dependencies, callbacks=(callbacks if callbacks is not None else [])
+				lambda: launcher.run(**kwargs),
+				manager=self._manager,
+				dependencies=dependencies,
+				callbacks=(callbacks if callbacks is not None else []),
 			)
 			self.tasks.append(task)
 			self._classical_tasks.append(task)
 			return task
 
 		# Split real device task into generation and actual run on a QC
-		t_gen = AQLTask(launcher._get_compatible_problem, dependencies=[dep for dep in dependencies_list if dep not in self._quantum_tasks])
+		t_gen = AQLTask(
+			launcher._get_compatible_problem,
+			manager=self._manager,
+			dependencies=[dep for dep in dependencies_list if dep not in self._quantum_tasks],
+		)
 
 		def quantum_task(formatted, *_):
 			ql = QLauncher(formatted, launcher.algorithm, launcher.backend)
@@ -141,6 +152,7 @@ class AQL:
 
 		t_quant = AQLTask(
 			quantum_task,
+			manager=self._manager,
 			dependencies=[t_gen] + [dep for dep in dependencies_list if dep in self._quantum_tasks],
 			callbacks=(callbacks if callbacks is not None else []),
 			pipe_dependencies=True,  # Receive output from formatter
@@ -171,12 +183,12 @@ class AQL:
 		quantum_dependencies = quantum_dependencies.difference(self._quantum_tasks)
 		# The gateway tasks will ensure execution order of
 		# (all classical tasks that quantum tasks depend on) - (all quantum tasks) - (rest of the classical tasks)
-		gateway_task_classical = AQLTask(lambda: True, dependencies=list(quantum_dependencies))
+		gateway_task_classical = AQLTask(lambda: True, manager=self._manager, dependencies=list(quantum_dependencies))
 
 		for qt in self._quantum_tasks:
 			qt.dependencies.append(gateway_task_classical)
 
-		gateway_task_quantum = AQLTask(lambda: 42, dependencies=self._quantum_tasks.copy())
+		gateway_task_quantum = AQLTask(lambda: 42, manager=self._manager, dependencies=self._quantum_tasks.copy())
 
 		for ct in [t for t in self._classical_tasks if t not in quantum_dependencies]:
 			ct.dependencies.append(gateway_task_quantum)

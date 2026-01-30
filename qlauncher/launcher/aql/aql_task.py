@@ -6,10 +6,8 @@ from collections.abc import Callable
 from threading import Event, Thread
 from typing import Any
 
-import multiprocess
-from pathos.multiprocessing import _ProcessPool
-
 from qlauncher.base.base import Result
+from qlauncher.workflow.base_job_manager import BaseJobManager
 
 
 def get_timeout(max_timeout: int | float | None, start: int | float) -> float | None:
@@ -17,33 +15,34 @@ def get_timeout(max_timeout: int | float | None, start: int | float) -> float | 
 	Get timeout to wait on an event, useful when awaiting multiple tasks and total timeout must be max_timeout.
 
 	Args:
-	    max_timeout (int | float | None): Total allowed timeout, None = infinite wait.
-	    start (int | float): Await start timestamp (time.time())
+		max_timeout (int | float | None): Total allowed timeout, None = infinite wait.
+		start (int | float): Await start timestamp (time.time())
 
 	Returns:
-	    int | float | None: Remaining timeout or None if max_timeout was None
+		int | float | None: Remaining timeout or None if max_timeout was None
 	"""
 	if max_timeout is None:
 		return None
 	return max_timeout - (time.time() - start)
 
 
-class _InnerAQLTask:
+class _IAQLTask:
 	"""
 	Task object returned to user, so that dependencies can be created.
 
 	Attributes:
-	    task (Callable): function that gets executed asynchronously
-	    dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
-	    callbacks (list[Callable]): Callbacks ran when the task finishes executing.
-	                                Task result is inserted as an argument to the function.
-	    pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task.
-	                              Defaults to False.
+		task (Callable): function that gets executed asynchronously
+		dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
+		callbacks (list[Callable]): Callbacks ran when the task finishes executing.
+									Task result is inserted as an argument to the function.
+		pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task.
+									Defaults to False.
 	"""
 
 	def __init__(
 		self,
 		task: Callable,
+		manager: BaseJobManager,
 		dependencies: list['AQLTask'] | None = None,
 		callbacks: list[Callable] | None = None,
 		pipe_dependencies: bool = False,
@@ -55,16 +54,11 @@ class _InnerAQLTask:
 
 		self._cancelled = False
 		self._thread = None
-		self._pool = _ProcessPool(processes=1)
+		self._manager = manager
 		self._thread_made = Event()
 
 		self._result = None
 		self._done = False
-
-	def _shutdown_subprocess(self) -> None:
-		self._pool.close()
-		self._pool.terminate()
-		self._pool.join()
 
 	def _async_task(self) -> Any:
 		dep_results = [d.result() for d in self.dependencies]
@@ -74,26 +68,32 @@ class _InnerAQLTask:
 			self._done = True
 			return
 
-		res = self._pool.apply_async(self.task, args=(dep_results if self.pipe_dependencies else []))
-		# Turns out you can't just outright kill threads (or futures) is so I have to do this, so that the thread knows to exit.
+		task = self.task
+		pipe = self.pipe_dependencies
+
+		def run():
+			return task(*dep_results) if pipe else task()
+
+		jid = self._manager.submit(run)
 		while not self._cancelled:
 			try:
-				self._result = res.get(timeout=0.05)
+				self._manager.wait_for_a_job(jid, timeout=0.05)
+				self._result = self._manager.read_results(jid)
 				self._done = True
 				return
-			except multiprocess.context.TimeoutError:
+			except TimeoutError:
 				pass  # task not ready, check for cancel
 			# For any other error originating from the task, shutdown and clean up subprocess then raise error again.
 			except Exception as e:
-				self._shutdown_subprocess()
+				self._manager.cancel(jid)
 				self._result = e
 				self._done = True
 				return
 
 		if self._cancelled:
-			self._shutdown_subprocess()  # kill res process
+			self._manager.cancel(jid)  # kill res process
+			self._result = None
 
-		self._result = res.get() if res.ready() else None
 		self._done = True
 		return
 
@@ -119,7 +119,7 @@ class _InnerAQLTask:
 		Attempt to cancel the task.
 
 		Returns:
-		    bool: True if cancellation was successful
+			bool: True if cancellation was successful
 		"""
 		self._cancelled = True
 		if self._thread is None:
@@ -130,21 +130,21 @@ class _InnerAQLTask:
 	def cancelled(self) -> bool:
 		"""
 		Returns:
-		    bool: True if the task was cancelled by the user.
+			bool: True if the task was cancelled by the user.
 		"""
 		return self._cancelled
 
 	def done(self) -> bool:
 		"""
 		Returns:
-		    bool: True if the task had finished execution.
+			bool: True if the task had finished execution.
 		"""
 		return self._done
 
 	def running(self) -> bool:
 		"""
 		Returns:
-		    bool: True if the task is currently executing.
+			bool: True if the task is currently executing.
 		"""
 		if self._thread is None:
 			return False
@@ -156,12 +156,12 @@ class _InnerAQLTask:
 		Blocks the thread until task is finished.
 
 		Args:
-		    timeout (float | int | None, optional):
-		            The maximum amount to wait for execution to finish.
-		            If None, wait forever. If not None and time runs out, raises TimeoutError.
-		            Defaults to None.
+			timeout (float | int | None, optional):
+					The maximum amount to wait for execution to finish.
+					If None, wait forever. If not None and time runs out, raises TimeoutError.
+					Defaults to None.
 		Returns:
-		    Result if future returned result or None when cancelled.
+			Result if future returned result or None when cancelled.
 		"""
 		start = time.time()
 		self._thread_made.wait(timeout=get_timeout(timeout, start))  # Wait until we start a thread
@@ -174,30 +174,16 @@ class _InnerAQLTask:
 		return self._result
 
 
-# Why like this? The inner task was not getting properly garbage collected when it was running,
-# but this does and just cancels the inner task so it also gets garbage collected
-# this is cursed :/
 class AQLTask:
-	"""
-	Task object returned to user, so that dependencies can be created.
-
-	Attributes:
-	    task (Callable): function that gets executed asynchronously
-	    dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
-	    callbacks (list[Callable]): Callbacks ran when the task finishes executing.
-	                                Task result is inserted as an argument to the function.
-	    pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task.
-	                              Defaults to False.
-	"""
-
 	def __init__(
 		self,
 		task: Callable,
+		manager: BaseJobManager,
 		dependencies: list['AQLTask'] | None = None,
 		callbacks: list[Callable] | None = None,
 		pipe_dependencies: bool = False,
 	) -> None:
-		self._inner_task = _InnerAQLTask(task, dependencies, callbacks, pipe_dependencies)
+		self._inner_task = _IAQLTask(task, manager, dependencies, callbacks, pipe_dependencies)
 		weakref.finalize(self, self._inner_task.cancel)
 
 	def __getattr__(self, name: str) -> Any:
