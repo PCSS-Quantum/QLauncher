@@ -33,7 +33,7 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
 		self.verbose = verbose
 		self.failed_jobs = 0
 		self.min_energy = math.inf
-		self.manager = PilotJobManager()
+		self.manager = PilotJobManager(self.output)
 		self.best_job_id = ''
 		self.max_jobs = max_job_batch_size
 
@@ -42,9 +42,7 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
 	def run(self, problem: Hamiltonian, backend: QiskitBackend) -> Result:
 		from qlauncher.launcher.qlauncher import QLauncher
 
-		self.manager.submit_many(
-			QLauncher(problem, QAOA(p=self.p_init), backend).run, output_path=self.output_initial, n_jobs=self.max_jobs
-		)
+		self.manager.submit_many(QLauncher(problem, QAOA(p=self.p_init), backend).run, n_jobs=self.max_jobs)
 		print(f'{len(self.manager.jobs)} jobs submitted to qcg')
 
 		found_optimal_params = False
@@ -59,9 +57,7 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
 			if has_potential:
 				found_optimal_params = self._search_for_job_with_optimal_params(jobid, energy, problem, backend)
 
-			self.manager.submit_many(
-				QLauncher(problem, QAOA(p=self.p_init), backend).run, output_path=self.output_initial, n_jobs=self.max_jobs
-			)
+			self.manager.submit_many(QLauncher(problem, QAOA(p=self.p_init), backend).run, n_jobs=self.max_jobs)
 
 		result = self.manager.read_results(self.best_job_id)
 		self.manager.stop()
