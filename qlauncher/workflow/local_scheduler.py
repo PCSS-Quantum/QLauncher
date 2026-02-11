@@ -1,11 +1,23 @@
+import contextlib
 import time
 import weakref
 from collections.abc import Callable
 from threading import Event, Thread
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import multiprocess
-from pathos.multiprocessing import _ProcessPool
+import multiprocess as mp
+from multiprocess.queues import Queue as QueueType
+
+if TYPE_CHECKING:
+    from multiprocess.process import BaseProcess as ProcessType
+else:
+    ProcessType = Any
+
+# LocalJobManager used to run each job via pathos._ProcessPool (apply_async + polling).
+# On Windows this proved flaky for our test/CI contract (cancel + GC cleanup): worker pools were not
+# deterministically torn down, leaving child processes alive and causing intermittent timeouts and
+# noisy Pool.__del__/WinError shutdown errors. I switched to a per-job multiprocess.Process + Queue
+# so we can reliably terminate/join the worker on cancel/cleanup and ensure no subprocesses leak.
 
 from qlauncher.base.base import Result
 from qlauncher.workflow.base_job_manager import BaseJobManager
@@ -27,19 +39,39 @@ def get_timeout(max_timeout: int | float | None, start: int | float) -> float | 
 	return max_timeout - (time.time() - start)
 
 
+def _run_in_subprocess(q: QueueType, fn: Callable[[], Any]) -> None:
+	"""
+	Execute a callable in a worker process and send its outcome back via a queue.
+
+	Args:
+		q: Queue used to report ("ok", result) or ("err", exception).
+		fn: Zero-argument callable to execute in the child process.
+
+	Returns:
+		None. The result/exception is returned through the queue.
+	"""
+	try:
+		q.put(("ok", fn()))
+	except BaseException as e:
+		# Pass exception object back; parent will raise it.
+		q.put(("err", e))
+
+
 class _InnerMPTask:
 	"""
-	Task object returned to user, so that dependencies can be created.
+	Internal asynchronous task runner implemented as:
+	- a supervisor thread in the parent process,
+	- a dedicated child process running the user callable,
+	- a queue for returning result or exception.
+
+	Args:
+		task: Zero-argument callable to execute.
+		callbacks: Optional list of callables invoked with the task outcome (result or exception).
 
 	Attributes:
-		task (Callable): function that gets executed asynchronously
-		dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
-		callbacks (list[Callable]): Callbacks ran when the task finishes executing.
-									Task result is inserted as an argument to the function.
-		pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task.
-									Defaults to False.
+		task: Callable executed in the child process.
+		callbacks: Functions called after task finishes (best-effort).
 	"""
-
 	def __init__(
 		self,
 		task: Callable,
@@ -49,60 +81,96 @@ class _InnerMPTask:
 		self.callbacks = callbacks if callbacks is not None else []
 
 		self._cancelled = False
-		self._thread = None
-		self._pool = _ProcessPool(processes=1)
+		self._thread: Thread | None = None
 		self._thread_made = Event()
 
-		self._result = None
+		self._proc: ProcessType | None = None
+		self._queue: QueueType | None = None
+
+		self._result: Any = None
 		self._done = False
 
-	def _shutdown_subprocess(self) -> None:
-		self._pool.close()
-		self._pool.terminate()
-		self._pool.join()
+	def _terminate_proc(self) -> None:
+		p = self._proc
+		if p is None:
+			return
+		try:
+			if p.is_alive():
+				p.terminate()
+		except Exception:
+			pass
+		with contextlib.suppress(Exception):
+			p.join(timeout=1.0)
 
-	def _async_task(self) -> Any:
+	def _async_task(self) -> None:
 		if self._cancelled:
 			self._result = None
 			self._done = True
 			return
 
-		res = self._pool.apply_async(self.task)
-		# Turns out you can't just outright kill threads (or futures) is so I have to do this, so that the thread knows to exit.
-		while not self._cancelled:
+		ctx = mp.get_context()  # na Windows będzie spawn (domyślnie)
+		q: QueueType = ctx.Queue(maxsize=1)
+		self._queue = q
+
+		p = ctx.Process(target=_run_in_subprocess, args=(q, self.task), daemon=True)
+		self._proc = p
+
+		try:
+			p.start()
+		except BaseException as e:
+			self._result = e
+			self._done = True
+			return
+
+		while True:
+			if self._cancelled:
+				self._terminate_proc()
+				self._result = None
+				self._done = True
+				return
+
 			try:
-				self._result = res.get(timeout=0.05)
-				self._done = True
-				return
-			except multiprocess.context.TimeoutError:
-				pass  # task not ready, check for cancel
-			# For any other error originating from the task, shutdown and clean up subprocess then raise error again.
-			except Exception as e:
-				self._shutdown_subprocess()
-				self._result = e
-				self._done = True
-				return
+				p.join(timeout=0.05)
+			except Exception:
+				time.sleep(0.05)
 
-		if self._cancelled:
-			self._shutdown_subprocess()  # kill res process
+			if not p.is_alive():
+				break
 
-		self._result = res.get() if res.ready() else None
+		try:
+			tag, payload = q.get_nowait()
+		except Exception:
+			tag, payload = ("ok", None)
+
+		if tag == "err":
+			self._result = payload
+		else:
+			self._result = payload
+
 		self._done = True
-		return
 
-	def _target_task(self) -> None:
-		# Main task + callbacks launch
+	def thread_main(self) -> None:
 		self._async_task()
+
 		for cb in self.callbacks:
-			cb(self._result)
+			with contextlib.suppress(Exception):
+				cb(self._result)
 
 	def _set_thread(self) -> None:
-		self._thread = Thread(target=weakref.proxy(self)._target_task, daemon=True)  # set daemon so that thread quits as main process quits
+		self._thread = Thread(target=weakref.proxy(self).thread_main, daemon=True)  # set daemon so that thread quits as main process quits
 		self._thread.start()
 		self._thread_made.set()
 
 	def start(self) -> None:
-		"""Start task execution."""
+		"""
+		Start task execution.
+
+		Args:
+			None.
+
+		Returns:
+			None.
+		"""
 		if self._thread is not None or self._cancelled:
 			raise ValueError('Cannot start, task already started or cancelled.')
 		self._set_thread()
@@ -111,19 +179,33 @@ class _InnerMPTask:
 		"""
 		Attempt to cancel the task.
 
+		Args:
+			None.
+
 		Returns:
-			bool: True if cancellation was successful
+			True if the task is considered canceled.
 		"""
 		self._cancelled = True
 		if self._thread is None:
+			self._terminate_proc()
+			self._result = None
+			self._done = True
 			return True
-		self._thread.join(0.1)
-		return not self._thread.is_alive()
+
+		# Started: terminate subprocess and wait briefly for supervisor thread to exit
+		self._terminate_proc()
+		with contextlib.suppress(Exception):
+			self._thread.join(timeout=1.0)
+
+		# Mark as done (even if thread is stubborn); public contract: cancelled => terminal
+		self._result = None
+		self._done = True
+		return True
 
 	def cancelled(self) -> bool:
 		"""
 		Returns:
-			bool: True if the task was cancelled by the user.
+			bool: True if the task was canceled by the user.
 		"""
 		return self._cancelled
 
@@ -145,19 +227,27 @@ class _InnerMPTask:
 
 	def result(self, timeout: float | int | None = None) -> Result | None:
 		"""
-		Get result of running the task.
-		Blocks the thread until task is finished.
+		Wait for the task to finish and return its result.
 
 		Args:
-			timeout (float | int | None, optional):
-					The maximum amount to wait for execution to finish.
-					If None, wait forever. If not None and time runs out, raises TimeoutError.
-					Defaults to None.
+			timeout: Maximum time to wait in seconds. If None, wait indefinitely.
+
 		Returns:
-			Result if future returned result or None when cancelled.
+			The task result, or None if the task was canceled.
+
+		Raises:
+			TimeoutError: If the task does not finish within the timeout (task is canceled).
+			BaseException: Re-raises an exception produced by the task.
 		"""
 		start = time.time()
-		self._thread_made.wait(timeout=get_timeout(timeout, start))  # Wait until we start a thread
+
+		# wait until the supervisor thread exists
+		self._thread_made.wait(timeout=get_timeout(timeout, start))
+
+		# if never started, just return current result
+		if self._thread is None:
+			return None
+
 		self._thread.join(timeout=get_timeout(timeout, start))
 		if self._thread.is_alive():
 			self.cancel()
@@ -167,20 +257,19 @@ class _InnerMPTask:
 		return self._result
 
 
-# Why like this? The inner task was not getting properly garbage collected when it was running,
-# but this does and just cancels the inner task so it also gets garbage collected
-# this is cursed :/
 class MPTask:
 	"""
-	Task object returned to user, so that dependencies can be created.
+	Public-facing wrapper around _InnerMPTask.
+
+	This wrapper exists so that if the task object is garbage-collected,
+	we best-effort cancel the underlying execution to avoid leaking subprocesses.
+
+	Args:
+		task: Zero-argument callable to execute.
+		callbacks: Optional list of callables invoked with the task outcome.
 
 	Attributes:
-		task (Callable): function that gets executed asynchronously
-		dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
-		callbacks (list[Callable]): Callbacks ran when the task finishes executing.
-									Task result is inserted as an argument to the function.
-		pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task.
-									Defaults to False.
+		_inner_task: The underlying _InnerMPTask instance.
 	"""
 
 	def __init__(
@@ -191,21 +280,41 @@ class MPTask:
 		self._inner_task = _InnerMPTask(task, callbacks)
 		weakref.finalize(self, self._inner_task.cancel)
 
-	def __getattr__(self, name: str) -> Any:
+	def __getattr__(self, name: str):
 		return getattr(self._inner_task, name)
 
 
 class LocalJobManager(BaseJobManager):
-	def __init__(self):
+	"""
+	Run jobs locally using a per-job child process.
+
+	This manager implements the BaseJobManager interface and is primarily intended
+	for local execution and testing (supports waiting for any job, cancellation, and cleanup).
+	"""
+	def __init__(self, poll_interval_s: float = 0.05):
 		super().__init__()
 		self.tasks: dict[str, MPTask] = {}
-		self._poll_interval_s: float = 0.05
+		self._poll_interval_s = poll_interval_s
+
+	def __del__(self):
+		with contextlib.suppress(Exception):
+			self.clean_up()
 
 	def submit(
 		self,
 		function: Callable,
 		**kwargs,
 	) -> str:
+		"""
+		Submit a function job to the scheduler.
+
+		Args:
+			function: Function to be executed.
+			**kwargs: Manager-specific additional arguments (currently unused by LocalJobManager).
+
+		Returns:
+			Job ID as a string.
+		"""
 		jid = self._make_job_uid()
 		while jid in self.tasks or jid in self.jobs:
 			jid = self._make_job_uid()
@@ -222,7 +331,21 @@ class LocalJobManager(BaseJobManager):
 		job_id: str | None = None,
 		timeout: float | None = None,
 	) -> str | None:
-		# czekaj na konkretny job
+		"""
+		Wait for a job to finish.
+
+		Args:
+			job_id: If provided, wait for this specific job. If None, wait for any unfinished job.
+			timeout: Maximum time to wait in seconds. If None, wait indefinitely.
+
+		Returns:
+			The finished job ID.
+
+		Raises:
+			KeyError: If job_id is provided but unknown.
+			ValueError: If waiting for any job but no jobs exist.
+			TimeoutError: If timeout expires before a job finishes.
+		"""
 		if job_id is not None:
 			if job_id not in self.tasks:
 				raise KeyError('No such job!')
@@ -231,16 +354,17 @@ class LocalJobManager(BaseJobManager):
 				self.jobs[job_id]['finished'] = True
 			return job_id
 
-		# czekaj na jakikolwiek job (job_id=None)
 		if not self.tasks:
 			raise ValueError('No jobs to wait for.')
 
 		start = time.time()
 		while True:
 			for jid, t in self.tasks.items():
-				# zakończony i jeszcze nieoznaczony jako finished
-				if t.done() and (jid in self.jobs) and (not self.jobs[jid].get('finished', False)):
-					self.jobs[jid]['finished'] = True
+				if jid in self.jobs and self.jobs[jid].get("finished", False):
+					continue
+				if t.done() or t.cancelled():
+					if jid in self.jobs:
+						self.jobs[jid]["finished"] = True
 					return jid
 
 			if timeout is not None and (time.time() - start) >= timeout:
@@ -249,6 +373,19 @@ class LocalJobManager(BaseJobManager):
 			time.sleep(self._poll_interval_s)
 
 	def read_results(self, job_id: str) -> Result:
+		"""
+		Read results for a finished job.
+
+		Args:
+			job_id: Job ID.
+
+		Returns:
+			The job result.
+
+		Raises:
+			KeyError: If job_id is unknown.
+			BaseException: Re-raises an exception produced by the job.
+		"""
 		if job_id not in self.tasks:
 			raise KeyError('No such job!')
 		res = self.tasks[job_id].result()
@@ -256,7 +393,19 @@ class LocalJobManager(BaseJobManager):
 			self.jobs[job_id]['finished'] = True
 		return res
 
-	def cancel(self, job_id: str):
+	def cancel(self, job_id: str) -> bool:
+		"""
+		Cancel a submitted job.
+
+		Args:
+			job_id: Job ID.
+
+		Returns:
+			True if cancellation was performed (best-effort) and the job is marked finished.
+
+		Raises:
+			KeyError: If job_id is unknown.
+		"""
 		if job_id not in self.tasks:
 			raise KeyError('No such job!')
 		ok = self.tasks[job_id].cancel()
@@ -265,5 +414,17 @@ class LocalJobManager(BaseJobManager):
 		return ok
 
 	def clean_up(self) -> None:
-		for t in self.tasks.values():
-			t.cancel()
+		"""
+		Cancel all known jobs and mark them as finished.
+
+		Args:
+			None.
+
+		Returns:
+			None.
+		"""
+		for jid, t in list(self.tasks.items()):
+			with contextlib.suppress(Exception):
+				t.cancel()
+			if jid in self.jobs:
+				self.jobs[jid]["finished"] = True
