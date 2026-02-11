@@ -13,12 +13,17 @@ try:
 	import dill
 	from qcg.pilotjob.api.job import Jobs
 	from qcg.pilotjob.api.manager import LocalManager, Manager
+	from qcg.pilotjob.api.errors import TimeoutElapsed
 except ImportError as e:
 	raise DependencyError(e, install_hint='pilotjob') from e
 
 
 class PilotJobManager(BaseJobManager):
-	def __init__(self, manager: Manager | None = None):
+	def __init__(
+		self,
+		output_path: str,
+		manager: Manager | None = None,
+	):
 		"""
 		PilotJob manager is QLauncher's wrapper for process management system, current version works on top of qcg-pilotjob
 
@@ -29,12 +34,12 @@ class PilotJobManager(BaseJobManager):
 		super().__init__()
 		self.code_path = os.path.join(os.path.dirname(__file__), 'subprocess_fn.py')
 		self.manager = manager if manager is not None else LocalManager()
+		self.output_path = output_path
 
 	def submit(
 		self,
 		function: Callable,
 		cores: int = 1,
-		output_path: str | None = None,
 		**kwargs,
 	) -> str:
 		"""
@@ -48,12 +53,10 @@ class PilotJobManager(BaseJobManager):
 		Returns:
 			Job ID as a string.
 		"""
-		if output_path is None:
-			raise ValueError('output_path is required for PilotJobManager')
 
 		job = self._prepare_ql_dill_job(
 			function,
-			output=output_path,
+			output=self.output_path,
 			cores=cores,
 		)
 		return self.manager.submit(Jobs().add(**job['qcg_args']))[0]
@@ -61,7 +64,6 @@ class PilotJobManager(BaseJobManager):
 	def submit_many(
 		self,
 		function: Callable,
-		output_path,
 		cores_per_job: int = 1,
 		n_jobs: int | None = None,
 	) -> list[str]:
@@ -87,7 +89,7 @@ class PilotJobManager(BaseJobManager):
 		for _ in range(num_jobs):
 			job = self._prepare_ql_dill_job(
 				function,
-				output=output_path,
+				output=self.output_path,
 				cores=cores_per_job,
 			)
 			qcg_jobs.add(**job['qcg_args'])
@@ -117,7 +119,10 @@ class PilotJobManager(BaseJobManager):
 				raise ValueError('There are no jobs left')
 			job_id, state = self.manager.wait4_any_job_finish(timeout)
 		elif job_id in self.jobs:
-			state = self.manager.wait4(job_id, timeout=timeout)[job_id]
+			try:
+				state = self.manager.wait4(job_id, timeout=timeout)[job_id]
+			except TimeoutElapsed as e:
+				raise TimeoutError from e
 		else:
 			raise ValueError(f"Job {job_id} not found in {self.__class__.__name__}'s jobs")
 

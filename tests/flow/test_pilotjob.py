@@ -23,14 +23,14 @@ def clean_env():
 
 
 def test_job_manager(tmp_path) -> None:
-	manager = PilotJobManager()
+	manager = PilotJobManager(tmp_path)
 	assert isinstance(manager, PilotJobManager)
 
 	problem = get_hamiltonian()
 	algorithm = FALQON(max_reps=1)
 	backend = QiskitBackend('local_simulator')
 
-	manager.submit(QLauncher(problem, algorithm, backend).run, output_path=f'{tmp_path}/')
+	manager.submit(QLauncher(problem, algorithm, backend).run)
 	for _ in range(len(manager.jobs)):
 		job_id, status = manager.wait_for_a_job(timeout=60)
 		assert isinstance(job_id, str)
@@ -45,14 +45,14 @@ def test_job_manager(tmp_path) -> None:
 
 
 def test_job_manager_cancel(tmp_path) -> None:
-	manager = PilotJobManager()
+	manager = PilotJobManager(tmp_path)
 	assert isinstance(manager, PilotJobManager)
 
 	problem = get_hamiltonian()
 	algorithm = FALQON(max_reps=1000000000)
 	backend = QiskitBackend('local_simulator')
 
-	job_id = manager.submit(QLauncher(problem, algorithm, backend).run, output_path=f'{tmp_path}/')
+	job_id = manager.submit(QLauncher(problem, algorithm, backend).run)
 
 	time.sleep(1)
 	manager.cancel(job_id)
@@ -67,6 +67,7 @@ def test_educated_guess(tmp_path) -> None:
 	educated_guess.output_initial = f'{tmp_path}/'
 	educated_guess.output_interpolated = f'{tmp_path}/'
 	educated_guess.output = f'{tmp_path}/'
+	educated_guess.manager.output_path = f'{tmp_path}/'
 	backend = QiskitBackend('local_simulator')
 	launcher = QLauncher(problem, educated_guess, backend)
 

@@ -61,11 +61,7 @@ def test_job_manager_cancel_on_gc():
 	manager = LocalJobManager()
 	assert isinstance(manager, LocalJobManager)
 
-	problem = get_hamiltonian()
-	algorithm = FALQON(max_reps=1000000000)
-	backend = QiskitBackend('local_simulator')
-
-	manager.submit(QLauncher(problem, algorithm, backend).run)
+	manager.submit(lambda: time.sleep(1000))
 
 	time.sleep(1)
 	# celowo bez clean_up(): dekorator ma wykryć, czy procesy i tak się posprzątały
