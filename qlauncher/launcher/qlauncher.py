@@ -131,7 +131,7 @@ class QLauncher:
 
 		self.result: Result | None = None
 
-	def _get_compatible_problem(self) -> ProblemLike:
+	def _get_compatible_problem(self, **formatter_kwargs) -> ProblemLike:
 		input_format = self.algorithm.get_input_format()
 		if input_format is None:
 			raise TypeError
@@ -140,19 +140,26 @@ class QLauncher:
 		if methods is None:
 			raise TypeError
 
-		for method in methods:
+		if len(methods) == 0:
+			return problem
+
+		if isinstance(problem, Problem):
+			# The first method is the Problem -> ProblemLike formatter.
+			problem = methods[0](problem, **formatter_kwargs)
+
+		for method in methods[1:]:
 			problem = method(problem)
 
 		return problem
 
-	def run(self) -> Result:
+	def run(self, **formatter_kwargs) -> Result:
 		"""
 		Finds proper formatter, and runs the algorithm on the problem with given backends.
 
 		Returns:
 			dict: The results of the algorithm execution.
 		"""
-		self.result = self.algorithm.run(self._get_compatible_problem(), self.backend)
+		self.result = self.algorithm.run(self._get_compatible_problem(**formatter_kwargs), self.backend)
 		self.logger.info('Algorithm ended successfully!')
 		return self.result
 

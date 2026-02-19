@@ -3,8 +3,10 @@ from typing import TYPE_CHECKING, Any, overload
 
 import numpy as np
 from dimod import BinaryQuadraticModel
-from pyqubo import Model, Spin  # type: ignore
-from qiskit import QuantumCircuit
+from pyqubo import Model, Spin # type: ignore
+from qiskit import QuantumCircuit, QuantumRegister
+from qiskit.circuit import Gate
+from qiskit.circuit.library import QFTGate, SwapGate, UnitaryGate, XGate
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_nature.second_q.drivers import PySCFDriver
 from qiskit_nature.second_q.formats.molecule_info import MoleculeInfo
@@ -196,3 +198,232 @@ class Molecule(ProblemLike):
 			case _:
 				raise ValueError(f"Molecule {instance_name} not supported, currently you can use: 'H2'")
 		return Molecule(instance)
+
+
+class GroverCircuit(ProblemLike):
+	@staticmethod
+	def create_oracle_from_bitstring(bit_string: str | list[str]) -> Gate:
+		"""
+		Creates oracle from given bit string
+		"""
+		num_qubits = len(bit_string) + 1
+		qc = QuantumCircuit(num_qubits, name=f'Oracle_{bit_string}')
+
+		reversed_s = bit_string[::-1]  # Does this stay???
+
+		qc.x(-1)
+		qc.h(-1)
+
+		for i, char in enumerate(reversed_s):
+			if char == '0':
+				qc.x(i)
+
+		mcx = XGate().control(num_qubits - 1)
+		qc.append(mcx, range(num_qubits))
+
+		for i, char in enumerate(reversed_s):
+			if char == '0':
+				qc.x(i)
+
+		qc.h(-1)
+		qc.x(-1)
+
+		return qc.to_gate()
+
+	@staticmethod
+	def _create_hadamard_walsh_transform(num_qubits: int) -> Gate:
+		print('state_prep is None. Using Hadamard-Walsh Transform')
+		state_prep_circ = QuantumCircuit(num_qubits)
+		state_prep_circ.h(range(num_qubits))
+		return state_prep_circ.to_gate()
+
+	@staticmethod
+	def _validate_and_create_oracle(val: str | list[str]) -> Gate:
+		if not all(c in '01' for c in val):
+			raise ValueError('String/List must contain only zeros and ones.')
+		return GroverCircuit.create_oracle_from_bitstring(val)
+
+	def __init__(
+		self,
+		oracle: QuantumCircuit | np.ndarray | list[str] | str,
+		num_solutions: int = None,
+		num_iterations: int = None,
+		state_prep: QuantumCircuit | Gate | np.ndarray = None,
+		num_state_qubits: int = None,
+	):
+		""" """
+		self.num_solutions = num_solutions
+
+		if not (num_solutions or num_iterations):
+			raise ValueError('At least one of num_solutions, num_iterations has to be not None')
+
+		self.state_prep = state_prep
+
+		self._gate = None
+
+		oracle_conversion_map = {
+			QuantumCircuit: lambda x: x.to_gate(),
+			str: GroverCircuit._validate_and_create_oracle,
+			list: GroverCircuit._validate_and_create_oracle,
+			np.ndarray: lambda x: UnitaryGate(x),
+		}
+
+		if type(oracle) in oracle_conversion_map:
+			self.oracle = oracle_conversion_map[type(oracle)](oracle)
+		else:
+			raise TypeError(f'Unsupported data type: {type(oracle)}')
+
+		theta = np.arcsin(np.sqrt(num_solutions / (2 ** (self.oracle.num_qubits - 1))))
+		self.num_iterations = num_iterations if num_iterations is not None else int(np.round(np.pi / (4 * theta)))
+
+		self.num_state_qubits = num_state_qubits if num_state_qubits is not None else self.oracle.num_qubits - 1
+
+		state_prep_conversion_map = {
+			QuantumCircuit: lambda x: x.to_gate(),
+			np.ndarray: lambda x: UnitaryGate(x),
+			type(None): lambda _: GroverCircuit._create_hadamard_walsh_transform(self.num_state_qubits),
+		}
+
+		if type(self.state_prep) in state_prep_conversion_map:
+			self.state_prep = state_prep_conversion_map[type(self.state_prep)](self.state_prep)
+
+		self.num_qubits = self.oracle.num_qubits
+
+
+class ShorCircuit(ProblemLike):
+	@staticmethod
+	def create_modular_multiplier_gate_with_uncomputation(factor: int, modulo: int) -> Gate:
+		n_modulo_number_qubits = int(np.floor(np.log2(modulo))) + 1
+
+		def create_adder_gate(factor: int, modulo: int) -> Gate:
+			phase_adder_circuit = QuantumCircuit(n_modulo_number_qubits + 1)  # + 1 to avoid overflow
+
+			for qubit_ix in range(n_modulo_number_qubits + 1):
+				phi = 2 * np.pi * factor / 2 ** (n_modulo_number_qubits + 1 - qubit_ix)
+				phase_adder_circuit.rz(phi, qubit_ix)
+
+			return phase_adder_circuit.to_gate()
+
+		def create_modular_adder_gate(factor: int, modulo: int) -> Gate:
+			factor_adder = create_adder_gate(factor, modulo)
+			modulo_adder = create_adder_gate(modulo, modulo)
+
+			controlled_modulo_adder = modulo_adder.control(1)
+
+			factor_substractor = factor_adder.inverse()
+			modulo_substractor = modulo_adder.inverse()
+
+			qft = QFTGate(num_qubits=n_modulo_number_qubits + 1)
+			qft_i = qft.inverse()
+
+			y = QuantumRegister(n_modulo_number_qubits + 1)
+			ancilla = QuantumRegister(1)
+			controls = QuantumRegister(2)
+
+			modular_adder_circuit = QuantumCircuit(controls, y, ancilla)
+
+			modular_adder_circuit.append(factor_adder.control(2), controls[:] + y[:])
+			modular_adder_circuit.append(modulo_substractor, y)
+			modular_adder_circuit.append(qft_i, y)
+			modular_adder_circuit.cx(y[-1], ancilla)
+			modular_adder_circuit.append(qft, y)
+			modular_adder_circuit.append(controlled_modulo_adder, ancilla[:] + y[:])
+			modular_adder_circuit.append(factor_substractor.control(2), controls[:] + y[:])
+			modular_adder_circuit.append(qft_i, y)
+			modular_adder_circuit.x(y[-1])
+			modular_adder_circuit.cx(y[-1], ancilla)
+			modular_adder_circuit.x(y[-1])
+			modular_adder_circuit.append(qft, y[:])
+			modular_adder_circuit.append(factor_adder.control(2), controls[:] + y[:])
+
+			return modular_adder_circuit.to_gate()
+
+		def create_modular_multiplier_gate(factor: int, modulo: int) -> Gate:
+			qft = QFTGate(num_qubits=n_modulo_number_qubits + 1)
+			qft_i = qft.inverse()
+
+			x = QuantumRegister(n_modulo_number_qubits)
+			y = QuantumRegister(n_modulo_number_qubits + 1)
+			ancilla = QuantumRegister(1)
+			control = QuantumRegister(1)
+
+			modular_multiplier_circuit = QuantumCircuit(control, x, y, ancilla)
+
+			modular_multiplier_circuit.append(qft, y)
+
+			for qubit_ix in range(n_modulo_number_qubits):
+				controlled_modular_adder_gate = create_modular_adder_gate(((2**qubit_ix * factor) % modulo), modulo)
+				modular_multiplier_circuit.append(controlled_modular_adder_gate, control[:] + [x[qubit_ix]] + y[:] + ancilla[:])
+
+			modular_multiplier_circuit.append(qft_i, y)
+
+			return modular_multiplier_circuit.to_gate()
+
+		controlled_modular_multiplier_gate = create_modular_multiplier_gate(factor, modulo)
+		controlled_modular_multiplier_gate_i = create_modular_multiplier_gate(pow(factor, -1, modulo), modulo).inverse()
+
+		control = QuantumRegister(1)
+		x = QuantumRegister(n_modulo_number_qubits)
+		y_with_ancilla = QuantumRegister(n_modulo_number_qubits + 1 + 1)
+
+		controlled_modular_multiplier_gate_circuit = QuantumCircuit(control, x, y_with_ancilla)
+
+		controlled_modular_multiplier_gate_circuit.append(controlled_modular_multiplier_gate, control[:] + x[:] + y_with_ancilla[:])
+
+		controlled_swap_gate = SwapGate().control()
+
+		for qubit_ix in range(n_modulo_number_qubits):
+			controlled_modular_multiplier_gate_circuit.append(
+				controlled_swap_gate, control[:] + [x[qubit_ix]] + [y_with_ancilla[qubit_ix]]
+			)  # ancillas are 0 so it's ok
+
+		controlled_modular_multiplier_gate_circuit.append(controlled_modular_multiplier_gate_i, control[:] + x[:] + y_with_ancilla[:])
+
+		return controlled_modular_multiplier_gate_circuit.to_gate()
+
+	def __init__(
+		self,
+		factor: int,
+		modulo: int,
+  		n_phase_kickback_qubits: int = None,
+		circuits: list[QuantumCircuit | np.ndarray | Gate] = None,
+		eigen_state_prep: QuantumCircuit | np.ndarray | Gate = None,
+	):
+		self.factor = factor
+		self.modulo = modulo
+		self.gates = []
+
+		if not n_phase_kickback_qubits:
+			self.n_phase_kickback_qubits = 2 * int(np.floor(np.log2(self.modulo) + 1))
+		else:
+			self.n_phase_kickback_qubits = n_phase_kickback_qubits
+  
+		conversion_map = {
+			QuantumCircuit: lambda c: c.to_gate(),
+			np.ndarray: lambda c: UnitaryGate(c),
+			Gate: lambda c: c,
+			type(None): lambda c: None,
+		}
+
+		if circuits is None:
+			for exp in range(2 * (int(np.floor(np.log2(modulo))) + 1)):
+				tmp_factor = (factor ** (2**exp)) % modulo
+				self.gates.append(ShorCircuit.create_modular_multiplier_gate_with_uncomputation(tmp_factor, modulo))
+		else:
+			for circuit in circuits:
+				target_type = type(circuit)
+
+				if target_type in conversion_map:
+					self.gates.append(conversion_map[target_type](circuit))
+				else:
+					raise TypeError(f'Unsupported data type: {target_type}')
+
+		self.num_qubits = self.gates[0].num_qubits
+
+		self.eigen_state_prep = eigen_state_prep
+
+		target_type = type(eigen_state_prep)
+		if target_type in conversion_map:
+			self.eigen_state_prep = conversion_map[target_type](self.eigen_state_prep)
+		else:
+			raise TypeError(f'Unsupported data type: {target_type}')

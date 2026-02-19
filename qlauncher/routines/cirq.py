@@ -20,6 +20,8 @@ from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.result import QuasiDistribution
 
+from qlauncher.base import Backend
+from qlauncher.base.translator import Translation
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.qiskit.adapters import TranslatingSampler, TranslatingSamplerV1
 from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend

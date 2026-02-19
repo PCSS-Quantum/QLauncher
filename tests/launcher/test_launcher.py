@@ -1,12 +1,25 @@
-import warnings
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+from qiskit.quantum_info import SparsePauliOp
+
 from qlauncher import QLauncher
-from qlauncher.base.base import Result
+from qlauncher.base.base import Result, Problem
+from qlauncher.base.problem_like import Hamiltonian
 from qlauncher.routines.qiskit import FALQON, QiskitBackend
 from tests.utils.problem import get_hamiltonian
+
+
+class DummyProblem(Problem):
+	def to_hamiltonian(
+		self,
+		v=None,
+	) -> Hamiltonian:
+		if v is None:
+			raise ValueError('Param not set!')
+		return Hamiltonian(SparsePauliOp.from_list([('Z', 1.0)]))
 
 
 def prepare_launcher() -> QLauncher:
@@ -17,9 +30,9 @@ def prepare_launcher() -> QLauncher:
 
 
 def test_params_are_bound() -> None:
-	launcher = prepare_launcher()
+	launcher = QLauncher(DummyProblem(None), FALQON(), QiskitBackend('local_simulator'))
 
-	inform = launcher.run()
+	inform = launcher.run(v=2)
 
 	assert isinstance(inform, Result)
 

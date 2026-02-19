@@ -80,9 +80,6 @@ class SamplerV2ToSamplerV1Adapter(BaseSamplerV1):
 class SamplerV1ToSamplerV2Adapter(BaseSamplerV2):
 	"""
 	Adapts a v1 sampler to a v2 interface.
-
-	Args:
-		BaseSamplerV2 (_type_): _description_
 	"""
 
 	def __init__(self, sampler_v1: BaseSamplerV1) -> None:

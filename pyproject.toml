@@ -68,4 +68,4 @@ select = ["E", # pycodestyle errors
           "TD", # flake8-todos
           "NPY", # NumPy-specific rules
 ]
-ignore = ["W191", "E111", "E114", "E117", "E501", "D206", "D300", "ISC002", "ANN003", "ANN204"]
+ignore = ["W191", "E111", "E114", "E117", "E501", "D206", "D300", "ISC002", "ANN001", "ANN003", "ANN204"]

@@ -12,6 +12,7 @@ from qiskit.providers import BackendV1, BackendV2
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_ibm_runtime import Options
 
+from qlauncher.base import Backend
 from qlauncher.routines.circuits import CIRCUIT_FORMATS
 from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter, TranslatingSampler
 from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
