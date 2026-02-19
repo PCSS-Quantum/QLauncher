@@ -1,16 +1,21 @@
 """Base backend class for Qiskit routines."""
 
+import types
+import typing
 from typing import Literal
 from warnings import warn
 
-from qiskit import QuantumCircuit
+import qiskit
+from qiskit import QuantumCircuit, qasm2
 from qiskit.primitives import BackendEstimatorV2, BackendSamplerV2, Sampler, StatevectorEstimator, StatevectorSampler
 from qiskit.providers import BackendV1, BackendV2
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_ibm_runtime import Options
 
 from qlauncher.base import Backend
-from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter
+from qlauncher.routines.circuits import CIRCUIT_FORMATS
+from qlauncher.routines.qiskit.adapters import SamplerV2ToSamplerV1Adapter, TranslatingSampler
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 from qlauncher.routines.qiskit.backends.utils import (
 	AUTO_TRANSPILE_ESTIMATOR_TYPE,
 	AUTO_TRANSPILE_SAMPLER_TYPE,
@@ -21,7 +26,7 @@ from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecuti
 from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation
 
 
-class QiskitBackend(Backend):
+class QiskitBackend(GateCircuitBackend[QuantumCircuit]):
 	"""
 	Base class for backends compatible with qiskit.
 
@@ -32,6 +37,8 @@ class QiskitBackend(Backend):
 		sampler (BaseSamplerV2): The sampler used for sampling.
 		estimator (BaseEstimatorV2): The estimator used for estimation.
 	"""
+
+	basis_gates = ['x', 'y', 'z', 'cx', 'h', 'rx', 'ry', 'rz', 'u']
 
 	def __init__(
 		self,
@@ -93,6 +100,7 @@ class QiskitBackend(Backend):
 			raise ValueError(f"Unsupported mode for this backend:'{self.name}'")
 
 		self._configure_auto_behavior()
+		self.sampler = TranslatingSampler(self.sampler, self.compatible_circuit)
 
 	def _configure_auto_behavior(self) -> None:
 		"""
@@ -111,7 +119,23 @@ class QiskitBackend(Backend):
 				self.sampler, auto_transpile=do_transpile, auto_transpile_level=level, auto_assign=self._auto_assign
 			)
 
-	def sample_circuit(self, circuit: QuantumCircuit, shots: int = 1024) -> dict[str, int]:
+	@staticmethod
+	def to_qasm(circuit: qiskit.QuantumCircuit) -> str:
+		return qasm2.dumps(circuit)
+
+	@staticmethod
+	def from_qasm(qasm: str, name: str = 'Qasm Circuit') -> qiskit.QuantumCircuit:
+		circuit = qiskit.QuantumCircuit.from_qasm_str(qasm)
+		circuit.name = name
+		return circuit
+
+	def sample_circuit(self, circuit: CIRCUIT_FORMATS, shots: int = 1024) -> dict[str, int]:
+		compatible_circuit = self._mitigation_strategy.compatible_circuit
+		if not isinstance(circuit, compatible_circuit):
+			if isinstance(compatible_circuit, types.UnionType):
+				compatible_circuit = typing.get_args(compatible_circuit)[0]
+			circuit = GateCircuitBackend.get_translation(circuit, compatible_circuit)
+
 		return self._mitigation_strategy.sample(circuit, self, shots)
 
 	def estimate_energy(self, circuit: QuantumCircuit, observable: SparsePauliOp) -> float:

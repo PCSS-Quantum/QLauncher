@@ -1,11 +1,13 @@
 import logging
 import pickle
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Generic, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar
 
 from qlauncher.base.problem_like import ProblemLike
+
+if TYPE_CHECKING:
+	from collections.abc import Callable
 
 AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'bqm', 'none', 'fn', 'tabular_ml']
 
