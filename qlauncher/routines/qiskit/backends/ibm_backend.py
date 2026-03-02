@@ -14,7 +14,7 @@ class IBMBackend(QiskitBackend):
 	An extension of QiskitBackend providing support for IBM sessions.
 
 	Attributes:
-	    session (Session | None, optional): The session to use with name 'device'.
+		session (Session | None, optional): The session to use with name 'device'.
 	"""
 
 	def __init__(
@@ -57,12 +57,10 @@ class IBMBackend(QiskitBackend):
 			self.sampler = SamplerV2(mode=self.session, options=self.options)
 		else:
 			raise ValueError(
-				' '.join(
-					[
-						f"Unsupported mode for this backend:'{self.name}'."
-						"Please use one of the following: ['local_simulator', 'backendv1v2', 'session']"
-					]
-				)
+				' '.join([
+					f"Unsupported mode for this backend:'{self.name}'."
+					"Please use one of the following: ['local_simulator', 'backendv1v2', 'session']"
+				])
 			)
 
 		self._configure_auto_behavior()

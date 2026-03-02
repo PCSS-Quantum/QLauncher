@@ -5,14 +5,16 @@ import logging
 import pickle
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal, overload
+from typing import Literal, get_args, overload
 
 from qiskit.primitives.containers import SamplerPubLike
 
 from qlauncher.base import Algorithm, Backend, Problem, Result
-from qlauncher.base.base import ProblemLike
+from qlauncher.base.base import Model
 from qlauncher.problems.circuit import _Circuit
+from qlauncher.routines.circuits import CIRCUIT_FORMATS
 from qlauncher.routines.qiskit.algorithms.wrapper import CircuitRunner
+from qlauncher.routines.qiskit.utils import coerce_to_circuit_list
 
 
 def _extract_args(argtypes: list[tuple[str, type]], args, kwargs) -> dict[str, object]:
@@ -68,7 +70,7 @@ class QLauncher:
 
 	@overload
 	def __init__(
-		self, problem: Problem | ProblemLike, algorithm: Algorithm, backend: Backend, /, *, logger: logging.Logger | None = None
+		self, problem: Problem | Model, algorithm: Algorithm, backend: Backend, /, *, logger: logging.Logger | None = None
 	) -> None:
 		"""
 		Create a QLauncher instance that solves a `problem` using a given `algorithm` on a `backend`.
@@ -81,7 +83,9 @@ class QLauncher:
 		"""
 
 	@overload
-	def __init__(self, circuit: SamplerPubLike, backend: Backend, /, *, shots: int = 1024, logger: logging.Logger | None = None) -> None:
+	def __init__(
+		self, circuit: SamplerPubLike | CIRCUIT_FORMATS, backend: Backend, /, *, shots: int = 1024, logger: logging.Logger | None = None
+	) -> None:
 		"""
 		Create a QLauncher instance that samples `circuit` on the `backend` for `shots` shots.
 
@@ -93,30 +97,30 @@ class QLauncher:
 		"""
 
 	@overload
-	def __init__(self, problem: Problem | ProblemLike, algorithm: Algorithm, /, *, logger: logging.Logger | None = None) -> None:
+	def __init__(self, problem: Problem | Model, algorithm: Algorithm, /, *, logger: logging.Logger | None = None) -> None:
 		"""
 		Create a QLauncher instance that solves a `problem` using a given workflow `algorithm`. Backend is None.
 
 		Args:
-			problem (Problem | ProblemLike): Problem to solve.
+			problem (Problem | Model): Problem to solve.
 			algorithm (Algorithm): Algorithm to use.
 			logger (logging.Logger | None, optional): Logger. Defaults to None.
 		"""
 
 	def __init__(self, *args, **kwargs) -> None:
 		if len(args) == 3:
-			problem: Problem | ProblemLike = args[0]
+			problem: Problem | Model = args[0]
 			algorithm: Algorithm = args[1]
 			backend: Backend = args[2]
-		elif len(args) == 2 and isinstance(args[0], Problem | ProblemLike):
-			problem: Problem | ProblemLike = args[0]
+		elif len(args) == 2 and isinstance(args[0], Problem | Model):
+			problem: Problem | Model = args[0]
 			algorithm: Algorithm = args[1]
 			backend: Backend = Backend('')
-		elif len(args) == 2 and isinstance(args[0], SamplerPubLike):
+		elif len(args) == 2 and isinstance(args[0], (*get_args(CIRCUIT_FORMATS), *get_args(SamplerPubLike))):
 			problem, algorithm, backend = self._build_from_circuit(args[0], args[1], kwargs.get('shots', 1024))
 		else:
 			raise TypeError
-		self.problem: Problem | ProblemLike = problem
+		self.problem: Problem | Model = problem
 		self.algorithm = algorithm
 		self.backend = backend
 
@@ -127,7 +131,7 @@ class QLauncher:
 
 		self.result: Result | None = None
 
-	def _get_compatible_problem(self) -> ProblemLike:
+	def _get_compatible_problem(self, **formatter_kwargs) -> Model:
 		input_format = self.algorithm.get_input_format()
 		if input_format is None:
 			raise TypeError
@@ -136,29 +140,36 @@ class QLauncher:
 		if methods is None:
 			raise TypeError
 
-		for method in methods:
+		if len(methods) == 0:
+			return problem
+
+		if isinstance(problem, Problem):
+			# The first method is the Problem -> Model formatter.
+			problem = methods[0](problem, **formatter_kwargs)
+
+		for method in methods[1:]:
 			problem = method(problem)
 
 		return problem
 
-	def run(self) -> Result:
+	def run(self, **formatter_kwargs) -> Result:
 		"""
 		Finds proper formatter, and runs the algorithm on the problem with given backends.
 
 		Returns:
 			dict: The results of the algorithm execution.
 		"""
-		self.result = self.algorithm.run(self._get_compatible_problem(), self.backend)
+		self.result = self.algorithm.run(self._get_compatible_problem(**formatter_kwargs), self.backend)
 		self.logger.info('Algorithm ended successfully!')
 		return self.result
 
-	def _build_from_circuit(self, circuit: SamplerPubLike, backend: Backend, shots: int) -> tuple[ProblemLike, Algorithm, Backend]:
-		return (_Circuit(circuit), CircuitRunner(shots), backend)
+	def _build_from_circuit(
+		self, circuit: SamplerPubLike | CIRCUIT_FORMATS, backend: Backend, shots: int
+	) -> tuple[Model, Algorithm, Backend]:
+		return (_Circuit(coerce_to_circuit_list(circuit)[0]), CircuitRunner(shots), backend)
 
-	def _bfs_search(
-		self, problem: Problem | ProblemLike, input_format: type[ProblemLike]
-	) -> list[Callable[[Problem | ProblemLike], ProblemLike]] | None:
-		to_check: list[tuple[list, type[Problem] | type[ProblemLike]]] = [([], type(problem))]
+	def _bfs_search(self, problem: Problem | Model, input_format: type[Model]) -> list[Callable[[Problem | Model], Model]] | None:
+		to_check: list[tuple[list, type[Problem] | type[Model]]] = [([], type(problem))]
 		visited: set = {type(problem)}
 		if isinstance(problem, input_format):
 			return []
@@ -168,7 +179,7 @@ class QLauncher:
 				return parents
 			for child, method in current._mapping.items():
 				if isinstance(child, str):
-					child = ProblemLike._all_problems[child]
+					child = Model._all_problems[child]
 				if child in visited:
 					continue
 				to_check.append((parents + [method], child))

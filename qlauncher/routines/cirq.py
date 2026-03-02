@@ -3,6 +3,8 @@ Routine file for Cirq library
 """
 
 import math
+import types
+import typing
 from collections.abc import Iterable, Sequence
 from typing import Any, Literal
 
@@ -21,11 +23,14 @@ from qiskit.result import QuasiDistribution
 from qlauncher.base import Backend
 from qlauncher.base.translator import Translation
 from qlauncher.exceptions import DependencyError
+from qlauncher.routines.qiskit.adapters import TranslatingSampler, TranslatingSamplerV1
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 from qlauncher.routines.qiskit.mitigation_suppression.base import CircuitExecutionMethod
 from qlauncher.routines.qiskit.mitigation_suppression.mitigation import NoMitigation
 
 try:
 	import cirq
+	from cirq.contrib.qasm_import.qasm import circuit_from_qasm
 	from cirq.sim.sparse_simulator import Simulator
 except ImportError as e:
 	raise DependencyError(e, install_hint='cirq') from e
@@ -71,12 +76,10 @@ class _CirqRunner:
 
 	@classmethod
 	def calculate_circuit(
-		cls, circuit: qiskit.QuantumCircuit, return_type: Literal['counts', 'dist', 'raw'] = 'counts', shots: int | None = None
+		cls, cirq_circ: cirq.Circuit, return_type: Literal['counts', 'dist', 'raw'] = 'counts', shots: int | None = None
 	) -> dict | list[str]:
-		if circuit.num_clbits == 0:
-			circuit = circuit.measure_all(inplace=False)
-
-		cirq_circ = Translation.get_translation(circuit, 'cirq')
+		if not cirq_circ.all_measurement_key_names():
+			cirq_circ.append(cirq.measure_each(*cirq_circ.all_qubits()))
 
 		result = cls.simulator.run(cirq_circ, repetitions=cls.repetitions if shots is None else shots)
 
@@ -90,14 +93,16 @@ class CirqSampler(Sampler):
 	"""Sampler adapter for Cirq"""
 
 	def _call(self, circuits: Sequence[int], parameter_values: Sequence[Sequence[float]], **run_options) -> SamplerResult:
-		bound_circuits = []
-		for i, value in zip(circuits, parameter_values):
-			bound_circuits.append(
-				self._circuits[i] if len(value) == 0 else self._circuits[i].assign_parameters(dict(zip(self._parameters[i], value)))
-			)
-		distributions = [_CirqRunner.calculate_circuit(circuit, 'dist') for circuit in bound_circuits]
+		distributions = [_CirqRunner.calculate_circuit(self._circuits[i], 'dist') for i in circuits]
 		quasi_dists = list(map(QuasiDistribution, distributions))
 		return SamplerResult(quasi_dists, [{} for _ in range(len(parameter_values))])
+
+	def run(self, circuits: tuple[cirq.Circuit, ...], parameter_values: tuple[tuple[float, ...], ...], **run_options):
+		self._circuits = list(circuits)
+
+		job = PrimitiveJob(self._call, range(len(self._circuits)), parameter_values, **run_options)
+		job._submit()
+		return job
 
 
 class CirqSamplerV2(BaseSamplerV2):
@@ -118,9 +123,9 @@ class CirqSamplerV2(BaseSamplerV2):
 	def run(self, pubs: Iterable[SamplerPubLike], *, shots: int | None = None) -> BasePrimitiveJob[PrimitiveResult[SamplerPubResult], Any]:
 		bound_circuits = []
 		for pub in pubs:
-			if isinstance(pub, qiskit.QuantumCircuit):
+			if isinstance(pub, cirq.Circuit):
 				bound_circuits.append(pub)
-			elif len(pub) == 1 and isinstance(pub[0], qiskit.QuantumCircuit):
+			elif len(pub) == 1 and isinstance(pub[0], cirq.Circuit):
 				bound_circuits.append(pub[0])
 			elif len(pub) == 2:
 				bound_circuits.append(pub[0].assign_parameters(pub[1]))
@@ -134,25 +139,40 @@ class CirqSamplerV2(BaseSamplerV2):
 		return job
 
 
-class CirqBackend(Backend):
+class CirqBackend(GateCircuitBackend[cirq.Circuit]):
 	"""
 
 	Args:
-	    Backend (_type_): _description_
+		Backend (_type_): _description_
 	"""
+
+	basis_gates = ['x', 'y', 'z', 'cx', 'h', 'rx', 'ry', 'rz']
 
 	def __init__(
 		self,
 		name: Literal['local_simulator'] = 'local_simulator',
 		error_mitigation_strategy: CircuitExecutionMethod | None = None,
 	):
-		self.sampler = CirqSamplerV2()
-		self.samplerV1 = CirqSampler()
+		self.sampler = TranslatingSampler(CirqSamplerV2(), self.compatible_circuit)
+		self.samplerV1 = TranslatingSamplerV1(CirqSampler(), self.compatible_circuit)
 		self._mitigation_strategy = error_mitigation_strategy if error_mitigation_strategy is not None else NoMitigation()
 		self.backendv1v2 = None
 		super().__init__(name)
 
-	def sample_circuit(self, circuit: qiskit.QuantumCircuit, shots: int = 1024) -> dict[str, int]:
+	@staticmethod
+	def to_qasm(circuit: cirq.Circuit) -> str:
+		return circuit.to_qasm()
+
+	@staticmethod
+	def from_qasm(qasm: str) -> cirq.Circuit:
+		return circuit_from_qasm(qasm)
+
+	def sample_circuit(self, circuit: cirq.Circuit, shots: int = 1024) -> dict[str, int]:
+		compatible_circuit = self._mitigation_strategy.compatible_circuit
+		if not isinstance(circuit, compatible_circuit):
+			if isinstance(compatible_circuit, types.UnionType):
+				compatible_circuit = typing.get_args(compatible_circuit)[0]
+			circuit = GateCircuitBackend.get_translation(circuit, compatible_circuit)
 		return self._mitigation_strategy.sample(circuit, self, shots)
 
 	def estimate_energy(self, circuit: qiskit.QuantumCircuit, observable: SparsePauliOp) -> float:

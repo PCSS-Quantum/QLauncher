@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING, Any, overload
 
 import numpy as np
 from dimod import BinaryQuadraticModel
-from pyqubo import Model, Spin # type: ignore
+from pyqubo import Model as pyquboModel
+from pyqubo import Spin  # type: ignore
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit import Gate
 from qiskit.circuit.library import QFTGate, SwapGate, UnitaryGate, XGate
@@ -20,24 +21,24 @@ if TYPE_CHECKING:
 from qlauncher.hampy import Equation
 
 
-class ProblemLike:
-	_all_problems: dict[str, type['ProblemLike']] = {}
+class Model:
+	_all_problems: dict[str, type['Model']] = {}
 
 	def __init__(self, instance: Any) -> None:
 		self.instance = instance
 
 	def __init_subclass__(cls) -> None:
-		if ProblemLike not in cls.__bases__:
+		if Model not in cls.__bases__:
 			return
-		ProblemLike._all_problems[cls.__name__] = cls
-		cls._mapping: dict[type[ProblemLike], Callable[[], ProblemLike]] = {}
+		Model._all_problems[cls.__name__] = cls
+		cls._mapping: dict[type[Model], Callable[[], Model]] = {}
 		for method_name in cls.__dict__:
 			if method_name.startswith('to_'):
 				method = cls.__dict__[method_name]
 				cls._mapping[method.__annotations__['return']] = method
 
 
-class QUBO(ProblemLike):
+class QUBO(Model):
 	def __init__(self, matrix: np.ndarray, offset: float = 0) -> None:
 		self.matrix = matrix
 		self.offset = offset
@@ -89,7 +90,7 @@ class QUBO(ProblemLike):
 		return BQM(model)
 
 
-class FN(ProblemLike):
+class FN(Model):
 	def __init__(self, function: Callable[[np.ndarray], float]) -> None:
 		self.function = function
 
@@ -97,7 +98,7 @@ class FN(ProblemLike):
 		return self.function(vector)
 
 
-class Hamiltonian(ProblemLike):
+class Hamiltonian(Model):
 	@overload
 	def __init__(
 		self, hamiltonian: SparsePauliOp, mixer_hamiltonian: SparsePauliOp | None = None, initial_state: QuantumCircuit | None = None
@@ -156,8 +157,8 @@ class Hamiltonian(ProblemLike):
 		return QUBO(qubo.quadratic.to_array(), qubo.constant)
 
 
-class BQM(ProblemLike):
-	def __init__(self, model: Model) -> None:  # noqa: ANN401
+class BQM(Model):
+	def __init__(self, model: pyquboModel) -> None:  # noqa: ANN401
 		self.model = model
 
 	@property
@@ -178,7 +179,7 @@ class BQM(ProblemLike):
 		return QUBO(Q_matrix, offset)
 
 
-class Molecule(ProblemLike):
+class Molecule(Model):
 	def __init__(self, instance: MoleculeInfo, mapper: QubitMapper | None = None, basis_set: str = 'STO-6G') -> None:
 		self.instance = instance
 		self.basis_set = basis_set
@@ -200,7 +201,7 @@ class Molecule(ProblemLike):
 		return Molecule(instance)
 
 
-class GroverCircuit(ProblemLike):
+class GroverCircuit(Model):
 	@staticmethod
 	def create_oracle_from_bitstring(bit_string: str | list[str]) -> Gate:
 		"""
@@ -290,7 +291,7 @@ class GroverCircuit(ProblemLike):
 		self.num_qubits = self.oracle.num_qubits
 
 
-class ShorCircuit(ProblemLike):
+class ShorCircuit(Model):
 	@staticmethod
 	def create_modular_multiplier_gate_with_uncomputation(factor: int, modulo: int) -> Gate:
 		n_modulo_number_qubits = int(np.floor(np.log2(modulo))) + 1
@@ -385,7 +386,7 @@ class ShorCircuit(ProblemLike):
 		self,
 		factor: int,
 		modulo: int,
-  		n_phase_kickback_qubits: int = None,
+		n_phase_kickback_qubits: int = None,
 		circuits: list[QuantumCircuit | np.ndarray | Gate] = None,
 		eigen_state_prep: QuantumCircuit | np.ndarray | Gate = None,
 	):
@@ -397,7 +398,7 @@ class ShorCircuit(ProblemLike):
 			self.n_phase_kickback_qubits = 2 * int(np.floor(np.log2(self.modulo) + 1))
 		else:
 			self.n_phase_kickback_qubits = n_phase_kickback_qubits
-  
+
 		conversion_map = {
 			QuantumCircuit: lambda c: c.to_gate(),
 			np.ndarray: lambda c: UnitaryGate(c),

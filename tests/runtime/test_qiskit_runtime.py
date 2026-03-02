@@ -64,7 +64,7 @@ def test_mitigation(mitigation_name: str) -> None:
 	QLauncher(get_hamiltonian(), falqon, backend).run()
 
 
-#! We use FALQON for problem tests as it is very fast to execute
+# ! We use FALQON for problem tests as it is very fast to execute
 @pytest.mark.parametrize('problem_name', ALL_PROBLEMS)
 def test_problems(problem_name: str) -> None:
 	"""Testing function for Exact Cover"""

@@ -2,10 +2,10 @@ from typing import Literal
 
 import numpy as np
 
-from qlauncher.base import ProblemLike
+from qlauncher.base import Model
 
 
-class TabularML(ProblemLike):
+class TabularML(Model):
 	def __init__(self, X: np.ndarray, y: np.ndarray | None = None, instance_name: str = 'unnamed') -> None:
 		self.X = X
 		self.y = y
@@ -16,18 +16,20 @@ class TabularML(ProblemLike):
 		match instance_name:
 			case 'default':
 				return TabularML(
-					np.array([
-						[5.2, 3.1],
-						[11.3, 2.2],
-						[9.8, 10.5],
-						[2.1, 1.9],
-						[12.0, 15.2],
-						[6.4, 9.9],
-						[0.0, 11.1],
-						[10.1, 10.2],
-						[8.8, 7.7],
-						[13.3, 0.4],
-					]),
+					np.array(
+						[
+							[5.2, 3.1],
+							[11.3, 2.2],
+							[9.8, 10.5],
+							[2.1, 1.9],
+							[12.0, 15.2],
+							[6.4, 9.9],
+							[0.0, 11.1],
+							[10.1, 10.2],
+							[8.8, 7.7],
+							[13.3, 0.4],
+						]
+					),
 					np.array([0, 1, 1, 0, 1, 0, 1, 1, 0, 1]),
 					instance_name=instance_name,
 				)

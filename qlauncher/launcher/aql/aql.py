@@ -40,8 +40,8 @@ from threading import Event, Thread
 from typing import Any, Literal
 
 from qlauncher.base.base import Algorithm, Backend, Problem, Result
-from qlauncher.base.problem_like import ProblemLike
-from qlauncher.launcher.aql.aql_task import ManagerBackedTask, get_timeout
+from qlauncher.base.problem_like import Model
+from qlauncher.launcher.aql.aql_task import AQLTask, get_timeout
 from qlauncher.launcher.qlauncher import QLauncher
 from qlauncher.workflow.base_job_manager import BaseJobManager
 from qlauncher.workflow.local_scheduler import LocalJobManager
@@ -205,8 +205,8 @@ class AQL:
 
 	def add_task(
 		self,
-		launcher: QLauncher | tuple[Problem | ProblemLike, Algorithm, Backend],
-		dependencies: list[ManagerBackedTask] | None = None,
+		launcher: QLauncher | tuple[Problem | Model, Algorithm, Backend],
+		dependencies: list[AQLTask] | None = None,
 		callbacks: list[Callable] | None = None,
 		manager_kwargs: dict[str, Any] | None = None,
 		**run_kwargs: object,

@@ -19,16 +19,16 @@ from qiskit_nature.second_q.problems import EigenstateResult
 from scipy.optimize import minimize
 
 from qlauncher.base import Algorithm, Result
-from qlauncher.base.base import _ProblemLike
+from qlauncher.base.base import _Model
 from qlauncher.base.problem_like import Hamiltonian, Molecule
-from qlauncher.routines.cirq import CirqBackend
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
-class QiskitOptimizationAlgorithm(Algorithm[_ProblemLike, QiskitBackend], Generic[_ProblemLike]):
+class QiskitOptimizationAlgorithm(Algorithm[_Model, QiskitBackend], Generic[_Model]):
 	"""Abstract class for Qiskit optimization algorithms"""
 
-	def make_tag(self, problem: _ProblemLike, backend: QiskitBackend) -> str:
+	def make_tag(self, problem: _Model, backend: QiskitBackend) -> str:
 		return (
 			problem.__class__.__name__
 			+ '-'
@@ -123,7 +123,7 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 		return {'aux': self.aux, 'p': self.p, 'parameters': self.parameters, 'arg_kwargs': self.alg_kwargs}
 
 	def _get_optimized_circuit_params(
-		self, circuit: QuantumCircuit, hamiltonian: SparsePauliOp, backend: QiskitBackend | CirqBackend
+		self, circuit: QuantumCircuit, hamiltonian: SparsePauliOp, backend: GateCircuitBackend
 	) -> tuple[np.ndarray, list[float]]:
 		"""
 		Optimize circuit params
@@ -163,7 +163,7 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 
 		return res.x, costs
 
-	def run(self, problem: Hamiltonian, backend: QiskitBackend | CirqBackend) -> Result:
+	def run(self, problem: Hamiltonian, backend: GateCircuitBackend) -> Result:
 		"""Runs the QAOA algorithm"""
 
 		# problem.hamiltonian: SparsePauliOp = formatter(problem)
