@@ -1,29 +1,57 @@
-from qlauncher.base.translator import QiskitTranslation, CirqTranslation, Translation
+import pytest
 import qiskit
-import cirq
+
+from qlauncher.exceptions import DependencyError
+from qlauncher.routines.qiskit import QiskitBackend
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
+from qlauncher.routines.qiskit.mitigation_suppression import NoMitigation, PauliTwirling, ZeroNoiseExtrapolation
+
+try:
+	import cirq
+
+	from qlauncher.routines.cirq import CirqBackend
+
+	CIRQ = True
+except (DependencyError, ImportError):
+	CIRQ = False
 
 
-def test_qiskit_to_cirq_translation():
-    circuit = qiskit.QuantumCircuit(2)
-    circuit.h(0)
-    circuit.cx(0, 1)
-    circuit.x(0)
-    translator_qiskit = QiskitTranslation()
-    translator_cirq = CirqTranslation()
-    qasm = translator_qiskit.to_qasm(circuit)
-    cirq_circuit = translator_cirq.from_qasm(qasm)
-    assert isinstance(cirq_circuit, cirq.Circuit)
-    cirq_qasm = translator_cirq.to_qasm(cirq_circuit)
-    assert isinstance(cirq_qasm, str)
-    qiskit_circuit = translator_qiskit.from_qasm(cirq_qasm)
-    assert isinstance(qiskit_circuit, qiskit.QuantumCircuit)
-    assert circuit.decompose(reps=5) == qiskit_circuit.decompose(reps=5)
+@pytest.mark.skipif(not CIRQ, reason='cirq not installed')
+def test_auto_translation() -> None:
+	circuit = qiskit.QuantumCircuit(2)
+	circuit.h(0)
+	circuit.cx(0, 1)
+	circuit.x(0)
+	cirq_circuit = GateCircuitBackend.get_translation(circuit, cirq.Circuit)
+	assert isinstance(cirq_circuit, cirq.Circuit)
 
 
-def test_auto_translation():
-    circuit = qiskit.QuantumCircuit(2)
-    circuit.h(0)
-    circuit.cx(0, 1)
-    circuit.x(0)
-    cirq_circuit = Translation.get_translation(circuit, 'cirq')
-    assert isinstance(cirq_circuit, cirq.Circuit)
+@pytest.mark.skipif(not CIRQ, reason='cirq not installed')
+def test_translating_samplers() -> None:
+	mitigation = NoMitigation()
+	qiskit_circuit = qiskit.QuantumCircuit(2)
+	qiskit_circuit.h(0)
+	qiskit_circuit.cx(0, 1)
+	qiskit_circuit.x(0)
+	qiskit_circuit.measure_all()
+	cirq_circuit = GateCircuitBackend.get_translation(qiskit_circuit, cirq.Circuit)
+	qiskit_backend = QiskitBackend(error_mitigation_strategy=mitigation)
+	cirq_backend = CirqBackend(error_mitigation_strategy=mitigation)
+	assert isinstance(cirq_backend.sample_circuit(qiskit_circuit), dict)
+	assert isinstance(qiskit_backend.sample_circuit(cirq_circuit), dict)
+	assert isinstance(qiskit_backend.sample_circuit(qiskit_circuit), dict)
+	assert isinstance(cirq_backend.sample_circuit(cirq_circuit), dict)
+
+	mitigation = ZeroNoiseExtrapolation()
+	qiskit_backend = QiskitBackend(error_mitigation_strategy=mitigation)
+	cirq_backend = CirqBackend(error_mitigation_strategy=mitigation)
+	assert isinstance(qiskit_backend.sample_circuit(qiskit_circuit), dict)
+	assert isinstance(cirq_backend.sample_circuit(qiskit_circuit), dict)
+	assert isinstance(qiskit_backend.sample_circuit(cirq_circuit), dict)
+	assert isinstance(cirq_backend.sample_circuit(cirq_circuit), dict)
+
+	mitigation = PauliTwirling(2)
+	qiskit_backend = QiskitBackend(error_mitigation_strategy=mitigation)
+	cirq_backend = CirqBackend(error_mitigation_strategy=mitigation)
+	assert isinstance(qiskit_backend.sample_circuit(qiskit_circuit), dict)
+	assert isinstance(qiskit_backend.sample_circuit(cirq_circuit), dict)

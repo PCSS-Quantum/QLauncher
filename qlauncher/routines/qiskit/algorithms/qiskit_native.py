@@ -1,47 +1,35 @@
 """Algorithms for Qiskit routines"""
 
 import statistics
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, Literal
+from typing import Generic, Literal
 
 import numpy as np
 import qiskit_algorithms
 from qiskit import QuantumCircuit
-from qiskit.circuit import Parameter
 from qiskit.circuit.library import PauliEvolutionGate, QAOAAnsatz, efficient_su2
-from qiskit.primitives import (
-	BaseEstimatorV1,
-	BaseSamplerV1,
-	PrimitiveResult,
-	SamplerPubResult,
-)
+from qiskit.primitives import BaseEstimatorV1, BaseSamplerV1
 from qiskit.primitives.base.base_primitive import BasePrimitive
-from qiskit.primitives.containers import BitArray
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_algorithms import optimizers
-from qiskit_algorithms.minimum_eigensolvers.diagonal_estimator import (
-	_evaluate_sparsepauli as evaluate_energy,
-)
-from qiskit_nature.second_q.algorithms.ground_state_solvers import (
-	GroundStateEigensolver,
-)
+from qiskit_algorithms.minimum_eigensolvers.diagonal_estimator import _evaluate_sparsepauli as evaluate_energy
+from qiskit_nature.second_q.algorithms.ground_state_solvers import GroundStateEigensolver
 from qiskit_nature.second_q.problems import EigenstateResult
 from scipy.optimize import minimize
 
-from qlauncher.base import Algorithm, Problem, Result
-from qlauncher.base.base import Backend
-from qlauncher.problems import Molecule
-from qlauncher.routines.cirq import CirqBackend
+from qlauncher.base import Algorithm, Result
+from qlauncher.base.base import _Model
+from qlauncher.base.problem_like import Hamiltonian, Molecule
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
-from qlauncher.utils import int_to_bitstring
 
 
-class QiskitOptimizationAlgorithm(Algorithm):
+class QiskitOptimizationAlgorithm(Algorithm[_Model, QiskitBackend], Generic[_Model]):
 	"""Abstract class for Qiskit optimization algorithms"""
 
-	def make_tag(self, problem: Problem, backend: QiskitBackend) -> str:
-		tag = (
+	def make_tag(self, problem: _Model, backend: QiskitBackend) -> str:
+		return (
 			problem.__class__.__name__
 			+ '-'
 			+ backend.__class__.__name__
@@ -50,7 +38,6 @@ class QiskitOptimizationAlgorithm(Algorithm):
 			+ '-'
 			+ datetime.today().strftime('%Y-%m-%d')
 		)
-		return tag
 
 	def get_processing_times(self, tag: str, primitive: BasePrimitive) -> None | tuple[list, list, int]:
 		timestamps = []
@@ -71,7 +58,7 @@ def commutator(op_a: SparsePauliOp, op_b: SparsePauliOp) -> SparsePauliOp:
 	return op_a @ op_b - op_b @ op_a
 
 
-def cvar_cost(probs_values: Iterable[tuple[float, float]], alpha: float):
+def cvar_cost(probs_values: Iterable[tuple[float, float]], alpha: float) -> float:
 	"""CVar cost function to be used instead of mean for qaoa training"""
 	if not (alpha > 0 and alpha <= 1):
 		raise ValueError('Alpha must be in range (0,1]')
@@ -84,7 +71,7 @@ def cvar_cost(probs_values: Iterable[tuple[float, float]], alpha: float):
 	return cvar / alpha
 
 
-class QAOA(QiskitOptimizationAlgorithm):
+class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 	"""Algorithm class with QAOA.
 
 	Args:
@@ -105,8 +92,6 @@ class QAOA(QiskitOptimizationAlgorithm):
 
 	"""
 
-	_algorithm_format = 'hamiltonian'
-
 	def __init__(
 		self,
 		p: int = 1,
@@ -115,7 +100,6 @@ class QAOA(QiskitOptimizationAlgorithm):
 		training_aggregation_method: Literal['mean', 'cvar'] = 'mean',
 		cvar_alpha: float = 1,
 		alternating_ansatz: bool = False,
-		variant: Literal['qaoa', 'qaoa+'] = 'qaoa',
 		aux=None,
 		**alg_kwargs,
 	):
@@ -130,25 +114,16 @@ class QAOA(QiskitOptimizationAlgorithm):
 		self.cvar_alpha = cvar_alpha
 
 		self.alternating_ansatz: bool = alternating_ansatz
-		self.variant: str = variant
 		self.parameters = ['p']
 		self.mixer_h: SparsePauliOp | None = None
 		self.initial_state: QuantumCircuit | None = None
 
 	@property
 	def setup(self) -> dict:
-		return {
-			'aux': self.aux,
-			'p': self.p,
-			'parameters': self.parameters,
-			'arg_kwargs': self.alg_kwargs,
-		}
+		return {'aux': self.aux, 'p': self.p, 'parameters': self.parameters, 'arg_kwargs': self.alg_kwargs}
 
 	def _get_optimized_circuit_params(
-		self,
-		circuit: QuantumCircuit,
-		hamiltonian: SparsePauliOp,
-		backend: QiskitBackend | CirqBackend,
+		self, circuit: QuantumCircuit, hamiltonian: SparsePauliOp, backend: GateCircuitBackend
 	) -> tuple[np.ndarray, list[float]]:
 		"""
 		Optimize circuit params
@@ -163,11 +138,12 @@ class QAOA(QiskitOptimizationAlgorithm):
 		costs = []
 
 		def cost_fn(params: np.ndarray):
-			job = backend.sampler.run([(circuit, params)])
-			results = job.result()[0].data.meas.get_int_counts()
+			results = backend.sample_circuit(circuit.assign_parameters(params))
 			shots = sum(results.values())
 
-			probs_with_costs = {state: (count / shots, np.real(evaluate_energy(state, hamiltonian))) for state, count in results.items()}
+			probs_with_costs = {
+				state: (count / shots, np.real(evaluate_energy(int(state, 2), hamiltonian))) for state, count in results.items()
+			}
 
 			cost = (
 				sum(prob * cost for prob, cost in probs_with_costs.values())
@@ -187,73 +163,47 @@ class QAOA(QiskitOptimizationAlgorithm):
 
 		return res.x, costs
 
-	def run(self, problem: Problem, backend: Backend, formatter: Callable) -> Result:
+	def run(self, problem: Hamiltonian, backend: GateCircuitBackend) -> Result:
 		"""Runs the QAOA algorithm"""
 
-		if not (isinstance(backend, QiskitBackend) or isinstance(backend, CirqBackend)):
-			raise ValueError('Backend should be CirqBackend, QiskitBackend or subclass.')
-
-		hamiltonian: SparsePauliOp = formatter(problem)
+		# problem.hamiltonian: SparsePauliOp = formatter(problem)
 
 		if self.alternating_ansatz:
 			if self.mixer_h is None:
-				self.mixer_h = formatter.get_mixer_hamiltonian(problem)
+				self.mixer_h = problem.get_mixer_hamiltonian()
 			if self.initial_state is None:
-				self.initial_state = formatter.get_QAOAAnsatz_initial_state(problem)
+				self.initial_state = problem.get_QAOAAnsatz_initial_state()
 
 		# Cirq translation issues if we use QAOAAnsatz() by itself without appending it to a QuantumCircuit
-		circuit = QuantumCircuit(hamiltonian.num_qubits)
-		circuit.append(
-			QAOAAnsatz(cost_operator=hamiltonian, reps=self.p).to_instruction(),
-			range(hamiltonian.num_qubits),
-		)
-
-		if self.variant == 'qaoa+':
-			extra_layer = self._build_plus_ansatz(hamiltonian)
-			circuit.append(extra_layer.to_instruction(), range(hamiltonian.num_qubits))
+		circuit = QuantumCircuit(problem.hamiltonian.num_qubits)
+		circuit.append(QAOAAnsatz(cost_operator=problem.hamiltonian, reps=self.p).to_instruction(), range(problem.hamiltonian.num_qubits))
 
 		circuit.measure_all()
 
-		opt_params, costs = self._get_optimized_circuit_params(circuit, hamiltonian, backend)
+		opt_params, costs = self._get_optimized_circuit_params(circuit, problem.hamiltonian, backend)
 
-		job = backend.sampler.run([(circuit, opt_params)])
-		results = job.result()[0].data.meas.get_int_counts()
+		results = backend.sample_circuit(circuit.assign_parameters(opt_params))
 
-		final_energies = {int_to_bitstring(k, circuit.num_qubits): np.real(evaluate_energy(k, hamiltonian)) for k in results.keys()}
-		final_counts = {int_to_bitstring(k, circuit.num_qubits): v for k, v in results.items()}
+		final_energies = {k: np.real(evaluate_energy(int(k, 2), problem.hamiltonian)) for k in results.keys()}
 
 		depth = circuit.decompose(reps=10).depth()
-		if 'cx' in circuit.decompose(reps=10).count_ops():
-			cx_count = circuit.decompose(reps=10).count_ops()['cx']
-		else:
-			cx_count = 0
+		cx_count = circuit.decompose(reps=10).count_ops().get('cx', 0)
 
-		return self.construct_result({
-			'energy': min(costs),
-			'depth': depth,
-			'cx_count': cx_count,
-			'qpu_time': 0,
-			'training_costs': costs,
-			'final_sample_energies': final_energies,
-			'final_sample_counts': final_counts,
-			'optimal_point': opt_params,  # needed for educated_guess
-		})
-
-	def _build_plus_ansatz(self, hamiltonian):
-		extra_layer = QuantumCircuit(hamiltonian.num_qubits)
-		alphas = [Parameter(f'a{i}') for i in range(hamiltonian.num_qubits - 1)]
-		betas = [Parameter(f'b{i}') for i in range(hamiltonian.num_qubits - 1)]
-		for i in range(hamiltonian.num_qubits - 1):
-			extra_layer.rzz(alphas[i], i, i + 1)
-		for i in range(hamiltonian.num_qubits - 1):
-			extra_layer.rx(betas[i], i)
-		return extra_layer
+		return self.construct_result(
+			{
+				'energy': min(costs),
+				'depth': depth,
+				'cx_count': cx_count,
+				'qpu_time': 0,
+				'training_costs': costs,
+				'final_sample_energies': final_energies,
+				'final_sample_counts': results,
+				'optimal_point': opt_params,  # needed for educated_guess
+			}
+		)
 
 	def construct_result(self, result: dict) -> Result:
-		counts, energies = (
-			result['final_sample_counts'],
-			result['final_sample_energies'],
-		)
+		counts, energies = result['final_sample_counts'], result['final_sample_energies']
 		num_of_samples = sum(counts.values())
 		average_energy = statistics.mean(energies.values())
 		energy_std = statistics.stdev(energies.values()) if len(energies) > 1 else 0
@@ -275,7 +225,7 @@ class QAOA(QiskitOptimizationAlgorithm):
 		)
 
 
-class FALQON(QiskitOptimizationAlgorithm):
+class FALQON(QiskitOptimizationAlgorithm[Hamiltonian]):
 	"""
 	Algorithm class with FALQON.
 
@@ -299,13 +249,7 @@ class FALQON(QiskitOptimizationAlgorithm):
 
 	_algorithm_format = 'hamiltonian'
 
-	def __init__(
-		self,
-		driver_h: SparsePauliOp | None = None,
-		delta_t: float = 0.03,
-		beta_0: float = 0.0,
-		max_reps: int = 20,
-	) -> None:
+	def __init__(self, driver_h: SparsePauliOp | None = None, delta_t: float = 0.03, beta_0: float = 0.0, max_reps: int = 20) -> None:
 		super().__init__()
 		self.driver_h = driver_h
 		self.cost_h = None
@@ -331,24 +275,22 @@ class FALQON(QiskitOptimizationAlgorithm):
 	def _get_path(self) -> str:
 		return f'{self.name}@{self.max_reps}@{self.delta_t}@{self.beta_0}'
 
-	def run(self, problem: Problem, backend: QiskitBackend, formatter: Callable) -> Result:
+	def run(self, problem: Hamiltonian, backend: QiskitBackend) -> Result:
 		"""Runs the FALQON algorithm"""
 
 		if isinstance(backend.sampler, BaseSamplerV1) or isinstance(backend.estimator, BaseEstimatorV1):
 			raise ValueError('FALQON works only on V2 samplers and estimators, consider using a different backend.')
 
-		cost_h = formatter(problem)
-
-		if cost_h is None:
+		if problem.hamiltonian is None:
 			raise ValueError('Formatter returned None')
 
-		self.n_qubits = cost_h.num_qubits
+		problem.hamiltonian.num_qubits
 
-		best_sample, betas, energies, depths, cnot_counts = self._falqon_subroutine(cost_h, backend)
+		self.n_qubits = problem.hamiltonian.num_qubits
 
-		best_data: BitArray = best_sample[0].data.meas
-		counts: dict = best_data.get_counts()
-		shots = best_data.num_shots
+		best_sample, betas, energies, depths, cnot_counts = self._falqon_subroutine(problem.hamiltonian, backend)
+
+		shots = sum(best_sample.values())
 
 		result = {
 			'betas': betas,
@@ -362,33 +304,26 @@ class FALQON(QiskitOptimizationAlgorithm):
 		}
 
 		return Result(
-			best_bitstring=max(counts, key=counts.get),
-			most_common_bitstring=max(counts, key=counts.get),
-			distribution={k: v / shots for k, v in counts.items()},
+			best_bitstring=max(best_sample, key=lambda x: best_sample.get(x, 0)),
+			most_common_bitstring=max(best_sample, key=lambda x: best_sample.get(x, 0)),
+			distribution={k: v / shots for k, v in best_sample.items()},
 			energies=energies,
-			energy_std=np.std(energies),
+			energy_std=float(np.std(energies)),
 			best_energy=min(energies),
 			num_of_samples=shots,
-			average_energy=np.mean(energies),
+			average_energy=float(np.mean(energies)),
 			most_common_bitstring_energy=0,
 			result=result,
 		)
 
 	def _add_ansatz_part(
-		self,
-		cost_hamiltonian: SparsePauliOp,
-		driver_hamiltonian: SparsePauliOp,
-		beta: float,
-		circuit: QuantumCircuit,
+		self, cost_hamiltonian: SparsePauliOp, driver_hamiltonian: SparsePauliOp, beta: float, circuit: QuantumCircuit
 	) -> None:
 		"""Adds a single FALQON ansatz 'building block' with the specified beta to the circuit"""
 		circ_part = QuantumCircuit(circuit.num_qubits)
 
 		circ_part.append(PauliEvolutionGate(cost_hamiltonian, time=self.delta_t), circ_part.qubits)
-		circ_part.append(
-			PauliEvolutionGate(driver_hamiltonian, time=self.delta_t * beta),
-			circ_part.qubits,
-		)
+		circ_part.append(PauliEvolutionGate(driver_hamiltonian, time=self.delta_t * beta), circ_part.qubits)
 
 		circuit.compose(circ_part, circ_part.qubits, inplace=True)
 
@@ -400,21 +335,12 @@ class FALQON(QiskitOptimizationAlgorithm):
 
 		for beta in betas:
 			circ.append(PauliEvolutionGate(cost_hamiltonian, time=self.delta_t), circ.qubits)
-			circ.append(
-				PauliEvolutionGate(driver_hamiltonian, time=self.delta_t * beta),
-				circ.qubits,
-			)
+			circ.append(PauliEvolutionGate(driver_hamiltonian, time=self.delta_t * beta), circ.qubits)
 		return circ
 
 	def _falqon_subroutine(
 		self, cost_hamiltonian: SparsePauliOp, backend: QiskitBackend
-	) -> tuple[
-		PrimitiveResult[SamplerPubResult],
-		list[float],
-		list[float],
-		list[int],
-		list[int],
-	]:
+	) -> tuple[dict[str, int], list[float], list[float], list[int], list[int]]:
 		"""
 		Run the 'meat' of the algorithm.
 
@@ -428,8 +354,7 @@ class FALQON(QiskitOptimizationAlgorithm):
 		"""
 
 		if self.driver_h is None:
-			self.driver_h = SparsePauliOp.from_sparse_list([('X', [i], 1) for i in range(self.n_qubits)], num_qubits=self.n_qubits)
-			driver_hamiltonian = self.driver_h
+			driver_hamiltonian = SparsePauliOp.from_sparse_list([('X', [i], 1) for i in range(self.n_qubits)], num_qubits=self.n_qubits)
 		else:
 			driver_hamiltonian = self.driver_h
 
@@ -445,13 +370,13 @@ class FALQON(QiskitOptimizationAlgorithm):
 
 		self._add_ansatz_part(cost_hamiltonian, driver_hamiltonian, self.beta_0, circuit)
 
-		for i in range(self.max_reps):
-			beta = -1 * backend.estimator.run([(circuit, hamiltonian_commutator)]).result()[0].data.evs
+		for _ in range(self.max_reps):
+			beta = -1 * backend.estimate_energy(circuit, hamiltonian_commutator)
 			betas.append(beta)
 
 			self._add_ansatz_part(cost_hamiltonian, driver_hamiltonian, beta, circuit)
 
-			energy = backend.estimator.run([(circuit, cost_hamiltonian)]).result()[0].data.evs
+			energy = backend.estimate_energy(circuit, cost_hamiltonian)
 			# print(i, energy)
 			energies.append(energy)
 			circuit_depths.append(circuit.depth())
@@ -462,12 +387,12 @@ class FALQON(QiskitOptimizationAlgorithm):
 		sampling_circuit = self._build_ansatz(cost_hamiltonian, driver_hamiltonian, betas[:argmin])
 		sampling_circuit.measure_all()
 
-		best_sample = backend.sampler.run([(sampling_circuit)]).result()
+		best_sample = backend.sample_circuit(sampling_circuit)
 
 		return best_sample, betas, energies, circuit_depths, cnot_counts
 
 
-class VQE(QiskitOptimizationAlgorithm):
+class VQE(QiskitOptimizationAlgorithm[Molecule]):
 	"""Variational Quantum EigenSolver - qiskit-algorithm implementation wrapper.
 
 	Args:
@@ -480,10 +405,7 @@ class VQE(QiskitOptimizationAlgorithm):
 	# pyscf
 
 	def __init__(
-		self,
-		optimizer: optimizers.Optimizer | None = None,
-		ansatz: QuantumCircuit | None = None,
-		with_numpy: bool = False,
+		self, optimizer: optimizers.Optimizer | None = None, ansatz: QuantumCircuit | None = None, with_numpy: bool = False
 	) -> None:
 		self.optimizer = optimizers.COBYLA() if optimizer is None else optimizer
 		self.ansatz = ansatz
@@ -498,14 +420,10 @@ class VQE(QiskitOptimizationAlgorithm):
 		return self._ansatz
 
 	@ansatz.setter
-	def ansatz(self, custom_ansatz):
+	def ansatz(self, custom_ansatz) -> None:
 		self._ansatz = custom_ansatz
 
-	def run(self, problem: Problem, backend: Backend, formatter: Callable[..., Any]) -> Result:
-		if not isinstance(backend, QiskitBackend):
-			raise ValueError('Backend should be QiskitBackend or subclass.')
-		if not isinstance(problem, Molecule):
-			raise ValueError('The problem for this algorithm should be Molecule problem')
+	def run(self, problem: Molecule, backend: QiskitBackend) -> Result:
 		if not isinstance(problem.operator.num_qubits, int):
 			raise ValueError('num_qubits from problem operator is expected to be int')
 

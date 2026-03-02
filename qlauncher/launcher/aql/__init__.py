@@ -1,4 +1,4 @@
 from .aql import AQL
-from .aql_task import AQLTask
+from .aql_task import ManagerBackedTask
 
-__all__ = ['AQL', 'AQLTask']
+__all__ = ['AQL', 'ManagerBackedTask']
