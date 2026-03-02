@@ -19,16 +19,16 @@ from qiskit_nature.second_q.problems import EigenstateResult
 from scipy.optimize import minimize
 
 from qlauncher.base import Algorithm, Result
-from qlauncher.base.base import _ProblemLike
+from qlauncher.base.base import _Model
 from qlauncher.base.problem_like import Hamiltonian, Molecule
 from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
-class QiskitOptimizationAlgorithm(Algorithm[_ProblemLike, QiskitBackend], Generic[_ProblemLike]):
+class QiskitOptimizationAlgorithm(Algorithm[_Model, QiskitBackend], Generic[_Model]):
 	"""Abstract class for Qiskit optimization algorithms"""
 
-	def make_tag(self, problem: _ProblemLike, backend: QiskitBackend) -> str:
+	def make_tag(self, problem: _Model, backend: QiskitBackend) -> str:
 		return (
 			problem.__class__.__name__
 			+ '-'

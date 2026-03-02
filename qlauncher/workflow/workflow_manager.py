@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 from qlauncher.base import Algorithm
 from qlauncher.base.base import Backend, Problem
-from qlauncher.base.problem_like import ProblemLike
+from qlauncher.base.problem_like import Model
 
 
 class Task:
@@ -52,7 +52,7 @@ class SubTask(Task):
 
 
 class Workflow(Algorithm):
-	def __init__(self, tasks: list[Task], input_task: Task, output_task: Task, input_format: type[Problem | ProblemLike]):
+	def __init__(self, tasks: list[Task], input_task: Task, output_task: Task, input_format: type[Problem | Model]):
 		self.tasks = tasks
 		self.input_task = input_task
 		self.output_task = output_task
@@ -64,9 +64,9 @@ class Workflow(Algorithm):
 			_execute_workflow(self.tasks, executor)
 		return self.output_task.result
 
-	def get_input_format(self) -> type[ProblemLike]:
+	def get_input_format(self) -> type[Model]:
 		if issubclass(self.input_format, Problem):
-			return ProblemLike
+			return Model
 		return self.input_format
 
 
@@ -75,7 +75,7 @@ class WorkflowManager:
 		self.tasks: list[Task] = []
 		self.manager = manager
 		self.input_task: Task | None = None
-		self.input_task_format: type[Problem | ProblemLike] = ProblemLike
+		self.input_task_format: type[Problem | Model] = Model
 		self.output_task: Task | None = None
 
 	def __enter__(self):
@@ -105,7 +105,7 @@ class WorkflowManager:
 			dep_names = [dep.func.__name__ for dep in task.dependencies]
 			print(f'{task.func.__name__} -> {dep_names}')
 
-	def input(self, format: type[Problem | ProblemLike]):
+	def input(self, format: type[Problem | Model]):
 		self.input_task = Task(func=None)
 		self.input_task.done = True
 		self.input_task_format = format

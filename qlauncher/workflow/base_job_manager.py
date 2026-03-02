@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from qlauncher.base import Algorithm, Backend, Problem, ProblemLike, Result
+from qlauncher.base import Algorithm, Backend, Problem, Model, Result
 
 
 class BaseJobManager(ABC):
@@ -16,7 +16,7 @@ class BaseJobManager(ABC):
 	@abstractmethod
 	def submit(
 		self,
-		problem: Problem | ProblemLike,
+		problem: Problem | Model,
 		algorithm: Algorithm,
 		backend: Backend,
 		cores: int = 1,
@@ -85,7 +85,7 @@ class BaseJobManager(ABC):
 
 	def run(
 		self,
-		problem: Problem | ProblemLike,
+		problem: Problem | Model,
 		algorithm: Algorithm,
 		backend: Backend,
 		cores: int = 1,

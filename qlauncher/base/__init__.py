@@ -1,4 +1,4 @@
 from .base import Algorithm, Backend, Problem, Result
-from .problem_like import ProblemLike
+from .problem_like import Model
 
-__all__ = ['Problem', 'Algorithm', 'Backend', 'Result', 'ProblemLike']
+__all__ = ['Problem', 'Algorithm', 'Backend', 'Result', 'Model']

@@ -6,7 +6,7 @@ import contextlib
 from typing import Any
 
 
-from qlauncher.base import Algorithm, Backend, Problem, ProblemLike, Result
+from qlauncher.base import Algorithm, Backend, Problem, Model, Result
 from qlauncher.exceptions import DependencyError
 from qlauncher.workflow.base_job_manager import BaseJobManager
 
@@ -33,7 +33,7 @@ class PilotJobManager(BaseJobManager):
 
 	def submit(
 		self,
-		problem: Problem | ProblemLike,
+		problem: Problem | Model,
 		algorithm,
 		backend,
 		cores: int = 1,
@@ -67,7 +67,7 @@ class PilotJobManager(BaseJobManager):
 
 	def submit_many(
 		self,
-		problem: Problem | ProblemLike,
+		problem: Problem | Model,
 		algorithm,
 		backend,
 		output_path,
@@ -139,7 +139,7 @@ class PilotJobManager(BaseJobManager):
 
 	def _prepare_ql_dill_job(
 		self,
-		problem: ProblemLike,
+		problem: Model,
 		algorithm: Algorithm,
 		backend: Backend,
 		output: str,

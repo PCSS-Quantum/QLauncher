@@ -5,7 +5,7 @@ from collections.abc import Callable
 from typing import Literal
 
 from qlauncher.base.base import Algorithm, Backend, Problem, Result
-from qlauncher.base.problem_like import ProblemLike
+from qlauncher.base.problem_like import Model
 from qlauncher.launcher.aql.aql_task import AQLTask, get_timeout
 from qlauncher.launcher.qlauncher import QLauncher
 
@@ -100,7 +100,7 @@ class AQL:
 
 	def add_task(
 		self,
-		launcher: QLauncher | tuple[Problem | ProblemLike, Algorithm, Backend],
+		launcher: QLauncher | tuple[Problem | Model, Algorithm, Backend],
 		dependencies: list[AQLTask] | None = None,
 		callbacks: list[Callable] | None = None,
 		**kwargs,

@@ -4,14 +4,14 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar
 
-from qlauncher.base.problem_like import ProblemLike
+from qlauncher.base.problem_like import Model
 
 if TYPE_CHECKING:
 	from collections.abc import Callable
 
 AVAILABLE_FORMATS = Literal['hamiltonian', 'qubo', 'bqm', 'none', 'fn', 'tabular_ml']
 
-_ProblemLike = TypeVar('_ProblemLike', bound=ProblemLike)
+_Model = TypeVar('_Model', bound=Model)
 _Backends = TypeVar('_Backends', bound='Backend')
 
 
@@ -142,7 +142,7 @@ class Problem:
 		if Problem not in cls.__bases__:
 			return
 		Problem._all_problems[cls.__name__] = cls
-		cls._mapping: dict[type[ProblemLike], Callable[[], ProblemLike]] = {}
+		cls._mapping: dict[type[Model], Callable[[], Model]] = {}
 		for method_name in cls.__dict__:
 			if method_name.startswith('to_'):
 				method = cls.__dict__[method_name]
@@ -173,7 +173,7 @@ class Problem:
 		"""
 		raise NotImplementedError()
 
-	def to(self, problem_type: type[ProblemLike]) -> ProblemLike:
+	def to(self, problem_type: type[Model]) -> Model:
 		name = problem_type.__name__.lower()
 		if hasattr(self, f'to_{name}'):
 			return getattr(self, f'to_{name}')()
@@ -183,7 +183,7 @@ class Problem:
 class OptimizationAlgorithm: ...
 
 
-class Algorithm(ABC, Generic[_ProblemLike, _Backends]):
+class Algorithm(ABC, Generic[_Model, _Backends]):
 	"""
 	Abstract class for Algorithms.
 
@@ -218,14 +218,14 @@ class Algorithm(ABC, Generic[_ProblemLike, _Backends]):
 		return o.__dict__
 
 	@classmethod
-	def get_class_input_format(cls) -> type[ProblemLike] | None:
+	def get_class_input_format(cls) -> type[Model] | None:
 		return cls.run.__annotations__.get('problem', None)
 
-	def get_input_format(self) -> type[ProblemLike] | None:
+	def get_input_format(self) -> type[Model] | None:
 		return self.get_class_input_format()
 
 	@abstractmethod
-	def run(self, problem: _ProblemLike, backend: _Backends) -> Result:
+	def run(self, problem: _Model, backend: _Backends) -> Result:
 		"""Runs the algorithm on a specific problem using a backend.
 
 		Args:

@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from qlauncher.base import Algorithm, Backend, Problem, ProblemLike, Result
+from qlauncher.base import Algorithm, Backend, Problem, Model, Result
 from qlauncher.exceptions import DependencyError
 from qlauncher.launcher import QLauncher
 from qlauncher.workflow.base_job_manager import BaseJobManager
@@ -71,7 +71,7 @@ class SlurmJobManager(BaseJobManager):
 		it to :meth:`submit_launcher`.
 
 		Args:
-			problem (Problem | ProblemLike): Problem to be solved.
+			problem (Problem | Model): Problem to be solved.
 			algorithm (Algorithm): Algorithm to be used.
 			backend (Backend): Backend on which the algorithm will be executed.
 			cores (int, optional): Number of CPU cores per task requested from
