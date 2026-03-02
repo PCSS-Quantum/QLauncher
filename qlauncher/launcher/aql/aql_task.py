@@ -1,204 +1,253 @@
-"""Wrapper for QLauncher that enables the user to launch tasks asynchronously (futures + multiprocessing)"""
-
+import contextlib
 import time
 import weakref
 from collections.abc import Callable
-from threading import Event, Thread
+from dataclasses import dataclass
+from functools import wraps
+from threading import Event, Lock
 from typing import Any
 
-import multiprocess
-from pathos.multiprocessing import _ProcessPool
-
 from qlauncher.base.base import Result
+from qlauncher.workflow.base_job_manager import BaseJobManager
 
 
 def get_timeout(max_timeout: int | float | None, start: int | float) -> float | None:
 	"""
-	Get timeout to wait on an event, useful when awaiting multiple tasks and total timeout must be max_timeout.
+	Compute remaining time budget when multiple waits share a single overall timeout.
 
 	Args:
-	    max_timeout (int | float | None): Total allowed timeout, None = infinite wait.
-	    start (int | float): Await start timestamp (time.time())
+		max_timeout: Total allowed timeout in seconds. If None, wait indefinitely.
+		start: Start timestamp from time.time().
 
 	Returns:
-	    int | float | None: Remaining timeout or None if max_timeout was None
+		Remaining timeout in seconds, or None if max_timeout was None.
 	"""
 	if max_timeout is None:
 		return None
 	return max_timeout - (time.time() - start)
 
+@dataclass(frozen=True)
+class _State:
+	PENDING: str = "PENDING"
+	SUBMITTED: str = "SUBMITTED"
+	DONE: str = "DONE"
+	CANCELLED: str = "CANCELLED"
+	FAILED: str = "FAILED"
 
-class _InnerAQLTask:
+
+class ManagerBackedTask:
 	"""
-	Task object returned to user, so that dependencies can be created.
-
-	Attributes:
-	    task (Callable): function that gets executed asynchronously
-	    dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
-	    callbacks (list[Callable]): Callbacks ran when the task finishes executing.
-	                                Task result is inserted as an argument to the function.
-	    pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task.
-	                              Defaults to False.
+	Async-like task that is executed by a BaseJobManager.
+	Returned to users. Supports dependencies, callbacks, cancellation, and result() waiting.
 	"""
-
 	def __init__(
-		self,
-		task: Callable,
-		dependencies: list['AQLTask'] | None = None,
-		callbacks: list[Callable] | None = None,
-		pipe_dependencies: bool = False,
+			self,
+			task: Callable,
+			dependencies: list["ManagerBackedTask"] | None = None,
+			callbacks: list[Callable] | None = None,
+			pipe_dependencies: bool = False,
 	) -> None:
+		"""
+		Create a task executed by a BaseJobManager.
+
+		Args:
+			task: Callable to execute. If pipe_dependencies=True, it will be invoked as task(*dep_results).
+			dependencies: Tasks that must be terminal before this task can be submitted.
+			callbacks: Optional callables invoked after completion with either (result) or (exception).
+			pipe_dependencies: If True, results of dependencies are passed as positional arguments to task.
+
+		Returns:
+			None.
+		"""
 		self.task = task
 		self.dependencies = dependencies if dependencies is not None else []
 		self.callbacks = callbacks if callbacks is not None else []
 		self.pipe_dependencies = pipe_dependencies
 
-		self._cancelled = False
-		self._thread = None
-		self._pool = _ProcessPool(processes=1)
-		self._thread_made = Event()
+		self._state = _State.PENDING
+		self._state_lock = Lock()
 
-		self._result = None
-		self._done = False
+		self._job_id: str | None = None
+		self._manager_ref: weakref.ReferenceType[BaseJobManager] | None = None
 
-	def _shutdown_subprocess(self) -> None:
-		self._pool.close()
-		self._pool.terminate()
-		self._pool.join()
+		self._result: Result | None = None
+		self._exception: BaseException | None = None
 
-	def _async_task(self) -> Any:
-		dep_results = [d.result() for d in self.dependencies]
+		self._done_event = Event()
 
-		if self._cancelled:
-			self._result = None
-			self._done = True
-			return
+	def is_ready(self) -> bool:
+		"""
+		Check whether the task can be submitted.
 
-		res = self._pool.apply_async(self.task, args=(dep_results if self.pipe_dependencies else []))
-		# Turns out you can't just outright kill threads (or futures) is so I have to do this, so that the thread knows to exit.
-		while not self._cancelled:
-			try:
-				self._result = res.get(timeout=0.05)
-				self._done = True
-				return
-			except multiprocess.context.TimeoutError:
-				pass  # task not ready, check for cancel
-			# For any other error originating from the task, shutdown and clean up subprocess then raise error again.
-			except Exception as e:
-				self._shutdown_subprocess()
-				self._result = e
-				self._done = True
-				return
+		Args:
+			None.
 
-		if self._cancelled:
-			self._shutdown_subprocess()  # kill res process
+		Returns:
+			True if all dependency tasks are terminal (DONE/FAILED/CANCELLED), otherwise False.
+		"""
+		return all(dep.done() for dep in self.dependencies)
 
-		self._result = res.get() if res.ready() else None
-		self._done = True
-		return
+	def job_id(self) -> str | None:
+		return self._job_id
 
-	def _target_task(self) -> None:
-		# Main task + callbacks launch
-		self._async_task()
-		for cb in self.callbacks:
-			cb(self._result)
+	def cancelled(self) -> bool:
+		return self._state == _State.CANCELLED
 
-	def _set_thread(self) -> None:
-		self._thread = Thread(target=weakref.proxy(self)._target_task, daemon=True)  # set daemon so that thread quits as main process quits
-		self._thread.start()
-		self._thread_made.set()
+	def done(self) -> bool:
+		return self._state in (_State.DONE, _State.CANCELLED, _State.FAILED)
 
-	def start(self) -> None:
-		"""Start task execution."""
-		if self._thread is not None or self._cancelled:
-			raise ValueError('Cannot start, task already started or cancelled.')
-		self._set_thread()
+	def running(self) -> bool:
+		return self._state == _State.SUBMITTED and not self._done_event.is_set()
 
 	def cancel(self) -> bool:
 		"""
 		Attempt to cancel the task.
 
-		Returns:
-		    bool: True if cancellation was successful
-		"""
-		self._cancelled = True
-		if self._thread is None:
-			return True
-		self._thread.join(0.1)
-		return not self._thread.is_alive()
+		If the task has already been submitted, this forwards the cancellation to the manager
+		best-effort (manager.cancel(job_id)). The task is marked CANCELLED and becomes terminal.
 
-	def cancelled(self) -> bool:
-		"""
-		Returns:
-		    bool: True if the task was cancelled by the user.
-		"""
-		return self._cancelled
+		Args:
+			None.
 
-	def done(self) -> bool:
-		"""
 		Returns:
-		    bool: True if the task had finished execution.
+			True if the task is now cancelled (or was already cancelled).
+			False if the task was already terminal (DONE/FAILED) and cannot be cancelled.
 		"""
-		return self._done
+		with self._state_lock:
+			# already terminal
+			if self._state in (_State.DONE, _State.FAILED):
+				return False
+			if self._state == _State.CANCELLED:
+				return True
 
-	def running(self) -> bool:
+			# pending => cancel locally
+			self._state = _State.CANCELLED
+			self._done_event.set()
+
+			job_id = self._job_id
+			mref = self._manager_ref
+
+		# if submitted, best-effort cancel via manager
+		mgr = mref() if mref is not None else None
+		if mgr is not None and job_id is not None:
+			with contextlib.suppress(Exception):
+				mgr.cancel(job_id)
+
+		return True
+
+	def _set_result(self, res: Result) -> None:
 		"""
+		Mark the task as successfully completed and run callbacks.
+
+		Args:
+			res: Result value produced by the job.
+
 		Returns:
-		    bool: True if the task is currently executing.
+			None.
 		"""
-		if self._thread is None:
-			return False
-		return self._thread.is_alive()
+		with self._state_lock:
+			if self.done():
+				return
+			self._result = res
+			self._state = _State.DONE
+			self._done_event.set()
+
+		for cb in self.callbacks:
+			with contextlib.suppress(Exception):
+				cb(res)
+
+	def _set_exception(self, e: BaseException) -> None:
+		"""
+		Mark the task as failed and run callbacks.
+
+		Args:
+			e: Exception raised by the job.
+
+		Returns:
+			None.
+		"""
+		with self._state_lock:
+			if self.done():
+				return
+			self._exception = e
+			self._state = _State.FAILED
+			self._done_event.set()
+
+		for cb in self.callbacks:
+			with contextlib.suppress(Exception):
+				cb(e)
 
 	def result(self, timeout: float | int | None = None) -> Result | None:
 		"""
-		Get result of running the task.
-		Blocks the thread until task is finished.
+		Wait for the task to reach a terminal state and return its outcome.
 
 		Args:
-		    timeout (float | int | None, optional):
-		            The maximum amount to wait for execution to finish.
-		            If None, wait forever. If not None and time runs out, raises TimeoutError.
-		            Defaults to None.
+			timeout: Maximum time to wait in seconds. If None, wait indefinitely.
+
 		Returns:
-		    Result if future returned result or None when cancelled.
+			The task result if completed successfully.
+			None if the task was cancelled.
+
+		Raises:
+			TimeoutError: If timeout expires before the task becomes terminal (task is cancelled).
+			BaseException: Re-raises the exception produced by the job when the task is FAILED.
 		"""
 		start = time.time()
-		self._thread_made.wait(timeout=get_timeout(timeout, start))  # Wait until we start a thread
-		self._thread.join(timeout=get_timeout(timeout, start))
-		if self._thread.is_alive():
+		if not self._done_event.wait(timeout=get_timeout(timeout, start)):
 			self.cancel()
-			raise TimeoutError  # thread still running after timeout
-		if isinstance(self._result, BaseException):
-			raise self._result
+			raise TimeoutError
+
+		if self._state == _State.CANCELLED:
+			return None
+		if self._exception is not None:
+			raise self._exception
 		return self._result
 
+	def _submit(self, manager: BaseJobManager, **manager_kwargs) -> str:
+		"""
+		Submit this task to a job manager and transition it to SUBMITTED.
 
-# Why like this? The inner task was not getting properly garbage collected when it was running,
-# but this does and just cancels the inner task so it also gets garbage collected
-# this is cursed :/
-class AQLTask:
-	"""
-	Task object returned to user, so that dependencies can be created.
+		This method is intended to be called by a scheduler (e.g., AQL) once is_ready() is True.
+		If pipe_dependencies=True, dependency results are collected and passed as positional args.
 
-	Attributes:
-	    task (Callable): function that gets executed asynchronously
-	    dependencies (list[AQLTask]): Optional dependencies. The task will wait for all its dependencies to finish, before starting.
-	    callbacks (list[Callable]): Callbacks ran when the task finishes executing.
-	                                Task result is inserted as an argument to the function.
-	    pipe_dependencies (bool): If True results of tasks defined as dependencies will be passed as arguments to self.task.
-	                              Defaults to False.
-	"""
+		Args:
+			manager: Job manager used to execute the task.
+			**manager_kwargs: Manager-specific arguments forwarded to manager.submit(...).
 
-	def __init__(
-		self,
-		task: Callable,
-		dependencies: list['AQLTask'] | None = None,
-		callbacks: list[Callable] | None = None,
-		pipe_dependencies: bool = False,
-	) -> None:
-		self._inner_task = _InnerAQLTask(task, dependencies, callbacks, pipe_dependencies)
-		weakref.finalize(self, self._inner_task.cancel)
+		Returns:
+			The job ID returned by manager.submit(...).
 
-	def __getattr__(self, name: str) -> Any:
-		return getattr(self._inner_task, name)
+		Raises:
+			RuntimeError: If the task is not in PENDING state, or if it is already cancelled.
+		"""
+		with self._state_lock:
+			if self._state != _State.PENDING:
+				raise RuntimeError("Task already submitted or terminal.")
+			if self.cancelled():
+				raise RuntimeError("Cannot submit a cancelled task.")
+			self._manager_ref = weakref.ref(manager)
+
+		task_fn = self.task
+
+		# Evaluate dep results only here (scheduler should call _submit only when is_ready()).
+		dep_results: list[Any] = []
+		if self.pipe_dependencies:
+			dep_results = [d.result() for d in self.dependencies]
+
+		func: Callable[..., Any]
+		if self.pipe_dependencies:
+			dep_args = tuple(dep_results)
+
+			@wraps(task_fn)
+			def bound(task_fn=task_fn, dep_args=dep_args) -> task_fn:
+				return task_fn(*dep_args)
+
+			func = bound
+		else:
+			func = task_fn
+
+		jid = manager.submit(func, **manager_kwargs)
+		with self._state_lock:
+			self._job_id = jid
+			self._state = _State.SUBMITTED
+		return jid

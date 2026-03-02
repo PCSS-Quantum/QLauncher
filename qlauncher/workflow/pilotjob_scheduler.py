@@ -1,12 +1,11 @@
+import contextlib
 import os
 import pickle
 import sys
+from collections.abc import Callable
 from pathlib import Path
-import contextlib
 from typing import Any
 
-
-from qlauncher.base import Algorithm, Backend, Problem, Model, Result
 from qlauncher.exceptions import DependencyError
 from qlauncher.workflow.base_job_manager import BaseJobManager
 
@@ -14,12 +13,17 @@ try:
 	import dill
 	from qcg.pilotjob.api.job import Jobs
 	from qcg.pilotjob.api.manager import LocalManager, Manager
+	from qcg.pilotjob.api.errors import TimeoutElapsed
 except ImportError as e:
 	raise DependencyError(e, install_hint='pilotjob') from e
 
 
 class PilotJobManager(BaseJobManager):
-	def __init__(self, manager: Manager | None = None):
+	def __init__(
+		self,
+		output_path: str,
+		manager: Manager | None = None,
+	):
 		"""
 		PilotJob manager is QLauncher's wrapper for process management system, current version works on top of qcg-pilotjob
 
@@ -28,49 +32,38 @@ class PilotJobManager(BaseJobManager):
 			Defaults to None.
 		"""
 		super().__init__()
-		self.code_path = os.path.join(os.path.dirname(__file__), 'pilotjob_task.py')
+		self.code_path = os.path.join(os.path.dirname(__file__), 'subprocess_fn.py')
 		self.manager = manager if manager is not None else LocalManager()
+		self.output_path = output_path
 
 	def submit(
 		self,
-		problem: Problem | Model,
-		algorithm,
-		backend,
+		function: Callable,
 		cores: int = 1,
-		output_path: str | None = None,
 		**kwargs,
 	) -> str:
 		"""
-		Submits QLauncher job to the scheduler
+		Submit a function job to the scheduler.
 
 		Args:
-			problem (Problem): Problem.
-			algorithm (Algorithm): Algorithm.
-			backend (Backend): Backend.
-			output_path (str): Path of output file.
-			cores (int | None, optional): Number of cores per task, if None value set to number of free cores (at least 1). Defaults to None.
+			function: Function to be executed.
+			cores: Number of CPU cores per task.
+			**kwargs: Manager-specific additional arguments.
 
 		Returns:
-			str: Job Id.
+			Job ID as a string.
 		"""
-		if output_path is None:
-			raise ValueError('output_path is required for PilotJobManager')
 
 		job = self._prepare_ql_dill_job(
-			problem=problem,
-			algorithm=algorithm,
-			backend=backend,
-			output=output_path,
+			function,
+			output=self.output_path,
 			cores=cores,
 		)
 		return self.manager.submit(Jobs().add(**job['qcg_args']))[0]
 
 	def submit_many(
 		self,
-		problem: Problem | Model,
-		algorithm,
-		backend,
-		output_path,
+		function: Callable,
 		cores_per_job: int = 1,
 		n_jobs: int | None = None,
 	) -> list[str]:
@@ -78,9 +71,7 @@ class PilotJobManager(BaseJobManager):
 		Submits as many jobs as there are currently available cores.
 
 		Args:
-			problem (Problem): Problem.
-			algorithm (Algorithm): Algorithm.
-			backend (Backend): Backend.
+			function (Callable): Function to execute.
 			output_path (str): Path of output file.
 			cores_per_job (int, optional): Number of cores per job. Defaults to 1.
 			n_jobs: number of jobs to submit. If None, submit as many as possible (free_cores//cores_per_job). Defaults to None.
@@ -97,10 +88,8 @@ class PilotJobManager(BaseJobManager):
 
 		for _ in range(num_jobs):
 			job = self._prepare_ql_dill_job(
-				problem=problem,
-				algorithm=algorithm,
-				backend=backend,
-				output=output_path,
+				function,
+				output=self.output_path,
 				cores=cores_per_job,
 			)
 			qcg_jobs.add(**job['qcg_args'])
@@ -130,7 +119,10 @@ class PilotJobManager(BaseJobManager):
 				raise ValueError('There are no jobs left')
 			job_id, state = self.manager.wait4_any_job_finish(timeout)
 		elif job_id in self.jobs:
-			state = self.manager.wait4(job_id, timeout=timeout)[job_id]
+			try:
+				state = self.manager.wait4(job_id, timeout=timeout)[job_id]
+			except TimeoutElapsed as e:
+				raise TimeoutError from e
 		else:
 			raise ValueError(f"Job {job_id} not found in {self.__class__.__name__}'s jobs")
 
@@ -139,14 +131,10 @@ class PilotJobManager(BaseJobManager):
 
 	def _prepare_ql_dill_job(
 		self,
-		problem: Model,
-		algorithm: Algorithm,
-		backend: Backend,
+		function: Callable,
 		output: str,
 		cores: int = 1,
 	) -> dict:
-		from qlauncher.launcher.qlauncher import QLauncher
-
 		job_uid = self._make_job_uid()
 
 		out_dir = Path(output).expanduser().resolve()
@@ -157,10 +145,8 @@ class PilotJobManager(BaseJobManager):
 		stdout_file = out_dir / f'stdout.{job_uid}'
 		stderr_file = out_dir / f'stderr.{job_uid}'
 
-		launcher = QLauncher(problem, algorithm, backend)
-
 		with open(input_file, 'wb') as f:
-			dill.dump(launcher, f)
+			dill.dump(function, f)
 
 		in_args = [self.code_path, str(input_file), str(output_file)]
 		qcg_args = {
@@ -239,6 +225,9 @@ class PilotJobManager(BaseJobManager):
 		if isinstance(mgr, LocalManager):
 			with contextlib.suppress(Exception):
 				mgr.finish()
+
+	def run(self, function: Callable[..., Any], cores: int = 1, **kwargs) -> Any:
+		return super().run(function, cores=cores, **kwargs)
 
 	def __del__(self):
 		with contextlib.suppress(Exception):

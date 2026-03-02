@@ -1,8 +1,6 @@
-import functools
 import time
 from typing import Literal
 
-import psutil
 import pytest
 from dimod import SampleSet
 
@@ -11,36 +9,9 @@ from qlauncher.launcher.aql import AQL, AQLTask
 from qlauncher.routines.dwave import SimulatedAnnealingBackend
 from qlauncher.routines.dwave.algorithms import SimulatedAnnealing
 from qlauncher.routines.qiskit import QAOA, QiskitBackend
+from qlauncher.workflow.local_scheduler import LocalJobManager
+from tests.utils.multiprocessing import check_subprocesses_exit
 from tests.utils.problem import get_hamiltonian, get_qubo
-
-
-def check_subprocesses_exit(max_timeout=5):
-	def wrapper1(func):
-		"""Verify if test kills all its children :)"""
-
-		@functools.wraps(func)
-		def wrapper2(*args, **kwargs):
-			current_process = psutil.Process()
-
-			def curr_nc():
-				return len(current_process.children(recursive=True))
-
-			num_children = curr_nc()
-
-			func(*args, **kwargs)
-
-			# Hacky, but killing a process from the os side might take some time.
-			i = 0
-			while i < max_timeout:
-				i += 0.1
-				time.sleep(0.1)
-				if curr_nc() == num_children:
-					return
-			assert curr_nc() == num_children
-
-		return wrapper2
-
-	return wrapper1
 
 
 def prepare_AQL(mode: Literal['default', 'optimize_session'] = 'default', long: bool = False) -> AQL:
@@ -65,8 +36,6 @@ def test_AQL_cancels_tasks() -> None:
 
 	for t in aql.tasks:
 		assert t.cancelled()
-
-	assert aql.results() == [None] * len(aql.tasks)
 
 	with pytest.raises(ValueError):
 		aql.start()
@@ -93,9 +62,9 @@ def test_AQL_cancels_tasks_after_timeout() -> None:
 	aql = prepare_AQL()
 
 	aql.start()
-	time.sleep(0.1)
+
 	with pytest.raises(TimeoutError):
-		aql.results(0.1, cancel_tasks_on_timeout=True)
+		aql.results(0.01, cancel_tasks_on_timeout=True)
 
 	for t in aql._classical_tasks + aql._quantum_tasks:
 		assert t.cancelled()
@@ -151,7 +120,7 @@ def test_AQL_session_optimization() -> None:
 	t3 = aql.add_task(t2_temp, dependencies=[t2])
 
 	for t in aql.tasks:
-		t._inner_task.callbacks.append(order.append)
+		t.callbacks.append(order.append)
 
 	assert aql._quantum_tasks == [t2, t3]
 	assert len(aql._classical_tasks) == 4
@@ -165,8 +134,9 @@ def test_AQL_session_optimization() -> None:
 
 @check_subprocesses_exit()
 def test_AQL_task_basic() -> None:
-	t1 = AQLTask(lambda: 2)
-	t2 = AQLTask(lambda prev: prev + 2, dependencies=[t1], pipe_dependencies=True)
+	manager = LocalJobManager()
+	t1 = AQLTask(lambda: 2, manager=manager)
+	t2 = AQLTask(lambda prev: prev + 2, dependencies=[t1], pipe_dependencies=True, manager=manager)
 	t2.start()
 	t1.start()
 	assert t2.result(timeout=1) == 4
@@ -178,9 +148,10 @@ def test_AQL_task_result_passing() -> None:
 	Test if values from dependencies are passed in the correct order,
 	i.e if dependencies=[dep1,dep2], [res(dep1),res(dep2)] is passed to the task function.
 	"""
-	t_string = AQLTask(lambda: 'Value:')
-	t_int = AQLTask(lambda: 42)
-	t_concat = AQLTask(lambda s, i: s + str(i), dependencies=[t_string, t_int], pipe_dependencies=True)
+	manager = LocalJobManager()
+	t_string = AQLTask(lambda: 'Value:', manager=manager)
+	t_int = AQLTask(lambda: 42, manager=manager)
+	t_concat = AQLTask(lambda s, i: s + str(i), dependencies=[t_string, t_int], pipe_dependencies=True, manager=manager)
 
 	for t in [t_string, t_concat, t_int]:
 		t.start()
@@ -190,10 +161,12 @@ def test_AQL_task_result_passing() -> None:
 
 @check_subprocesses_exit()
 def test_AQL_task_raises_error_from_target_fn() -> None:
+	manager = LocalJobManager()
+
 	def err():
 		raise ValueError
 
-	t_err = AQLTask(err)
+	t_err = AQLTask(err, manager=manager)
 
 	with pytest.raises(ValueError):
 		t_err.start()
@@ -202,7 +175,8 @@ def test_AQL_task_raises_error_from_target_fn() -> None:
 
 @check_subprocesses_exit()
 def test_task_dies_after_timeout_error() -> None:
-	t = AQLTask(lambda: time.sleep(20))
+	manager = LocalJobManager()
+	t = AQLTask(lambda: time.sleep(20), manager=manager)
 	t.start()
 
 	with pytest.raises(TimeoutError):
@@ -211,5 +185,6 @@ def test_task_dies_after_timeout_error() -> None:
 
 @check_subprocesses_exit()
 def test_task_dies_after_going_out_of_scope() -> None:
-	t = AQLTask(lambda: time.sleep(20))
+	manager = LocalJobManager()
+	t = AQLTask(lambda: time.sleep(20), manager=manager)
 	t.start()

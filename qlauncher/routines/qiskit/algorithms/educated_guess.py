@@ -33,14 +33,16 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
 		self.verbose = verbose
 		self.failed_jobs = 0
 		self.min_energy = math.inf
-		self.manager = PilotJobManager()
+		self.manager = PilotJobManager(self.output)
 		self.best_job_id = ''
 		self.max_jobs = max_job_batch_size
 
 		weakref.finalize(self, self.manager.stop)  # Kill the running jobs in case of a crash or otherwise
 
 	def run(self, problem: Hamiltonian, backend: QiskitBackend) -> Result:
-		self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial, n_jobs=self.max_jobs)
+		from qlauncher.launcher.qlauncher import QLauncher
+
+		self.manager.submit_many(QLauncher(problem, QAOA(p=self.p_init), backend).run, n_jobs=self.max_jobs)
 		print(f'{len(self.manager.jobs)} jobs submitted to qcg')
 
 		found_optimal_params = False
@@ -55,19 +57,23 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
 			if has_potential:
 				found_optimal_params = self._search_for_job_with_optimal_params(jobid, energy, problem, backend)
 
-			self.manager.submit_many(problem, QAOA(p=self.p_init), backend, output_path=self.output_initial, n_jobs=self.max_jobs)
+			self.manager.submit_many(QLauncher(problem, QAOA(p=self.p_init), backend).run, n_jobs=self.max_jobs)
 
 		result = self.manager.read_results(self.best_job_id)
 		self.manager.stop()
 		return result
 
 	def _search_for_job_with_optimal_params(self, previous_job_id, previous_energy, problem, backend) -> bool:
+		from qlauncher.launcher.qlauncher import QLauncher
+
 		new_job_id = None
 		for p in range(self.p_init + 1, self.p_max + 1):
 			previous_job_results = self.manager.read_results(previous_job_id).result
 			initial_point = self._interpolate_f(list(previous_job_results['result']['optimal_point']), p - 1)
 
-			new_job_id = self.manager.submit(problem, QAOA(p=p, initial_point=initial_point), backend, output_path=self.output_interpolated)
+			new_job_id = self.manager.submit(
+				QLauncher(problem, QAOA(p=p, initial_point=initial_point), backend).run, output_path=self.output_interpolated
+			)
 			_, state = self.manager.wait_for_a_job(new_job_id)
 			if state != 'SUCCEED':
 				self.failed_jobs += 1

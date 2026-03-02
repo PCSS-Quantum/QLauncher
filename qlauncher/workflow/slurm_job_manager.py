@@ -5,13 +5,15 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from qlauncher.base import Algorithm, Backend, Problem, Model, Result
 from qlauncher.exceptions import DependencyError
-from qlauncher.launcher import QLauncher
 from qlauncher.workflow.base_job_manager import BaseJobManager
+
+if TYPE_CHECKING:
+	from qlauncher.base import Result
 
 try:
 	import dill
@@ -23,6 +25,7 @@ class SlurmJobManager(BaseJobManager):
 	def __init__(
 		self,
 		sbatch_exe: str = 'sbatch',
+		scancel_exe: str = 'scancel',
 		slurm_options: dict[str, Any] | None = None,
 		env_setup: list[str] | None = None,
 	) -> None:
@@ -46,8 +49,9 @@ class SlurmJobManager(BaseJobManager):
 				in ``PATH``.
 		"""
 		super().__init__()
-		self.code_path = Path(__file__).with_name('pilotjob_task.py')
+		self.code_path = Path(__file__).with_name('subprocess_fn.py')
 		self.sbatch_exe = sbatch_exe
+		self.scancel_exe = scancel_exe
 		self.slurm_options = slurm_options or {}
 		self.env_setup = env_setup or []
 
@@ -57,11 +61,15 @@ class SlurmJobManager(BaseJobManager):
 				install_hint='slurm',
 			)
 
+		if shutil.which(self.scancel_exe) is None:
+			raise DependencyError(
+				ImportError(f'{self.scancel_exe} not found in PATH'),
+				install_hint='slurm',
+			)
+
 	def submit(
 		self,
-		problem,
-		algorithm,
-		backend,
+		function,
 		cores: int = 1,
 		**kwargs,
 	) -> str:
@@ -83,25 +91,7 @@ class SlurmJobManager(BaseJobManager):
 		Raises:
 			RuntimeError: If ``sbatch`` returns a non-zero exit code.
 		"""
-		launcher = QLauncher(problem, algorithm, backend)
-		return self.submit_launcher(launcher, cores=cores)
 
-	def submit_launcher(self, launcher, cores: int = 1):
-		"""
-		Submits a prepared :class:`QLauncher` instance to Slurm.
-
-		Args:
-			launcher (QLauncher): Prepared launcher object.
-			cores (int, optional): Number of CPU cores per task requested from
-				Slurm (mapped to ``--cpus-per-task``). Defaults to 1.
-
-		Returns:
-			str: Slurm job ID returned by ``sbatch``.
-
-		Raises:
-			RuntimeError: If ``sbatch`` returns a non-zero exit code or its
-				standard output does not contain a job ID.
-		"""
 		job_uid = self._make_job_uid()
 
 		input_file = f'input.{job_uid}.pkl'
@@ -109,7 +99,7 @@ class SlurmJobManager(BaseJobManager):
 		script_path = f'slurm_job.{job_uid}.sh'
 
 		with open(input_file, 'wb') as f:
-			dill.dump(launcher, f)
+			dill.dump(function, f)
 
 		self._write_sbatch_script(
 			script_path=script_path,
@@ -172,6 +162,10 @@ class SlurmJobManager(BaseJobManager):
 			job_id = not_finished[0]
 
 		job = self.jobs[job_id]
+		if job.get('canceled', False):
+			job['finished'] = True
+			return job_id
+
 		output_file = job['output_file']
 
 		start = time.time()
@@ -199,6 +193,11 @@ class SlurmJobManager(BaseJobManager):
 				job['finished'] = True
 				return job_id
 
+			if state in ('CANCELLED', 'CANCELED'):
+				job['canceled'] = True
+				job['finished'] = True
+				return job_id
+
 			raise RuntimeError(f'Job {job_id} finished in bad state: {state}')
 
 	def read_results(self, job_id):
@@ -220,6 +219,9 @@ class SlurmJobManager(BaseJobManager):
 			raise KeyError(f'Job {job_id} not found')
 
 		job = self.jobs[job_id]
+		if job.get('canceled', False):
+			raise RuntimeError(f'Job {job_id} was canceled; no results are available')
+
 		output_file = job['output_file']
 
 		if not Path(output_file).exists():
@@ -231,6 +233,34 @@ class SlurmJobManager(BaseJobManager):
 		job['finished'] = True
 		return result
 
+	def cancel(self, job_id: str) -> None:
+		"""
+		Cancel a given Slurm job via scancel.
+
+		Args:
+			job_id: Slurm job id returned by submit().
+
+		Raises:
+			KeyError: If job_id is not known to this manager.
+			RuntimeError: If scancel fails.
+		"""
+		if job_id not in self.jobs:
+			raise KeyError(f'Job {job_id} not found')
+
+		res = subprocess.run(
+			[self.scancel_exe, job_id],
+			capture_output=True,
+			text=True,
+			check=False,
+		)
+
+		if res.returncode != 0:
+			raise RuntimeError(f'scancel failed ({res.returncode}): {res.stderr.strip() or res.stdout.strip()}')
+
+		job = self.jobs[job_id]
+		job['canceled'] = True
+		job['finished'] = True
+
 	def clean_up(self):
 		"""
 		Removes temporary files created for all tracked jobs.
@@ -241,6 +271,9 @@ class SlurmJobManager(BaseJobManager):
 				if path and Path(path).exists():
 					with contextlib.suppress(OSError):
 						os.remove(path)
+
+	def run(self, function: Callable[..., Any], cores: int = 1, **kwargs) -> Any:
+		return super().run(function, cores=cores, **kwargs)
 
 	def _write_sbatch_script(
 		self,
