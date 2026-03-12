@@ -1,7 +1,7 @@
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
-from qlauncher.base.problem_like import QUBO, Hamiltonian
+from qlauncher.base.models import QUBO, Hamiltonian
 
 
 def get_hamiltonian() -> Hamiltonian:

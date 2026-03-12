@@ -10,8 +10,8 @@ import networkx as nx
 import numpy as np
 from pyqubo import Array, Binary
 
+from qlauncher import models
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import BQM, QUBO, Hamiltonian
 from qlauncher.hampy import Equation
 
 
@@ -129,16 +129,16 @@ class GraphColoring(Problem):
 				eq += eq_inner
 		return eq
 
-	def to_hamiltonian(self, constraints_weight: float = 1, costs_weight: float = 1) -> Hamiltonian:
+	def to_hamiltonian(self, constraints_weight: float = 1, costs_weight: float = 1) -> models.Hamiltonian:
 		color_bit_length = int(np.ceil(np.log2(self.num_colors)))
 		num_qubits = self.instance.number_of_nodes() * color_bit_length
 
 		eq = self._color_duplication_hamiltonian(num_qubits, color_bit_length)
 		eq2 = self._excessive_colors_use_hamiltonian(num_qubits, color_bit_length)
 
-		return Hamiltonian(eq * costs_weight + eq2 * constraints_weight)
+		return models.Hamiltonian(eq * costs_weight + eq2 * constraints_weight)
 
-	def to_bqm(self) -> BQM:
+	def to_bqm(self) -> models.BQM:
 		"""Returns BQM"""
 		x = Array.create('x', shape=(self.instance.number_of_nodes(), self.num_colors), vartype='BINARY')
 		qubo: Binary = 0
@@ -148,7 +148,7 @@ class GraphColoring(Problem):
 		for node in self.instance.nodes:
 			expression: Binary = 1 - sum(x[node, i] for i in range(self.num_colors))
 			qubo += expression * expression
-		return BQM(qubo.compile())
+		return models.BQM(qubo.compile())
 
-	def to_qubo(self) -> QUBO:
+	def to_qubo(self) -> models.QUBO:
 		return self.to_bqm().to_qubo()

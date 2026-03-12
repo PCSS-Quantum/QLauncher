@@ -1,5 +1,5 @@
 from qlauncher.base import Algorithm, Result
-from qlauncher.base.problem_like import GroverCircuit
+from qlauncher.base.models import GroverCircuit
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 from qiskit.circuit.library import grover_operator
@@ -16,19 +16,19 @@ class Grover(Algorithm[GroverCircuit, QiskitBackend]):
 		full_circuit = QuantumCircuit(problem.oracle.num_qubits)
 
 		full_circuit.append(problem.state_prep, range(problem.state_prep.num_qubits))
-  
+
 		for _ in range(problem.num_iterations):
 			full_circuit.compose(grover_op, inplace=True)
 		full_circuit.measure_all()
-  
+
 		self._circuit = full_circuit
-  
+
 		job = backend.sampler.run([full_circuit], shots=self.n_shots)
-  
+
 		return job.result()[0]
 
 	def circuit(self, mode: str = '') -> QuantumCircuit | None:
 		if not self._circuit:
-			print("Run the algorithm to generate circuit")
+			print('Run the algorithm to generate circuit')
 		else:
 			return self._circuit

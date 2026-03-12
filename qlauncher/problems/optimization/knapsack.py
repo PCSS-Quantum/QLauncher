@@ -6,8 +6,8 @@ from typing import Literal
 import numpy as np
 from pyqubo import Array, Binary
 
+from qlauncher import models
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import BQM
 
 
 class Knapsack(Problem):
@@ -45,7 +45,7 @@ class Knapsack(Problem):
 				raise ValueError(f'Preset f{instance_name} not defined')
 		return Knapsack(values, weights, capacity, instance_name)
 
-	def to_bqm(self, penalty_weight: float = 2.0, value_weight: float = 1.0) -> BQM:
+	def to_bqm(self, penalty_weight: float = 2.0, value_weight: float = 1.0) -> models.BQM:
 		"""
 		Returns BQM for Knapsack problem.
 		"""
@@ -62,4 +62,4 @@ class Knapsack(Problem):
 		penalty *= penalty
 		value_term = sum(self.values[i] * x[i] for i in range(size))
 		H: Binary = penalty_weight * penalty - value_weight * value_term
-		return BQM(H.compile())
+		return models.BQM(H.compile())

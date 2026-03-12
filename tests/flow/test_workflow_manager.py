@@ -1,6 +1,6 @@
 from qlauncher import QLauncher
 from qlauncher.base import Algorithm
-from qlauncher.base.problem_like import QUBO, Model
+from qlauncher.base.models import QUBO, Model
 from qlauncher.workflow import WorkflowManager
 from tests.utils.problem import get_qubo
 

@@ -5,7 +5,7 @@ import pytest
 from dimod import SampleSet
 
 from qlauncher.base.base import Result
-from qlauncher.launcher.aql import AQL, AQLTask
+from qlauncher.launcher.aql import AQL, ManagerBackedTask
 from qlauncher.routines.dwave import SimulatedAnnealingBackend
 from qlauncher.routines.dwave.algorithms import SimulatedAnnealing
 from qlauncher.routines.qiskit import QAOA, QiskitBackend
@@ -89,11 +89,11 @@ def test_AQL_individual_tasks() -> None:
 
 @check_subprocesses_exit()
 def test_AQL_context_manager() -> None:
-	tasks: list[AQLTask] = []
+	tasks: list[ManagerBackedTask] = []
 	with AQL() as aql:
 		t1 = aql.add_task((get_hamiltonian(), QAOA(p=10), QiskitBackend('local_simulator')))
 		t2 = aql.add_task((get_qubo(), SimulatedAnnealing(num_reads=10000), SimulatedAnnealingBackend()))
-		tasks: list[AQLTask] = [t1, t2]
+		tasks: list[ManagerBackedTask] = [t1, t2]
 		aql.start()
 
 	for t in tasks:
@@ -135,8 +135,8 @@ def test_AQL_session_optimization() -> None:
 @check_subprocesses_exit()
 def test_AQL_task_basic() -> None:
 	manager = LocalJobManager()
-	t1 = AQLTask(lambda: 2, manager=manager)
-	t2 = AQLTask(lambda prev: prev + 2, dependencies=[t1], pipe_dependencies=True, manager=manager)
+	t1 = ManagerBackedTask(lambda: 2, manager=manager)
+	t2 = ManagerBackedTask(lambda prev: prev + 2, dependencies=[t1], pipe_dependencies=True, manager=manager)
 	t2.start()
 	t1.start()
 	assert t2.result(timeout=1) == 4
@@ -149,9 +149,9 @@ def test_AQL_task_result_passing() -> None:
 	i.e if dependencies=[dep1,dep2], [res(dep1),res(dep2)] is passed to the task function.
 	"""
 	manager = LocalJobManager()
-	t_string = AQLTask(lambda: 'Value:', manager=manager)
-	t_int = AQLTask(lambda: 42, manager=manager)
-	t_concat = AQLTask(lambda s, i: s + str(i), dependencies=[t_string, t_int], pipe_dependencies=True, manager=manager)
+	t_string = ManagerBackedTask(lambda: 'Value:', manager=manager)
+	t_int = ManagerBackedTask(lambda: 42, manager=manager)
+	t_concat = ManagerBackedTask(lambda s, i: s + str(i), dependencies=[t_string, t_int], pipe_dependencies=True, manager=manager)
 
 	for t in [t_string, t_concat, t_int]:
 		t.start()
@@ -166,7 +166,7 @@ def test_AQL_task_raises_error_from_target_fn() -> None:
 	def err():
 		raise ValueError
 
-	t_err = AQLTask(err, manager=manager)
+	t_err = ManagerBackedTask(err, manager=manager)
 
 	with pytest.raises(ValueError):
 		t_err.start()
@@ -176,7 +176,7 @@ def test_AQL_task_raises_error_from_target_fn() -> None:
 @check_subprocesses_exit()
 def test_task_dies_after_timeout_error() -> None:
 	manager = LocalJobManager()
-	t = AQLTask(lambda: time.sleep(20), manager=manager)
+	t = ManagerBackedTask(lambda: time.sleep(20), manager=manager)
 	t.start()
 
 	with pytest.raises(TimeoutError):
@@ -186,5 +186,5 @@ def test_task_dies_after_timeout_error() -> None:
 @check_subprocesses_exit()
 def test_task_dies_after_going_out_of_scope() -> None:
 	manager = LocalJobManager()
-	t = AQLTask(lambda: time.sleep(20), manager=manager)
+	t = ManagerBackedTask(lambda: time.sleep(20), manager=manager)
 	t.start()

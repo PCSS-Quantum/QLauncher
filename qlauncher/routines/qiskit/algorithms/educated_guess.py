@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 
 from qlauncher.base import Algorithm, Result
-from qlauncher.base.problem_like import Hamiltonian
+from qlauncher.base.models import Hamiltonian
 from qlauncher.routines.qiskit.algorithms.qiskit_native import QAOA
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from qlauncher.workflow.pilotjob_scheduler import PilotJobManager

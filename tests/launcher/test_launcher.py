@@ -7,7 +7,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import QLauncher
 from qlauncher.base.base import Result, Problem
-from qlauncher.base.problem_like import Hamiltonian
+from qlauncher.base.models import Hamiltonian
 from qlauncher.routines.qiskit import FALQON, QiskitBackend
 from tests.utils.problem import get_hamiltonian
 

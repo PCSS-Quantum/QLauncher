@@ -5,7 +5,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.base.problem_like import Hamiltonian
+from qlauncher.base.models import Hamiltonian
 from qlauncher.exceptions import DependencyError
 from qlauncher.problems import MaxCut
 

@@ -20,7 +20,7 @@ from scipy.optimize import minimize
 
 from qlauncher.base import Algorithm, Result
 from qlauncher.base.base import _Model
-from qlauncher.base.problem_like import Hamiltonian, Molecule
+from qlauncher.base.models import Hamiltonian, Molecule
 from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 

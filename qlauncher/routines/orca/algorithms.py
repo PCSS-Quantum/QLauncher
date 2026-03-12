@@ -3,7 +3,7 @@ from typing import Literal
 import numpy as np
 
 from qlauncher.base import Algorithm, Result
-from qlauncher.base.problem_like import QUBO
+from qlauncher.base.models import QUBO
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.orca.backends import OrcaBackend
 

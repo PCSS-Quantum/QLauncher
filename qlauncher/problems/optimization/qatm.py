@@ -5,9 +5,8 @@ import numpy as np
 import pandas as pd
 from qiskit import QuantumCircuit
 
-from qlauncher import hampy
+from qlauncher import hampy, models
 from qlauncher.base.base import Problem
-from qlauncher.base.problem_like import Hamiltonian
 from qlauncher.hampy.object import Equation
 from qlauncher.problems.optimization.ec import ring_ham
 
@@ -31,18 +30,22 @@ class QATM(Problem):
 	def from_preset(instance_name: Literal['rcp-3'], **kwargs) -> 'QATM':
 		match instance_name:
 			case 'rcp-3':
-				cm = np.array([
-					[1, 0, 1, 0, 0, 0],
-					[0, 1, 0, 0, 0, 1],
-					[1, 0, 1, 0, 1, 0],
-					[0, 0, 0, 1, 0, 0],
-					[0, 0, 1, 0, 1, 0],
-					[0, 1, 0, 0, 0, 1],
-				])
-				aircrafts = pd.DataFrame({
-					'manouver': ['A0', 'A1', 'A2', 'A0_a=10', 'A1_a=10', 'A2_a=10'],
-					'aircraft': ['A0', 'A1', 'A2', 'A0', 'A1', 'A2'],
-				})
+				cm = np.array(
+					[
+						[1, 0, 1, 0, 0, 0],
+						[0, 1, 0, 0, 0, 1],
+						[1, 0, 1, 0, 1, 0],
+						[0, 0, 0, 1, 0, 0],
+						[0, 0, 1, 0, 1, 0],
+						[0, 1, 0, 0, 0, 1],
+					]
+				)
+				aircrafts = pd.DataFrame(
+					{
+						'manouver': ['A0', 'A1', 'A2', 'A0_a=10', 'A1_a=10', 'A2_a=10'],
+						'aircraft': ['A0', 'A1', 'A2', 'A0', 'A1', 'A2'],
+					}
+				)
 			case _:
 				raise KeyError
 		return QATM(cm, aircrafts)
@@ -59,7 +62,7 @@ class QATM(Problem):
 			optimization,
 		)
 
-	def to_hamiltonian(self, onehot: Literal['exact', 'quadratic', 'xor'] = 'exact') -> Hamiltonian:
+	def to_hamiltonian(self, onehot: Literal['exact', 'quadratic', 'xor'] = 'exact') -> models.Hamiltonian:
 		cm = self.cm
 		aircrafts = self.aircrafts
 		size = len(cm)
@@ -95,7 +98,7 @@ class QATM(Problem):
 					goal_hamiltonian += goal_hamiltonian.get_variable(i)
 			hamiltonian += goal_hamiltonian / cm.sum().sum()
 
-		return Hamiltonian(
+		return models.Hamiltonian(
 			hamiltonian,
 			mixer_hamiltonian=self.get_mixer_hamiltonian(),
 			initial_state=self.get_initial_state(),

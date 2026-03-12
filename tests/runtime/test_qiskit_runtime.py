@@ -5,6 +5,7 @@ from qiskit_ibm_runtime.fake_provider import FakeAthensV2  # Small 5qb backend f
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
+from qlauncher.problems.optimization.ec import EC
 from qlauncher.routines.qiskit import FALQON, QAOA, QiskitBackend  # , AQTBackend
 from qlauncher.routines.qiskit.algorithms.qiskit_native import VQE, Molecule
 from qlauncher.utils import int_to_bitstring
@@ -41,14 +42,15 @@ def test_QAOA() -> None:
 	results = launcher.run()
 	assert isinstance(results, Result)
 
-def test_QAOA_plus():
-    pr = EC.from_preset(instance_name="micro")
-    qaoa = QAOA(p=1, variant="qaoa+")
-    backend = QiskitBackend("local_simulator")
-    launcher = QLauncher(pr, qaoa, backend)
 
-    results = launcher.run()
-    assert isinstance(results, Result)
+def test_QAOA_plus():
+	pr = EC.from_preset(instance_name='micro')
+	qaoa = QAOA(p=1, variant='qaoa+')
+	backend = QiskitBackend('local_simulator')
+	launcher = QLauncher(pr, qaoa, backend)
+
+	results = launcher.run()
+	assert isinstance(results, Result)
 
 
 def test_VQE() -> None:

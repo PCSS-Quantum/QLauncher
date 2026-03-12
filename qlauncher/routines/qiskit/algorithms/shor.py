@@ -3,7 +3,7 @@ from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.circuit.library import QFTGate
 
 from qlauncher.base import Algorithm, Result
-from qlauncher.base.problem_like import ShorCircuit
+from qlauncher.base.models import ShorCircuit
 from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 
 
@@ -31,7 +31,10 @@ class Shor(Algorithm[ShorCircuit, QiskitBackend]):
 		full_circuit.h(phase_kickback)
 
 		for qubit_ix in range(n_qubits):
-			full_circuit.append(problem.gates[n_qubits - qubit_ix - 1], [phase_kickback[n_qubits - qubit_ix - 1]] + eigen_state[: problem.gates[qubit_ix].num_qubits])
+			full_circuit.append(
+				problem.gates[n_qubits - qubit_ix - 1],
+				[phase_kickback[n_qubits - qubit_ix - 1]] + eigen_state[: problem.gates[qubit_ix].num_qubits],
+			)
 
 		full_circuit.append(qft_i, phase_kickback)
 

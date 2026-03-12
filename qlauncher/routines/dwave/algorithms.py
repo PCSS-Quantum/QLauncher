@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from qlauncher.base import Algorithm, Result
-from qlauncher.base.problem_like import BQM
+from qlauncher.base.models import BQM
 from qlauncher.exceptions import DependencyError
 from qlauncher.routines.dwave.backends import BQMBackend
 

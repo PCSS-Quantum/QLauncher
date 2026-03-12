@@ -6,9 +6,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
-from qlauncher import hampy
+from qlauncher import hampy, models
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import QUBO, Hamiltonian
 
 
 class MaxCut(Problem):
@@ -56,7 +55,7 @@ class MaxCut(Problem):
 		graph = nx.gnp_random_graph(num_vertices, edge_probability)
 		return MaxCut(graph, instance_name='Generated')
 
-	def to_qubo(self) -> QUBO:
+	def to_qubo(self) -> models.QUBO:
 		n = len(self.instance)
 		Q = np.zeros((n, n))
 		for i, j in self.instance.edges:
@@ -65,13 +64,13 @@ class MaxCut(Problem):
 			Q[i, j] += 1
 			Q[j, i] += 1
 
-		return QUBO(Q, 0)
+		return models.QUBO(Q, 0)
 
-	def to_hamiltonian(self) -> Hamiltonian:
+	def to_hamiltonian(self) -> models.Hamiltonian:
 		size = self.instance.number_of_nodes()
 		hamiltonian = hampy.Equation(size)
 		for edge in self.instance.edges():
 			hamiltonian += ~hampy.one_in_n(list(edge), size)
 		if hamiltonian is None:
 			raise TypeError
-		return Hamiltonian(hamiltonian)
+		return models.Hamiltonian(hamiltonian)

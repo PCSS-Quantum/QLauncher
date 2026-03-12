@@ -2,9 +2,7 @@ import concurrent.futures
 from collections.abc import Callable
 from typing import Any, Literal
 
-from qlauncher.base import Algorithm
-from qlauncher.base.base import Backend, Problem
-from qlauncher.base.problem_like import Model
+from qlauncher.base import Algorithm, Backend, Model, Problem
 
 
 class Task:

@@ -4,7 +4,7 @@ import pytest
 
 import qlauncher.hampy as hp
 from qlauncher import QLauncher
-from qlauncher.base.problem_like import Hamiltonian
+from qlauncher.base.models import Hamiltonian
 from qlauncher.routines.qiskit import QAOA, QiskitBackend
 
 filterwarnings('ignore')

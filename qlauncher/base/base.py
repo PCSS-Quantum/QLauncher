@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar
 
-from qlauncher.base.problem_like import Model
+from qlauncher.base.models import Model
 
 if TYPE_CHECKING:
 	from collections.abc import Callable

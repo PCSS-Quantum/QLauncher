@@ -31,7 +31,6 @@ Example:
 		result = aql.results(timeout=60)[0]
 """
 
-
 import contextlib
 import time
 import weakref
@@ -39,9 +38,8 @@ from collections.abc import Callable
 from threading import Event, Thread
 from typing import Any, Literal
 
-from qlauncher.base.base import Algorithm, Backend, Problem, Result
-from qlauncher.base.problem_like import Model
-from qlauncher.launcher.aql.aql_task import AQLTask, get_timeout
+from qlauncher.base import Algorithm, Backend, Model, Problem, Result
+from qlauncher.launcher.aql.aql_task import ManagerBackedTask, get_timeout
 from qlauncher.launcher.qlauncher import QLauncher
 from qlauncher.workflow.base_job_manager import BaseJobManager
 from qlauncher.workflow.local_scheduler import LocalJobManager
@@ -107,9 +105,10 @@ class AQL:
 	- `**run_kwargs` are forwarded to `QLauncher.run(**run_kwargs)`.
 	- `manager_kwargs` are forwarded to `manager.submit(..., **manager_kwargs)`.
 	"""
+
 	def __init__(
 		self,
-		mode: Literal["default", "optimize_session"] = "default",
+		mode: Literal['default', 'optimize_session'] = 'default',
 		manager: BaseJobManager | None = None,
 	) -> None:
 		"""
@@ -126,7 +125,7 @@ class AQL:
 			None.
 		"""
 		self.tasks: list[ManagerBackedTask] = []  # user-visible tasks (results order)
-		self.mode: Literal["default", "optimize_session"] = mode
+		self.mode: Literal['default', 'optimize_session'] = mode
 
 		# Internal task sets (includes helper/gateway tasks)
 		self._classical_tasks: list[ManagerBackedTask] = []
@@ -206,7 +205,7 @@ class AQL:
 	def add_task(
 		self,
 		launcher: QLauncher | tuple[Problem | Model, Algorithm, Backend],
-		dependencies: list[AQLTask] | None = None,
+		dependencies: list[ManagerBackedTask] | None = None,
 		callbacks: list[Callable] | None = None,
 		manager_kwargs: dict[str, Any] | None = None,
 		**run_kwargs: object,
@@ -242,7 +241,7 @@ class AQL:
 		mkwargs = manager_kwargs if manager_kwargs is not None else {}
 
 		# Default mode (or non-device backend): single task
-		if self.mode != "optimize_session" or not launcher.backend.is_device:
+		if self.mode != 'optimize_session' or not launcher.backend.is_device:
 
 			def run_launcher(launcher=launcher, run_kwargs=run_kwargs) -> Result:
 				kwargs = _filter_run_kwargs_for_callable(launcher.run, run_kwargs)
@@ -266,7 +265,14 @@ class AQL:
 
 		QLauncherCtor = QLauncher
 
-		def quantum_run(formatted_problem: Problem|ProblemLike, *_: object, algo=algo, backend=backend, run_kwargs=run_kwargs, QLauncherCtor=QLauncherCtor) -> Result:
+		def quantum_run(
+			formatted_problem: Problem | ProblemLike,
+			*_: object,
+			algo=algo,
+			backend=backend,
+			run_kwargs=run_kwargs,
+			QLauncherCtor=QLauncherCtor,
+		) -> Result:
 			ql = QLauncherCtor(formatted_problem, algo, backend)
 			kwargs = _filter_run_kwargs_for_callable(ql.run, run_kwargs)
 			return ql.run(**kwargs)
@@ -303,13 +309,13 @@ class AQL:
 			ValueError: If the scheduler is already running or tasks were already submitted/finished.
 		"""
 		if self._scheduler_thread is not None and self._scheduler_thread.is_alive():
-			raise ValueError("Cannot start again, scheduler is already running.")
+			raise ValueError('Cannot start again, scheduler is already running.')
 
 		for t in self._classical_tasks + self._quantum_tasks:
 			if t.job_id() is not None or t.done() or t.running():
-				raise ValueError("Cannot start again, some tasks were already submitted or finished.")
+				raise ValueError('Cannot start again, some tasks were already submitted or finished.')
 
-		if self.mode == "optimize_session" and not self._prepared_optimize_session:
+		if self.mode == 'optimize_session' and not self._prepared_optimize_session:
 			self._prepare_optimize_session()
 			self._prepared_optimize_session = True
 
@@ -428,7 +434,7 @@ class AQL:
 					pending = [t for t in all_tasks if (not t.done()) and (not t.cancelled()) and (t.job_id() is None)]
 					if not pending:
 						break
-					raise RuntimeError("Deadlock: no runnable tasks (check dependency graph).")
+					raise RuntimeError('Deadlock: no runnable tasks (check dependency graph).')
 
 				try:
 					wait_ret = self._manager.wait_for_a_job(None, timeout=0.5)

@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from pyqubo import Array, Binary
 
+from qlauncher import models
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import BQM
 
 
 class VertexCover(Problem):
@@ -58,7 +58,7 @@ class VertexCover(Problem):
 		graph = nx.gnp_random_graph(num_vertices, edge_probability)
 		return VertexCover(graph)
 
-	def to_bqm(self, constraint_weight: int = 5, cost_weight: int = 1) -> BQM:
+	def to_bqm(self, constraint_weight: int = 5, cost_weight: int = 1) -> models.BQM:
 		vertices = self.instance.nodes()
 		edges = self.instance.edges()
 		x = Array.create('x', shape=len(vertices), vartype='BINARY')
@@ -70,4 +70,4 @@ class VertexCover(Problem):
 		for e in edges:
 			qubo += constraint_weight * (1 - x[e[0]] - x[e[1]] + x[e[0]] * x[e[1]])
 
-		return BQM(qubo.compile())
+		return models.BQM(qubo.compile())

@@ -5,8 +5,8 @@ from typing import Literal
 
 from qiskit.quantum_info import SparsePauliOp
 
+from qlauncher import models
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import BQM, Hamiltonian
 from qlauncher.hampy import Equation
 from qlauncher.problems.optimization.jssp_utils import HamPyScheduler, PyQuboScheduler
 
@@ -85,13 +85,13 @@ class JSSP(Problem):
 		lagrange_one_hot: float = 1,
 		lagrange_precedence: float = 2,
 		lagrange_share: float = 5,
-	) -> BQM:
+	) -> models.BQM:
 		# Define the matrix Q used for QUBO
 		scheduler = PyQuboScheduler(self.instance, self.max_time)
 		result = scheduler.get_result(lagrange_one_hot, lagrange_precedence, lagrange_share)
 		if isinstance(result, SparsePauliOp):
 			raise TypeError
-		return BQM(result)
+		return models.BQM(result)
 
 	def to_hamiltonian(
 		self,
@@ -99,9 +99,9 @@ class JSSP(Problem):
 		lagrange_precedence: float = 2,
 		lagrange_share: float = 5,
 		onehot: Literal['exact', 'quadratic'] = 'exact',
-	) -> Hamiltonian:
+	) -> models.Hamiltonian:
 		scheduler = HamPyScheduler(self.instance, self.max_time, onehot)
 		result = scheduler.get_result(lagrange_one_hot, lagrange_precedence, lagrange_share, self.variant)
 		if not isinstance(result, Equation):
 			raise TypeError
-		return Hamiltonian(result)
+		return models.Hamiltonian(result)

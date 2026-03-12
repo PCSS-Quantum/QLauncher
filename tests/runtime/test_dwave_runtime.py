@@ -3,7 +3,7 @@ from pyqubo import Spin
 
 from qlauncher import QLauncher
 from qlauncher.base import Result
-from qlauncher.base.problem_like import BQM
+from qlauncher.base.models import BQM
 from qlauncher.routines.dwave import TabuBackend
 from qlauncher.routines.dwave.algorithms import SimulatedAnnealing, SteepestDescent, Tabu
 from tests.runtime.utils import ALL_PROBLEMS, PROBLEM_MAP

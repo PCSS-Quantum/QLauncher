@@ -9,9 +9,8 @@ import networkx as nx
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
-from qlauncher import hampy
+from qlauncher import hampy, models
 from qlauncher.base import Problem
-from qlauncher.base.problem_like import QUBO, Hamiltonian
 
 
 class EC(Problem):
@@ -101,7 +100,7 @@ class EC(Problem):
 			instance[left].add(right)
 		return EC(instance=instance, **kwargs)
 
-	def to_hamiltonian(self, onehot: Literal['exact', 'quadratic'] = 'exact') -> Hamiltonian:
+	def to_hamiltonian(self, onehot: Literal['exact', 'quadratic'] = 'exact') -> models.Hamiltonian:
 		onehots = []
 		for ele in set().union(*self.instance):
 			ohs = set()
@@ -119,7 +118,7 @@ class EC(Problem):
 				part = hampy.one_in_n(list(ohs), len(self.instance), quadratic=True)
 			equation += part
 
-		return Hamiltonian(
+		return models.Hamiltonian(
 			equation,
 			mixer_hamiltonian=self.get_mixer_hamiltonian(),
 		)
@@ -178,7 +177,7 @@ class EC(Problem):
 
 		return mix_ham + x_gate_ham
 
-	def to_qubo(self) -> QUBO:
+	def to_qubo(self) -> models.QUBO:
 		n = len(self.instance)
 		# Calculate length tabs
 		len_routes = []
@@ -206,7 +205,7 @@ class EC(Problem):
 		for i in hr_dict:
 			qubo[i][i] = -hr_dict[i]
 
-		return QUBO(qubo, 0)
+		return models.QUBO(qubo, 0)
 
 
 def ring_ham(set_ring: set[int], n: int) -> hampy.Equation:

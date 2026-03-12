@@ -40,6 +40,11 @@ dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
 cirq = ["cirq>=1.4.1", "ply"]
 dev = ["pytest", "pytest-httpx>=0.35.0"]
 
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
+
 [tool.ruff]
 line-length = 140
 target-version = "py311"
