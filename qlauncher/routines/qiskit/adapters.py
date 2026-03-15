@@ -1,85 +1,32 @@
-from collections.abc import Sequence
-from typing import Any, Iterable
-
 import math
+from collections.abc import Iterable, Sequence
+from itertools import chain
+from typing import Any
 
 import numpy as np
-
-from qiskit import transpile, QuantumCircuit
+from qiskit import transpile
+from qiskit.circuit import QuantumCircuit
+from qiskit.primitives import BasePrimitiveJob, BitArray, DataBin, SamplerResult
+from qiskit.primitives.base import BaseEstimatorV1, BaseEstimatorV2, BaseSamplerV1, BaseSamplerV2, EstimatorResult
+from qiskit.primitives.containers import PubResult
+from qiskit.primitives.containers.estimator_pub import EstimatorPub, EstimatorPubLike
 from qiskit.primitives.containers.primitive_result import PrimitiveResult
+from qiskit.primitives.containers.sampler_pub import SamplerPub, SamplerPubLike
 from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
-from qiskit.result import QuasiDistribution
-from qiskit.primitives import SamplerResult, BasePrimitiveJob, BitArray, DataBin
-from qiskit.primitives.base import BaseSamplerV1, BaseSamplerV2
-from qiskit.primitives.containers.sampler_pub import SamplerPubLike
 from qiskit.primitives.primitive_job import PrimitiveJob
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.result import QuasiDistribution
 
-
-class RuntimeJobV2Adapter(BasePrimitiveJob):
-    def __init__(self, job, **kwargs):
-        super().__init__(job.job_id(), **kwargs)
-        self.job = job
-
-    def result(self):
-        raise NotImplementedError()
-
-    def cancel(self):
-        return self.job.cancel()
-
-    def status(self):
-        return self.job.status()
-
-    def done(self):
-        return self.job.done()
-
-    def cancelled(self):
-        return self.job.cancelled()
-
-    def running(self):
-        return self.job.running()
-
-    def in_final_state(self):
-        return self.job.in_final_state()
-
-
-class SamplerV2JobAdapter(RuntimeJobV2Adapter):
-    """
-    Dummy data holder, returns a v1 SamplerResult from v2 sampler job.
-    """
-
-    def __init__(self, job, **kwargs):
-        super().__init__(job, **kwargs)
-
-    def _get_quasi_meta(self, res):
-        data = BitArray.concatenate_bits(list(res.data.values()))
-        counts = data.get_int_counts()
-        probs = {k: v/data.num_shots for k, v in counts.items()}
-        quasi_dists = QuasiDistribution(probs, shots=data.num_shots)
-
-        metadata = res.metadata
-        metadata["sampler_version"] = 2  # might be useful for debugging
-
-        return quasi_dists, metadata
-
-    def result(self):
-        res = self.job.result()
-        qd, metas = [], []
-        for r in res:
-            quasi_dist, metadata = self._get_quasi_meta(r)
-            qd.append(quasi_dist)
-            metas.append(metadata)
-
-        return SamplerResult(quasi_dists=qd, metadata=metas)
+from qlauncher.routines.circuits import CIRCUIT_FORMATS
+from qlauncher.routines.qiskit.backends.gate_circuit_backend import GateCircuitBackend
+from qlauncher.routines.qiskit.utils import coerce_to_circuit_list
 
 
 def _transpile_circuits(circuits, backend):
     # Transpile qaoa circuit to backend instruction set, if backend is provided
     # ? I pass a backend into SamplerV2 as *mode* but here sampler_v2.mode returns None, why?
-    if not backend is None:
-        if isinstance(circuits, Sequence):
-            circuits = [transpile(circuit) for circuit in circuits]
-        else:
-            circuits = transpile(circuits)
+    if backend is not None:
+        circuits = [transpile(circuit) for circuit in circuits] if isinstance(circuits, Sequence) else transpile(circuits)
 
     return circuits
 
@@ -92,27 +39,47 @@ class SamplerV2ToSamplerV1Adapter(BaseSamplerV1):
     def __init__(self, sampler_v2: BaseSamplerV2, backend=None):
         """
         Args:
-            sampler_v2 (BaseSamplerV2): V2 sampler to be adapted.
-            backend (Backend | None): Backend to transpile circuits to.
+                sampler_v2 (BaseSamplerV2): V2 sampler to be adapted.
+                backend (Backend | None): Backend to transpile circuits to.
         """
         self.sampler_v2 = sampler_v2
         self.backend = backend
         super().__init__()
 
-    def _run(self, circuits, parameter_values=None, **run_options) -> SamplerV2JobAdapter:
+    def _get_quasi_meta(self, res):
+        data = BitArray.concatenate_bits(list(res.data.values()))
+        counts = data.get_int_counts()
+        probs = {measurement: counts / data.num_shots for measurement, counts in counts.items()}
+        quasi_dists = QuasiDistribution(probs, shots=data.num_shots)
+
+        metadata = res.metadata
+        metadata['sampler_version'] = 2  # might be useful for debugging
+
+        return quasi_dists, metadata
+
+    def _run_v2(self, pubs, **run_options):
+        job = self.sampler_v2.run(pubs=pubs, **run_options)
+        result = job.result()
+        quasi_dists, metas = [], []
+        for result_single in result:
+            quasi_dist, metadata = self._get_quasi_meta(result_single)
+            quasi_dists.append(quasi_dist)
+            metas.append(metadata)
+
+        return SamplerResult(quasi_dists=quasi_dists, metadata=metas)
+
+    def _run(self, circuits, parameter_values=None, **run_options) -> PrimitiveJob:
         circuits = _transpile_circuits(circuits, self.backend)
         v2_list = list(zip(circuits, parameter_values))
-        job = self.sampler_v2.run(pubs=v2_list, **run_options)
 
-        return SamplerV2JobAdapter(job)
+        job = PrimitiveJob(self._run_v2, v2_list, **run_options)
+        job._submit()
+        return job
 
 
 class SamplerV1ToSamplerV2Adapter(BaseSamplerV2):
     """
     Adapts a v1 sampler to a v2 interface.
-
-    Args:
-        BaseSamplerV2 (_type_): _description_
     """
 
     def __init__(self, sampler_v1: BaseSamplerV1) -> None:
@@ -122,44 +89,124 @@ class SamplerV1ToSamplerV2Adapter(BaseSamplerV2):
     def _run(self, pubs: Iterable[SamplerPubLike], shots: int = 1024):
         circuits, params = [], []
         for pub in pubs:
-            if isinstance(pub, QuantumCircuit):
-                circuits.append(pub)
-                params.append([])
-            elif isinstance(pub, tuple):
-                circuits.append(pub[0])
-                params.append(pub[1] if len(pub) == 2 else [])
+            coerced = SamplerPub.coerce(pub)
+            circuits.append(coerced.parameter_values.bind_all(coerced.circuit).item())
+            params.append([])
 
         out = self.samplerv1.run(circuits, params, shots=shots).result()
+
         results = []
-        for dist in out.quasi_dists:
-            vals: list[int] = []
-            max_val = 0
-            for k, v in dist.items():
-                vals += [k] * int(round(v*shots, 0))
-                max_val = max(max_val, k)
+        for circuit, dist in zip(circuits, out.quasi_dists):
+            values: list[int] = []
+            for value, relative_frequency in dist.items():
+                values += [value] * int(round(relative_frequency * shots, 0))
 
-            required_bits = math.ceil(math.log2(max_val))
-            required_bytes = math.ceil(required_bits/8)
+            required_bits = circuit.num_qubits
+            required_bytes = math.ceil(required_bits / 8)
+            byte_array = np.array([np.frombuffer(value.to_bytes(required_bytes), dtype=np.uint8) for value in values])
 
-            arr = np.array(
-                [
-                    np.frombuffer(v.to_bytes(required_bytes), dtype=np.uint8)
-                    for v in vals
-                ])
-            bit_array = BitArray(
-                arr,
-                num_bits=required_bits
-            )
+            bit_array = BitArray(byte_array, num_bits=required_bits)
+
             results.append(SamplerPubResult(data=DataBin(meas=bit_array), metadata={'shots': shots}))
 
         return PrimitiveResult(results, metadata={'version': 2})
 
-    def run(
-        self,
-        pubs: Iterable[SamplerPubLike],
-        *,
-        shots: int | None = None
-    ) -> BasePrimitiveJob[PrimitiveResult[SamplerPubResult], Any]:
+    def run(self, pubs: Iterable[SamplerPubLike], *, shots: int | None = None) -> BasePrimitiveJob[PrimitiveResult[SamplerPubResult], Any]:
         job = PrimitiveJob(self._run, pubs, shots if shots is not None else 1024)
         job._submit()
         return job
+
+
+class EstimatorV1ToEstimatorV2Adapter(BaseEstimatorV2):
+    def __init__(self, estimator: BaseEstimatorV1) -> None:
+        super().__init__()
+        self.estimator = estimator
+
+    def _construct_v2_result(self, estimator_result: EstimatorResult) -> PubResult:
+        var = np.array([meta.get('variance', 0) for meta in estimator_result.metadata])
+        shots = np.array([meta.get('shots', 1) for meta in estimator_result.metadata])
+
+        values = estimator_result.values
+        if len(values) == 1:
+            values = values.squeeze()
+            var = var.squeeze()
+            shots = shots.squeeze()
+        data_bin = DataBin(evs=values, stds=var / np.sqrt(shots), shape=values.shape if isinstance(values, np.ndarray) else tuple())
+        return PubResult(
+            data_bin,
+            metadata={
+                'shots': shots,
+            },
+        )
+
+    def _run(self, pubs: Iterable[EstimatorPub]) -> PrimitiveResult[PubResult]:
+        results = []
+        for pub in pubs:
+            observables = pub.observables
+            parameter_values = pub.parameter_values
+
+            param_shape = parameter_values.shape
+            param_indices = np.fromiter(np.ndindex(param_shape), dtype=object).reshape(param_shape)
+            broadcast_param_indices, broadcast_observables = np.broadcast_arrays(param_indices, observables)
+
+            params_final, final_observables = [], []
+            for index in np.ndindex(*broadcast_param_indices.shape):
+                param_index = broadcast_param_indices[index]
+                params_final.append(parameter_values[param_index].as_array())
+                final_observables.append(broadcast_observables[index])
+
+            res = self.estimator.run(
+                [pub.circuit] * len(params_final),
+                [SparsePauliOp.from_list(observable.items()) for observable in final_observables],
+                params_final,
+            ).result()
+            results.append(res)
+
+        return PrimitiveResult([self._construct_v2_result(result) for result in results], metadata={'version': 2})
+
+    def run(self, pubs: Iterable[EstimatorPubLike], *, precision: float | None = None) -> BasePrimitiveJob[PrimitiveResult[PubResult], Any]:
+        coerced_pubs = [EstimatorPub.coerce(pub, precision) for pub in pubs]
+        job = PrimitiveJob(self._run, coerced_pubs)
+        job._submit()
+        return job
+
+
+class TranslatingSamplerV1(BaseSamplerV1):
+    def __init__(self, sampler_v1: BaseSamplerV1, compatible_circuit: CIRCUIT_FORMATS, options: dict | None = None):
+        super().__init__(options=options)
+        self.sampler = sampler_v1
+        self.compatible_circuit = compatible_circuit
+
+    def _run(self, circuits: tuple[QuantumCircuit, ...], parameter_values: tuple[tuple[float, ...], ...], **run_options) -> PrimitiveJob:
+        bound_circuits = [
+            circuit.assign_parameters(params, strict=True) for circuit, params in zip(circuits, parameter_values, strict=True)
+        ]
+        pubs = [
+            GateCircuitBackend.get_translation(circuit, self.compatible_circuit)
+            if not isinstance(circuit, self.compatible_circuit)
+            else circuit
+            for circuit in bound_circuits
+        ]
+        return self.sampler.run(pubs, parameter_values=parameter_values, **run_options)
+
+
+class TranslatingSampler(BaseSamplerV2):
+    def __init__(self, sampler_v2: BaseSamplerV2, compatible_circuit: CIRCUIT_FORMATS):
+        super().__init__()
+        self.sampler = sampler_v2
+        self.compatible_circuit = compatible_circuit
+
+    def run(
+        self,
+        pubs: Iterable[SamplerPubLike | CIRCUIT_FORMATS],
+        *,
+        shots: int | None = None,
+    ) -> BasePrimitiveJob[PrimitiveResult[SamplerPubResult], Any]:
+        circuits = chain(*(coerce_to_circuit_list(pub, shots) for pub in pubs))
+        pubs = [
+            GateCircuitBackend.get_translation(circuit, self.compatible_circuit)
+            if not isinstance(circuit, self.compatible_circuit)
+            else circuit
+            for circuit in circuits
+        ]
+        return self.sampler.run(pubs, shots=shots)

@@ -1,17 +1,18 @@
-""" Example of how QLauncher works """
+"""Example of how QLauncher works"""
+
 from qlauncher import QLauncher, problems
-from qlauncher.routines.qiskit import IBMBackend, QAOA
+from qlauncher.routines.qiskit import QAOA, IBMBackend
 
 
-def main():
-    """ main """
-    pr = problems.JSSP.from_preset('toy')
-    alg = QAOA()
-    backend = IBMBackend('local_simulator')
+def main() -> None:
+	"""main"""
+	pr = problems.JSSP.from_preset('toy')
+	alg = QAOA()
+	backend = IBMBackend('local_simulator')
 
-    launcher = QLauncher(pr, alg, backend)
-    print(launcher.run())
+	launcher = QLauncher(pr, alg, backend)
+	print(launcher.run())
 
 
 if __name__ == '__main__':
-    main()
+	main()

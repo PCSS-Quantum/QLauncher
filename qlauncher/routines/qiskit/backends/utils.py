@@ -1,15 +1,18 @@
+from collections.abc import Iterable
 from typing import TypeVar
-from qiskit import QuantumCircuit, transpile
-from qiskit.providers.backend import BackendV1, BackendV2
-from qiskit.primitives import BackendSamplerV2, BackendEstimatorV2
-from qiskit_ibm_runtime import EstimatorV2, SamplerV2
 
+from qiskit import QuantumCircuit, transpile
+from qiskit.primitives import BackendEstimatorV2, BackendSamplerV2
+from qiskit.providers.backend import BackendV1, BackendV2
+from qiskit_ibm_runtime import EstimatorV2, SamplerV2
 
 AUTO_TRANSPILE_SAMPLER_TYPE = TypeVar('AUTO_TRANSPILE_SAMPLER_TYPE', BackendSamplerV2, SamplerV2)
 AUTO_TRANSPILE_ESTIMATOR_TYPE = TypeVar('AUTO_TRANSPILE_ESTIMATOR_TYPE', BackendEstimatorV2, EstimatorV2)
 
 
-def _get_transpiled_sampler_pubs(pubs: list[tuple | QuantumCircuit], backend: BackendV1 | BackendV2, optimization_level: int = 2) -> list[tuple | QuantumCircuit]:
+def _get_transpiled_sampler_pubs(
+    pubs: list[tuple | QuantumCircuit], backend: BackendV1 | BackendV2, optimization_level: int = 2
+) -> list[tuple | QuantumCircuit]:
     new_pubs = []
     for pub in pubs:
         if isinstance(pub, QuantumCircuit):
@@ -20,12 +23,19 @@ def _get_transpiled_sampler_pubs(pubs: list[tuple | QuantumCircuit], backend: Ba
     return new_pubs
 
 
-def _get_transpiled_estimator_pubs(pubs: list[tuple], backend: BackendV1 | BackendV2, optimization_level: int = 2) -> list[tuple | QuantumCircuit]:
+def _get_transpiled_estimator_pubs(
+    pubs: list[tuple], backend: BackendV1 | BackendV2, optimization_level: int = 2
+) -> list[tuple | QuantumCircuit]:
     new_pubs = []
     for pub in pubs:
         circuit, operator, *args = pub
         transp_circ: QuantumCircuit = transpile(circuit, backend, optimization_level=optimization_level)
-        transp_op = operator.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits)
+
+        if isinstance(operator, Iterable):
+            transp_op = [op.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits) for op in operator]
+        else:
+            transp_op = operator.apply_layout(transp_circ.layout, num_qubits=transp_circ.num_qubits)
+
         pub = (transp_circ, transp_op, *args)
         new_pubs.append(pub)
     return new_pubs
@@ -51,7 +61,9 @@ def _assign_estimator_pubs(pubs: list[tuple]) -> list[tuple]:
     return new_pubs
 
 
-def set_sampler_auto_run_behavior(sampler: AUTO_TRANSPILE_SAMPLER_TYPE, auto_transpile: bool = False, auto_transpile_level: int = 2, auto_assign: bool = False) -> AUTO_TRANSPILE_SAMPLER_TYPE:
+def set_sampler_auto_run_behavior(
+    sampler: AUTO_TRANSPILE_SAMPLER_TYPE, auto_transpile: bool = False, auto_transpile_level: int = 2, auto_assign: bool = False
+) -> AUTO_TRANSPILE_SAMPLER_TYPE:
     """
     Set chosen automatic behavior on a sampler instance.
 
@@ -78,7 +90,9 @@ def set_sampler_auto_run_behavior(sampler: AUTO_TRANSPILE_SAMPLER_TYPE, auto_tra
     return sampler
 
 
-def set_estimator_auto_run_behavior(estimator: AUTO_TRANSPILE_ESTIMATOR_TYPE, auto_transpile: bool = False, auto_transpile_level: int = 2, auto_assign: bool = False) -> AUTO_TRANSPILE_ESTIMATOR_TYPE:
+def set_estimator_auto_run_behavior(
+    estimator: AUTO_TRANSPILE_ESTIMATOR_TYPE, auto_transpile: bool = False, auto_transpile_level: int = 2, auto_assign: bool = False
+) -> AUTO_TRANSPILE_ESTIMATOR_TYPE:
     """
     Set chosen automatic behavior on a estimator instance.
 
@@ -99,5 +113,6 @@ def set_estimator_auto_run_behavior(estimator: AUTO_TRANSPILE_ESTIMATOR_TYPE, au
         if auto_assign:
             pubs = _assign_estimator_pubs(pubs)
         return func(pubs, *args, precision=precision)
+
     estimator.run = run_wrapper
     return estimator

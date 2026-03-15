@@ -1,4 +1,4 @@
-from .base import Problem, Algorithm, Backend, Result
-from .adapter_structure import adapter, formatter
+from .base import Algorithm, Backend, Problem, Result
+from .models import Model
 
-__all__ = ['Problem', 'Algorithm', 'Backend', 'Result', 'adapter', 'formatter']
+__all__ = ['Problem', 'Algorithm', 'Backend', 'Result', 'Model']

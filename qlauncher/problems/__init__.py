@@ -1,6 +1,10 @@
-""" All problems together """
-from qlauncher.base import Problem
-from . import problem_formulations as _
-from .problem_initialization import Raw, MaxCut, EC, QATM, JSSP, TSP, GraphColoring, TabularML, Molecule
+"""All problems together"""
 
-__all__ = ['Problem', 'Raw', 'MaxCut', 'EC', 'QATM', 'JSSP', 'TSP', 'GraphColoring', 'TabularML', 'Molecule']
+from qlauncher.base import Problem
+
+from .optimization import EC, JSSP, QATM, TSP, GraphColoring, Knapsack, MaxCut, VertexCover
+from .other import TabularML
+
+Raw, _Circuit = [None] * 2
+
+__all__ = ['Problem', 'MaxCut', 'EC', 'QATM', 'JSSP', 'TSP', 'GraphColoring', 'TabularML', 'Knapsack', '_Circuit', 'VertexCover']
