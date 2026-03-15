@@ -4,12 +4,12 @@ from .qiskit_native import FALQON, QAOA
 from .wrapper import CircuitRunner
 
 try:
-	from .qml import TrainQSVCKernel
+    from .qml import TrainQSVCKernel
 except ImportError:
-	TrainQSVCKernel = None
+    TrainQSVCKernel = None
 try:
-	from .educated_guess import EducatedGuess
+    from .educated_guess import EducatedGuess
 except ImportError:
-	EducatedGuess = None
+    EducatedGuess = None
 
 __all__ = ['QAOA', 'FALQON', 'EducatedGuess', 'TrainQSVCKernel', 'CircuitRunner']

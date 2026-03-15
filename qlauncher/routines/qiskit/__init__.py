@@ -14,12 +14,12 @@ from qlauncher.routines.qiskit.backends.qiskit_backend import QiskitBackend
 from .algorithms import FALQON, QAOA, EducatedGuess, TrainQSVCKernel
 
 __all__ = [
-	'FALQON',
-	'QAOA',
-	'EducatedGuess',
-	'TrainQSVCKernel',
-	'AerBackend',
-	'AQTBackend',
-	'IBMBackend',
-	'QiskitBackend',
+    'FALQON',
+    'QAOA',
+    'EducatedGuess',
+    'TrainQSVCKernel',
+    'AerBackend',
+    'AQTBackend',
+    'IBMBackend',
+    'QiskitBackend',
 ]

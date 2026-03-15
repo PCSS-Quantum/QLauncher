@@ -51,7 +51,6 @@ target-version = "py311"
 
 [tool.ruff.format]
 quote-style = "single"
-indent-style = "tab"
 docstring-code-format = true
 
 [tool.ruff.lint]

@@ -5,10 +5,10 @@ from qiskit import QuantumCircuit
 
 type_list: list[type] = [QuantumCircuit]
 try:
-	import cirq
+    import cirq
 
-	type_list.append(cirq.Circuit)
+    type_list.append(cirq.Circuit)
 except ImportError:
-	pass
+    pass
 
 CIRCUIT_FORMATS: TypeAlias = reduce(lambda a, b: a | b, type_list)

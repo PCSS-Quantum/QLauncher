@@ -7,6 +7,6 @@ from qlauncher.routines.circuits import CIRCUIT_FORMATS
 
 
 class _Circuit(Model):
-	def __init__(self, circuit: CIRCUIT_FORMATS) -> None:
-		self.variant = 'Circuit'
-		self.circuit = circuit
+    def __init__(self, circuit: CIRCUIT_FORMATS) -> None:
+        self.variant = 'Circuit'
+        self.circuit = circuit
