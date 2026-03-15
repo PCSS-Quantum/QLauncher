@@ -266,7 +266,7 @@ class AQL:
         QLauncherCtor = QLauncher
 
         def quantum_run(
-            formatted_problem: Problem | ProblemLike,
+            formatted_problem: Problem | Model,
             *_: object,
             algo=algo,
             backend=backend,

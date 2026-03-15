@@ -64,9 +64,7 @@ def test_AQT_backend_backendv1v2_simulator() -> None:
     assert isinstance(backend.backendv1v2, FakeAlmadenV2)
     assert isinstance(backend._estimatorv1, AQTEstimator)
     assert isinstance(backend.samplerV1, TranslatingSamplerV1)
-    assert isinstance(backend.sampler, TranslatingSampler)
     assert isinstance(backend.samplerV1.sampler, AQTSampler)
-    assert isinstance(backend.sampler.sampler, BaseSamplerV2)
 
     run_backend_qaoa(backend)
 

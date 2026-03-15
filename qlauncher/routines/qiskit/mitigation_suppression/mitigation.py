@@ -41,6 +41,8 @@ class WeighedMitigation(CircuitExecutionMethod):
             )
         self.weights = method_weights
         self.methods = mitigation_methods
+        # TODO: Change into intersection between all mitigation methods
+        self.compatible_circuit = mitigation_methods[0].compatible_circuit
         super().__init__()
 
     def sample(self, circuit: QuantumCircuit, backend: QiskitBackend, shots: int = 1024) -> dict[str, int]:
