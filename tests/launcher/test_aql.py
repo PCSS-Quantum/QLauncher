@@ -133,7 +133,7 @@ def test_AQL_session_optimization() -> None:
     del order
 
 
-@pytest.skip('Requires remake after AQL changes')
+@pytest.mark.skip('Requires remake after AQL changes')
 @check_subprocesses_exit()
 def test_AQL_task_basic() -> None:
     manager = LocalJobManager()
@@ -144,7 +144,7 @@ def test_AQL_task_basic() -> None:
     assert t2.result(timeout=1) == 4
 
 
-@pytest.skip('Requires remake after AQL changes')
+@pytest.mark.skip('Requires remake after AQL changes')
 @check_subprocesses_exit()
 def test_AQL_task_result_passing() -> None:
     """
@@ -162,7 +162,7 @@ def test_AQL_task_result_passing() -> None:
     assert t_concat.result(timeout=1) == 'Value:42'
 
 
-@pytest.skip('Requires remake after AQL changes')
+@pytest.mark.skip('Requires remake after AQL changes')
 @check_subprocesses_exit()
 def test_AQL_task_raises_error_from_target_fn() -> None:
     manager = LocalJobManager()
@@ -177,7 +177,7 @@ def test_AQL_task_raises_error_from_target_fn() -> None:
         t_err.result()
 
 
-@pytest.skip('Requires remake after AQL changes')
+@pytest.mark.skip('Requires remake after AQL changes')
 @check_subprocesses_exit()
 def test_task_dies_after_timeout_error() -> None:
     aql = AQL(manager=LocalJobManager())
@@ -188,7 +188,7 @@ def test_task_dies_after_timeout_error() -> None:
         t.result(0.1)
 
 
-@pytest.skip('Requires remake after AQL changes')
+@pytest.mark.skip('Requires remake after AQL changes')
 @check_subprocesses_exit()
 def test_task_dies_after_going_out_of_scope() -> None:
     manager = LocalJobManager()
