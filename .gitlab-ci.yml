@@ -14,8 +14,8 @@ default:
     - pip install uv
     - uv venv .venv
     - source .venv/bin/activate
-    - uv pip install git+https://ptseries-CI:${PTSERIES_TOKEN}@gitlab.pcss.pl/quantum/ptseries.git
     - uv sync --all-extras
+    - uv pip install git+https://ptseries-CI:${PTSERIES_TOKEN}@gitlab.pcss.pl/quantum/ptseries.git
 
 test:
   stage: test
