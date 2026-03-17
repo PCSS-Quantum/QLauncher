@@ -38,7 +38,6 @@ ml = ["qiskit-machine-learning","scikit_learn"]
 orca = ["numba==0.60.0", "torch"]
 dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
 cirq = ["cirq>=1.4.1", "ply"]
-dev = ["pytest", "pytest-httpx>=0.35.0"]
 
 [tool.pytest.ini_options]
 pythonpath = [
@@ -73,3 +72,18 @@ select = ["E", # pycodestyle errors
           "NPY", # NumPy-specific rules
 ]
 ignore = ["W191", "E111", "E114", "E117", "E501", "D206", "D300", "ISC002", "ANN001", "ANN003", "ANN204"]
+
+[dependency-groups]
+dev = [
+    "better-apidoc>=0.3.2",
+    "myst-nb>=1.4.0",
+    "pandoc>=2.4",
+    "psutil>=7.0.0",
+    "pylatexenc>=2.10",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.3.0",
+    "pytest-httpx>=0.35.0",
+    "sphinx==8.2.3",
+    "sphinx-book-theme>=1.2.0",
+    "sphinx-copybutton>=0.5.2",
+]

@@ -14,16 +14,15 @@ default:
     - pip install uv
     - uv venv .venv
     - source .venv/bin/activate
+    - uv sync --all-extras
     - uv pip install git+https://ptseries-CI:${PTSERIES_TOKEN}@gitlab.pcss.pl/quantum/ptseries.git
-    - uv pip install -r requirements.txt
-    - uv pip install -r requirements-dev.txt
-    - uv pip install --editable .
 
 test:
   stage: test
   script:
-    - pytest -v tests
+    - uv run pytest -v tests
   rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_COMMIT_BRANCH == "dev" && $CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
@@ -34,7 +33,7 @@ pages:
     - cd docs
     - mkdir -p tutorials
     - cp ../examples/*.ipynb tutorials
-    - sphinx-build -b html . ../public
+    - uv run sphinx-build -b html . ../public
     - cd ..
   artifacts:
     paths:
@@ -45,8 +44,8 @@ pages:
 publish:
   stage: publish
   script:
-    - uv pip install build twine
-    - python -m build
-    - twine upload dist/* -u "$PyPI_USERNAME" -p "$PyPI_PASSWORD"
+    - uv pip install build
+    - uv run python -m build
+    - uv publish dist/* -u "$PyPI_USERNAME" -p "$PyPI_PASSWORD"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
