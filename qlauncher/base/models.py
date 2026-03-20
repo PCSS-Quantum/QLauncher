@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Any, overload
 
 import numpy as np
 from dimod import BinaryQuadraticModel
+from pyqubo import Binary  # type: ignore
 from pyqubo import Model as pyquboModel
-from pyqubo import Spin  # type: ignore
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit import Gate
 from qiskit.circuit.library import QFTGate, SwapGate, UnitaryGate, XGate
@@ -40,7 +40,7 @@ class Model:
 
 class QUBO(Model):
     def __init__(self, matrix: np.ndarray, offset: float = 0) -> None:
-        self.matrix = matrix
+        self.matrix = (matrix + matrix.T) / 2
         self.offset = offset
 
     def to_hamiltonian(self) -> 'Hamiltonian':
@@ -59,7 +59,7 @@ class QUBO(Model):
                         )
                         * entry
                     )
-        pauli += SparsePauliOp.from_sparse_list([('I', [], self.offset)], num_vars)
+        pauli += SparsePauliOp.from_sparse_list([('I', [0], self.offset)], num_vars)
         return Hamiltonian(Equation(pauli))
 
     def to_fn(self) -> 'FN':
@@ -76,16 +76,15 @@ class QUBO(Model):
                 for j in range(len(self.matrix)):
                     if i > j:
                         matrix[i][j] = 0
+                    elif j > j:
+                        matrix[i][j] *= 2
 
         values_and_qubits = {(x, y): c for y, r in enumerate(matrix) for x, c in enumerate(r) if c != 0}
         number_of_qubits = len(matrix)
-        qubits = [Spin(f'x{i}') for i in range(number_of_qubits)]
+        qubits = [Binary(f'x{i}') for i in range(number_of_qubits)]
         H = 0
         for (x, y), value in values_and_qubits.items():
-            if symmetric:
-                H += value / len({x, y}) * qubits[x] * qubits[y]
-            else:
-                H += value * qubits[x] * qubits[y]
+            H += value * qubits[x] * qubits[y]
         model = H.compile()
         return BQM(model)
 
@@ -154,7 +153,7 @@ class Hamiltonian(Model):
         qp = from_ising(self.hamiltonian)
         conv = QuadraticProgramToQubo()
         qubo = conv.convert(qp).objective
-        return QUBO(qubo.quadratic.to_array(), qubo.constant)
+        return QUBO(qubo.quadratic.to_array(), float(qubo.constant))
 
 
 class BQM(Model):
@@ -177,6 +176,30 @@ class BQM(Model):
             var1, var2 = key
             Q_matrix[inv_map[var1], inv_map[var2]] = value
         return QUBO(Q_matrix, offset)
+
+    def to_hamiltonian(self) -> Hamiltonian:
+        """Returns Hamiltonian function"""
+
+        bqm = self.model.to_bqm()
+        variables, new_offset = bqm.variables, bqm.offset
+        variables = list(variables)
+        variables.sort()
+
+        sparse_list = []
+
+        for i, coeff in bqm.linear.items():
+            sparse_list.append(('Z', [variables.index(i)], -coeff / 2))
+            new_offset += coeff / 2
+
+        for (i, j), coeff in bqm.quadratic.items():
+            sparse_list.append(('ZZ', [variables.index(i), variables.index(j)], coeff / 4))
+            sparse_list.append(('Z', [variables.index(i)], -coeff / 4))
+            sparse_list.append(('Z', [variables.index(j)], -coeff / 4))
+            new_offset += coeff / 4
+
+        sparse_list.append(('I', [0], new_offset))
+
+        return Hamiltonian(SparsePauliOp.from_sparse_list(sparse_list, num_qubits=len(variables)).simplify())
 
 
 class Molecule(Model):
