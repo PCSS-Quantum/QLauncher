@@ -157,15 +157,25 @@ class Hamiltonian(Model):
 
 
 class BQM(Model):
-    def __init__(self, model: pyquboModel) -> None:  # noqa: ANN401
-        self.model = model
+    def __init__(self, model: pyquboModel | BinaryQuadraticModel) -> None:  # noqa: ANN401
+        if isinstance(model, pyquboModel):
+            self.model = model
+            self._bqm = None
+        else:
+            self.model = None
+            self._bqm = model
 
     @property
     def bqm(self) -> BinaryQuadraticModel:
-        return self.model.to_bqm()
+        if self._bqm is not None:
+            return self._bqm
+        self._bqm = self.model.to_bqm()
+        return self._bqm
 
     def to_qubo(self) -> QUBO:
         """Returns Qubo function"""
+        if self.model is None:
+            raise NotImplementedError('To transfer into QUBO it is required to provide to BQM pyqubo model')
         model = self.model
         variables = sorted(model.variables)
         num_qubits = len(variables)
