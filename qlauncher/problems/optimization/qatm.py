@@ -51,7 +51,7 @@ class QATM(Problem):
         return QATM(cm, aircrafts)
 
     @classmethod
-    def from_file(cls, path: str, instance_name: str = 'QATM', onehot: str = 'exact', optimization: bool = False) -> 'QATM':
+    def from_file(cls, path: str, instance_name: str = 'QATM', onehot: Literal['exact', 'quadratic', 'xor'] = 'exact', optimization: bool = False) -> 'QATM':
         cm_path = Path(path, 'CM_' + instance_name)
         aircrafts_path = Path(path, 'aircrafts_' + instance_name)
 
