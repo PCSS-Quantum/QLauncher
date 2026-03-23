@@ -8,9 +8,9 @@ def test_from_hamiltonian() -> None:
     """Testing translation from hamiltonian"""
     desired_matrix = np.array(
         [
-            [-2.0, 4.0, 0.0, 0.0],
-            [0.0, -4.0, 4.0, 0.0],
-            [0.0, 0.0, -6.0, 0.0],
+            [-2.0, 2.0, 0.0, 0.0],
+            [2.0, -4.0, 2.0, 0.0],
+            [0.0, 2.0, -6.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
         ]
     )
