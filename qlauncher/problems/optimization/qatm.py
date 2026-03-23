@@ -17,7 +17,7 @@ class QATM(Problem):
         cm: np.ndarray,
         aircrafts: pd.DataFrame,
         onehot: Literal['exact', 'quadratic', 'xor'] = 'exact',
-        optimization: bool = True,
+        optimization: bool = False,
     ) -> None:
         self.cm = cm
         self.aircrafts = aircrafts
@@ -51,18 +51,20 @@ class QATM(Problem):
         return QATM(cm, aircrafts)
 
     @classmethod
-    def from_file(cls, path: str, instance_name: str = 'QATM', optimization: bool = True) -> 'QATM':
+    def from_file(cls, path: str, instance_name: str = 'QATM', onehot: str = 'exact', optimization: bool = False) -> 'QATM':
         cm_path = Path(path, 'CM_' + instance_name)
         aircrafts_path = Path(path, 'aircrafts_' + instance_name)
 
         return QATM(
             np.loadtxt(cm_path),
             pd.read_csv(aircrafts_path, delimiter=' ', names=['manouver', 'aircraft']),
-            'exact',
+            onehot,
             optimization,
         )
 
-    def to_hamiltonian(self, onehot: Literal['exact', 'quadratic', 'xor'] = 'exact') -> models.Hamiltonian:
+    def to_hamiltonian(self, onehot: Literal['exact', 'quadratic', 'xor'] = None) -> models.Hamiltonian:
+        if onehot is None:
+            onehot = self.onehot
         cm = self.cm
         aircrafts = self.aircrafts
         size = len(cm)
