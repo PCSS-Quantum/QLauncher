@@ -1,6 +1,6 @@
 [project]
 name = "qlauncher"
-version = "2.1.0"
+version = "2.1.1"
 description = "QLauncher is modular tool, for solving many problems on many algorithms using many quantum computing backends"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,7 +23,7 @@ dependencies = [
     "qcg-pilotjob",
     "dill",
     "qiskit_nature",
-    "pyscf"
+    "pyscf" # Not working on windows?
 ]
 
 [tool.uv]
