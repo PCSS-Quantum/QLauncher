@@ -77,7 +77,6 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
     Args:
             p (int): The number of QAOA steps. Defaults to 1.
             optimizer (Optimizer | None): Optimizer used during algorithm runtime. If set to `None` turns into COBYLA. Defaults to None,
-            alternating_ansatz (bool): Whether to use an alternating ansatz. Defaults to False. If True, it's recommended to provide a mixer_h to alg_kwargs.
             aux: Auxiliary input for the QAOA algorithm.
             **alg_kwargs: Additional keyword arguments for the base class.
 
@@ -86,7 +85,6 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
             aux: Auxiliary input for the QAOA algorithm.
             p (int): The number of QAOA steps.
             optimizer (Optimizer): Optimizer used during algorithm runtime.
-            alternating_ansatz (bool): Whether to use an alternating ansatz.
             parameters (list): List of parameters for the algorithm.
             mixer_h (SparsePauliOp | None): The mixer Hamiltonian.
 
@@ -99,7 +97,6 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         max_evaluations: int = 100,
         training_aggregation_method: Literal['mean', 'cvar'] = 'mean',
         cvar_alpha: float = 1,
-        alternating_ansatz: bool = False,
         aux=None,
         **alg_kwargs,
     ):
@@ -113,7 +110,6 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         self.training_aggregation_method = training_aggregation_method
         self.cvar_alpha = cvar_alpha
 
-        self.alternating_ansatz: bool = alternating_ansatz
         self.parameters = ['p']
         self.mixer_h: SparsePauliOp | None = None
         self.initial_state: QuantumCircuit | None = None
@@ -167,12 +163,6 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         """Runs the QAOA algorithm"""
 
         # problem.hamiltonian: SparsePauliOp = formatter(problem)
-
-        if self.alternating_ansatz:
-            if self.mixer_h is None:
-                self.mixer_h = problem.get_mixer_hamiltonian()
-            if self.initial_state is None:
-                self.initial_state = problem.get_QAOAAnsatz_initial_state()
 
         # Cirq translation issues if we use QAOAAnsatz() by itself without appending it to a QuantumCircuit
         circuit = QuantumCircuit(problem.hamiltonian.num_qubits)
