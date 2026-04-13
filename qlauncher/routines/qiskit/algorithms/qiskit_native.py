@@ -94,6 +94,7 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         self,
         p: int = 1,
         optimization_method: Literal['COBYLA'] = 'COBYLA',
+        initial_point: numpy.ndarray | None = None,
         max_evaluations: int = 100,
         training_aggregation_method: Literal['mean', 'cvar'] = 'mean',
         cvar_alpha: float = 1,
@@ -104,6 +105,7 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         self.name: str = 'qaoa'
         self.aux = aux
         self.p: int = p
+        self.initial_point = initial_point
 
         self.optimization_method = optimization_method
         self.max_evaluations = max_evaluations
@@ -131,6 +133,11 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         Returns:
                 tuple[QuantumCircuit,list[float]]: Circuit with optimal param values applied, energy history
         """
+        if self.initial_point is None:
+            point = np.random.uniform(-2 * np.pi, 2 * np.pi, len(circuit.parameters))
+        else:
+            point = self.initial_point
+
         costs = []
 
         def cost_fn(params: np.ndarray):
@@ -151,7 +158,7 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
 
         res = minimize(
             cost_fn,
-            np.array([np.pi] * (len(circuit.parameters) // 2) + [np.pi / 2] * (len(circuit.parameters) // 2)),
+            point,
             method=self.optimization_method,
             tol=1e-2,
             options={'maxiter': self.max_evaluations},
