@@ -23,7 +23,7 @@ dependencies = [
     "qcg-pilotjob",
     "dill",
     "qiskit_nature",
-    "pyscf" # Not working on windows?
+    # "pyscf" # Not working on windows?
 ]
 
 [tool.uv]
@@ -34,6 +34,7 @@ where = ["."]
 include = ["qlauncher*"]
 
 [project.optional-dependencies]
+vqe = ["pyscf"]
 ml = ["qiskit-machine-learning","scikit_learn"]
 orca = ["numba==0.60.0", "torch"]
 dwave = ["dwave-ocean-sdk", "dwave-tabu>=0.5.0"]
