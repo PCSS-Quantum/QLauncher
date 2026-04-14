@@ -1,6 +1,6 @@
 [project]
 name = "qlauncher"
-version = "2.1.1"
+version = "2.1.2"
 description = "QLauncher is modular tool, for solving many problems on many algorithms using many quantum computing backends"
 readme = "README.md"
 requires-python = ">=3.11"
