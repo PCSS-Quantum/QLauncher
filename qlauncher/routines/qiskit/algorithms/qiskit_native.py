@@ -6,6 +6,8 @@ from datetime import datetime
 from typing import Generic, Literal
 
 import numpy as np
+from scipy.optimize import LinearConstraint, minimize
+
 import qiskit_algorithms
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import PauliEvolutionGate, QAOAAnsatz, efficient_su2
@@ -16,7 +18,6 @@ from qiskit_algorithms import optimizers
 from qiskit_algorithms.minimum_eigensolvers.diagonal_estimator import _evaluate_sparsepauli as evaluate_energy
 from qiskit_nature.second_q.algorithms.ground_state_solvers import GroundStateEigensolver
 from qiskit_nature.second_q.problems import EigenstateResult
-from scipy.optimize import minimize
 
 from qlauncher.base import Algorithm, Result
 from qlauncher.base.base import _Model
@@ -77,6 +78,8 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
     Args:
             p (int): The number of QAOA steps. Defaults to 1.
             optimizer (Optimizer | None): Optimizer used during algorithm runtime. If set to `None` turns into COBYLA. Defaults to None,
+            init_point (np.ndarray | None): initial parameters for QAOA. Should be within Constraints. Defaults to None.
+            constraints: (np.ndarray | None): constraints for QAOA parameters. Defaults to None.
             aux: Auxiliary input for the QAOA algorithm.
             **alg_kwargs: Additional keyword arguments for the base class.
 
@@ -94,8 +97,9 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         self,
         p: int = 1,
         optimization_method: Literal['COBYLA'] = 'COBYLA',
-        initial_point: numpy.ndarray | None = None,
-        max_evaluations: int = 100,
+        init_point: np.ndarray | None = None,
+        constraints: np.ndarray | None = None,
+        max_evaluations: int = 1000,
         training_aggregation_method: Literal['mean', 'cvar'] = 'mean',
         cvar_alpha: float = 1,
         aux=None,
@@ -105,7 +109,8 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         self.name: str = 'qaoa'
         self.aux = aux
         self.p: int = p
-        self.initial_point = initial_point
+        self.init_point = init_point if init_point is not None else self._prepare_init_point(constraints, p)
+        self.constraints = self._standardize_constraints(p, constraints) if constraints is not None else None
 
         self.optimization_method = optimization_method
         self.max_evaluations = max_evaluations
@@ -115,6 +120,16 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         self.parameters = ['p']
         self.mixer_h: SparsePauliOp | None = None
         self.initial_state: QuantumCircuit | None = None
+
+    def _prepare_init_point(self, constraints: np.ndarray, p: int) -> np.ndarray:
+        if constraints is not None:
+            init_point = np.random.uniform(constraints[:, 0], constraints[:, 1], 2 * p)
+        else:
+            init_point = np.random.uniform(-2 * np.pi, 2 * np.pi, 2 * p)
+        return init_point
+
+    def _standardize_constraints(self, p: int, constraints: np.ndarray) -> LinearConstraint:
+        return LinearConstraint(np.eye(2 * p), constraints[:, 0], constraints[:, 1])
 
     @property
     def setup(self) -> dict:
@@ -133,10 +148,6 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         Returns:
                 tuple[QuantumCircuit,list[float]]: Circuit with optimal param values applied, energy history
         """
-        if self.initial_point is None:
-            point = np.random.uniform(-2 * np.pi, 2 * np.pi, len(circuit.parameters))
-        else:
-            point = self.initial_point
 
         costs = []
 
@@ -157,11 +168,11 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
             return cost
 
         res = minimize(
-            cost_fn,
-            point,
+            fun=cost_fn,
+            x0=self.init_point,
+            constraints=self.constraints,
             method=self.optimization_method,
-            tol=1e-2,
-            options={'maxiter': self.max_evaluations},
+            options={'maxiter': self.max_evaluations, 'rhobeg': 1.0},
         )
 
         return res.x, costs
