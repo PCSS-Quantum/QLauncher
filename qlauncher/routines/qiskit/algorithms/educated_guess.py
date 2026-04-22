@@ -42,9 +42,10 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
     def run(self, problem: Hamiltonian, backend: QiskitBackend) -> Result:
         from qlauncher.launcher.qlauncher import QLauncher
 
-        self.manager.submit_many(QLauncher(problem,
-                                           QAOA(p=self.p_init, constraints=self._get_param_constraints(p=self.p_init)),
-                                           backend).run, n_jobs=self.max_jobs)
+        self.manager.submit_many(
+            QLauncher(problem, QAOA(p=self.p_init, constraints=self._get_param_constraints(p=self.p_init)), backend).run,
+            n_jobs=self.max_jobs,
+        )
         print(f'{len(self.manager.jobs)} jobs submitted to qcg')
 
         found_optimal_params = False
@@ -59,15 +60,16 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
             if has_potential:
                 found_optimal_params = self._search_for_job_with_optimal_params(jobid, energy, problem, backend)
 
-            self.manager.submit_many(QLauncher(problem,
-                                               QAOA(p=self.p_init, constraints=self._get_param_constraints(p=self.p_init)),
-                                               backend).run, n_jobs=self.max_jobs)
+            self.manager.submit_many(
+                QLauncher(problem, QAOA(p=self.p_init, constraints=self._get_param_constraints(p=self.p_init)), backend).run,
+                n_jobs=self.max_jobs,
+            )
 
         result = self.manager.read_results(self.best_job_id)
         self.manager.stop()
         return result
 
-    def _get_param_constraints(self, p: int, beta_constraint: float = np.pi, gamma_constraint: float = 2*np.pi) -> np.ndarray:
+    def _get_param_constraints(self, p: int, beta_constraint: float = np.pi, gamma_constraint: float = 2 * np.pi) -> np.ndarray:
         """
         The educated guess algorithm looks for parameters which are monotonic and in a specific range.
         Restricting the optimizer is essential for educated guess algorithm to work properly.
@@ -92,9 +94,8 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
             init_point = self._interpolate_f(list(previous_job_results['optimal_point']), p - 1)
 
             new_job_id = self.manager.submit(
-                QLauncher(problem,
-                          QAOA(p=p, init_point=init_point, constraints=self._get_param_constraints(p)),
-                          backend).run, output_path=self.output_interpolated
+                QLauncher(problem, QAOA(p=p, init_point=init_point, constraints=self._get_param_constraints(p)), backend).run,
+                output_path=self.output_interpolated,
             )
             _, state = self.manager.wait_for_a_job(new_job_id)
             if state != 'SUCCEED':
