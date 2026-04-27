@@ -16,7 +16,7 @@ from qiskit_algorithms import optimizers
 from qiskit_algorithms.minimum_eigensolvers.diagonal_estimator import _evaluate_sparsepauli as evaluate_energy
 from qiskit_nature.second_q.algorithms.ground_state_solvers import GroundStateEigensolver
 from qiskit_nature.second_q.problems import EigenstateResult
-from scipy.optimize import minimize
+from scipy.optimize import LinearConstraint, minimize
 
 from qlauncher.base import Algorithm, Result
 from qlauncher.base.base import _Model
@@ -77,7 +77,8 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
     Args:
             p (int): The number of QAOA steps. Defaults to 1.
             optimizer (Optimizer | None): Optimizer used during algorithm runtime. If set to `None` turns into COBYLA. Defaults to None,
-            alternating_ansatz (bool): Whether to use an alternating ansatz. Defaults to False. If True, it's recommended to provide a mixer_h to alg_kwargs.
+            init_point (np.ndarray | None): initial parameters for QAOA. Should be within Constraints. Defaults to None.
+            constraints: (np.ndarray | None): constraints for QAOA parameters. Defaults to None.
             aux: Auxiliary input for the QAOA algorithm.
             **alg_kwargs: Additional keyword arguments for the base class.
 
@@ -86,7 +87,6 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
             aux: Auxiliary input for the QAOA algorithm.
             p (int): The number of QAOA steps.
             optimizer (Optimizer): Optimizer used during algorithm runtime.
-            alternating_ansatz (bool): Whether to use an alternating ansatz.
             parameters (list): List of parameters for the algorithm.
             mixer_h (SparsePauliOp | None): The mixer Hamiltonian.
 
@@ -96,10 +96,11 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         self,
         p: int = 1,
         optimization_method: Literal['COBYLA'] = 'COBYLA',
-        max_evaluations: int = 100,
+        init_point: np.ndarray | None = None,
+        constraints: np.ndarray | None = None,
+        max_evaluations: int = 1000,
         training_aggregation_method: Literal['mean', 'cvar'] = 'mean',
         cvar_alpha: float = 1,
-        alternating_ansatz: bool = False,
         aux=None,
         **alg_kwargs,
     ):
@@ -107,16 +108,27 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         self.name: str = 'qaoa'
         self.aux = aux
         self.p: int = p
+        self.init_point = init_point if init_point is not None else self._prepare_init_point(p, constraints)
+        self.constraints = self._standardize_constraints(p, constraints) if constraints is not None else None
 
         self.optimization_method = optimization_method
         self.max_evaluations = max_evaluations
         self.training_aggregation_method = training_aggregation_method
         self.cvar_alpha = cvar_alpha
 
-        self.alternating_ansatz: bool = alternating_ansatz
         self.parameters = ['p']
         self.mixer_h: SparsePauliOp | None = None
         self.initial_state: QuantumCircuit | None = None
+
+    def _prepare_init_point(self, p: int, constraints: np.ndarray | None = None) -> np.ndarray:
+        if constraints is not None:
+            init_point = np.random.default_rng().uniform(constraints[:, 0], constraints[:, 1], 2 * p)
+        else:
+            init_point = np.random.default_rng().uniform(-2 * np.pi, 2 * np.pi, 2 * p)
+        return init_point
+
+    def _standardize_constraints(self, p: int, constraints: np.ndarray) -> LinearConstraint:
+        return LinearConstraint(np.eye(2 * p), constraints[:, 0], constraints[:, 1])
 
     @property
     def setup(self) -> dict:
@@ -135,6 +147,7 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         Returns:
                 tuple[QuantumCircuit,list[float]]: Circuit with optimal param values applied, energy history
         """
+
         costs = []
 
         def cost_fn(params: np.ndarray):
@@ -154,11 +167,11 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
             return cost
 
         res = minimize(
-            cost_fn,
-            np.array([np.pi] * (len(circuit.parameters) // 2) + [np.pi / 2] * (len(circuit.parameters) // 2)),
+            fun=cost_fn,
+            x0=self.init_point,
+            constraints=self.constraints,
             method=self.optimization_method,
-            tol=1e-2,
-            options={'maxiter': self.max_evaluations},
+            options={'maxiter': self.max_evaluations, 'rhobeg': 1.0},
         )
 
         return res.x, costs
@@ -167,12 +180,6 @@ class QAOA(QiskitOptimizationAlgorithm[Hamiltonian]):
         """Runs the QAOA algorithm"""
 
         # problem.hamiltonian: SparsePauliOp = formatter(problem)
-
-        if self.alternating_ansatz:
-            if self.mixer_h is None:
-                self.mixer_h = problem.get_mixer_hamiltonian()
-            if self.initial_state is None:
-                self.initial_state = problem.get_QAOAAnsatz_initial_state()
 
         # Cirq translation issues if we use QAOAAnsatz() by itself without appending it to a QuantumCircuit
         circuit = QuantumCircuit(problem.hamiltonian.num_qubits)

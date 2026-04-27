@@ -42,7 +42,10 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
     def run(self, problem: Hamiltonian, backend: QiskitBackend) -> Result:
         from qlauncher.launcher.qlauncher import QLauncher
 
-        self.manager.submit_many(QLauncher(problem, QAOA(p=self.p_init), backend).run, n_jobs=self.max_jobs)
+        self.manager.submit_many(
+            QLauncher(problem, QAOA(p=self.p_init, constraints=self._get_param_constraints(p=self.p_init)), backend).run,
+            n_jobs=self.max_jobs,
+        )
         print(f'{len(self.manager.jobs)} jobs submitted to qcg')
 
         found_optimal_params = False
@@ -53,15 +56,34 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
             if state != 'SUCCEED':
                 self.failed_jobs += 1
                 continue
-            has_potential, energy = self._process_job(jobid, self.p_init, self.min_energy, compare_factor=0.99)
+            has_potential, energy = self._process_job(jobid, self.p_init, self.min_energy, compare_factor=0.95)
             if has_potential:
                 found_optimal_params = self._search_for_job_with_optimal_params(jobid, energy, problem, backend)
 
-            self.manager.submit_many(QLauncher(problem, QAOA(p=self.p_init), backend).run, n_jobs=self.max_jobs)
+            self.manager.submit_many(
+                QLauncher(problem, QAOA(p=self.p_init, constraints=self._get_param_constraints(p=self.p_init)), backend).run,
+                n_jobs=self.max_jobs,
+            )
 
         result = self.manager.read_results(self.best_job_id)
         self.manager.stop()
         return result
+
+    def _get_param_constraints(self, p: int, beta_constraint: float = np.pi, gamma_constraint: float = 2 * np.pi) -> np.ndarray:
+        """
+        The educated guess algorithm looks for parameters which are monotonic and in a specific range.
+        Restricting the optimizer is essential for educated guess algorithm to work properly.
+
+        The ranges np.pi for beta parameters and 2*np.pi for gamma parameters were empirically found to work well for
+        problems already existing within QLauncher.
+        For different problems periodicity based on Hamiltonian needs to be found or calculated analytically.
+        """
+        constraints = np.zeros((2 * p, 2))
+
+        constraints[:p, 1] = beta_constraint
+        constraints[p:, 1] = gamma_constraint
+
+        return constraints
 
     def _search_for_job_with_optimal_params(self, previous_job_id, previous_energy, problem, backend) -> bool:
         from qlauncher.launcher.qlauncher import QLauncher
@@ -69,10 +91,11 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
         new_job_id = None
         for p in range(self.p_init + 1, self.p_max + 1):
             previous_job_results = self.manager.read_results(previous_job_id).result
-            initial_point = self._interpolate_f(list(previous_job_results['result']['optimal_point']), p - 1)
+            init_point = self._interpolate_f(list(previous_job_results['optimal_point']), p - 1)
 
             new_job_id = self.manager.submit(
-                QLauncher(problem, QAOA(p=p, initial_point=initial_point), backend).run, output_path=self.output_interpolated
+                QLauncher(problem, QAOA(p=p, init_point=init_point, constraints=self._get_param_constraints(p)), backend).run,
+                output_path=self.output_interpolated,
             )
             _, state = self.manager.wait_for_a_job(new_job_id)
             if state != 'SUCCEED':
@@ -87,7 +110,7 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
         self.best_job_id = new_job_id if new_job_id is not None else previous_job_id
         return True
 
-    def _process_job(self, jobid: str, p: int, energy_to_compare: float, compare_factor: float = 1.0) -> tuple[float, bool]:
+    def _process_job(self, jobid: str, p: int, energy_to_compare: float, compare_factor: float = 0.99) -> tuple[float, bool]:
         result = self.manager.read_results(jobid).result
         optimal_point = result['optimal_point']
         has_potential = False
