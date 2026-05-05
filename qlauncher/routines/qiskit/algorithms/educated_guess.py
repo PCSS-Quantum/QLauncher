@@ -6,6 +6,8 @@ import weakref
 
 import numpy as np
 import scipy
+import sympy as sp
+from qiskit.quantum_info import SparsePauliOp
 
 from qlauncher.base import Algorithm, Result
 from qlauncher.base.models import Hamiltonian
@@ -42,8 +44,10 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
     def run(self, problem: Hamiltonian, backend: QiskitBackend) -> Result:
         from qlauncher.launcher.qlauncher import QLauncher
 
+        constraints = self._get_param_constraints(p=self.p_init, problem=problem)
+
         self.manager.submit_many(
-            QLauncher(problem, QAOA(p=self.p_init, constraints=self._get_param_constraints(p=self.p_init)), backend).run,
+            QLauncher(problem, QAOA(p=self.p_init, constraints=constraints), backend).run,
             n_jobs=self.max_jobs,
         )
         print(f'{len(self.manager.jobs)} jobs submitted to qcg')
@@ -61,7 +65,7 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
                 found_optimal_params = self._search_for_job_with_optimal_params(jobid, energy, problem, backend)
 
             self.manager.submit_many(
-                QLauncher(problem, QAOA(p=self.p_init, constraints=self._get_param_constraints(p=self.p_init)), backend).run,
+                QLauncher(problem, QAOA(p=self.p_init, constraints=constraints), backend).run,
                 n_jobs=self.max_jobs,
             )
 
@@ -69,7 +73,7 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
         self.manager.stop()
         return result
 
-    def _get_param_constraints(self, p: int, beta_constraint: float = np.pi, gamma_constraint: float = 2 * np.pi) -> np.ndarray:
+    def _get_param_constraints(self, p: int, problem: Hamiltonian) -> np.ndarray:
         """
         The educated guess algorithm looks for parameters which are monotonic and in a specific range.
         Restricting the optimizer is essential for educated guess algorithm to work properly.
@@ -78,10 +82,31 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
         problems already existing within QLauncher.
         For different problems periodicity based on Hamiltonian needs to be found or calculated analytically.
         """
+
+        Hc = problem.hamiltonian
+
+        n = Hc.num_qubits
+        x = sp.symbols(f"x0:{n}")
+
+        expr = 0
+        for label, coeff in Hc.to_list():
+            term = sp.Float(coeff.real)
+            for i, p in enumerate(reversed(label)):
+                if p == "Z":
+                    term *= (1 - 2 * x[i])
+            expr += term
+
+        expr = sp.expand(expr)
+        poly = sp.Poly(expr, *x)
+        coeffs = [float(term[1]) for term in poly.terms()]
+
+
+        a = 1
+
         constraints = np.zeros((2 * p, 2))
 
-        constraints[:p, 1] = beta_constraint
-        constraints[p:, 1] = gamma_constraint
+        #constraints[:p, 1] = beta_constraint
+        #constraints[p:, 1] = gamma_constraint
 
         return constraints
 
