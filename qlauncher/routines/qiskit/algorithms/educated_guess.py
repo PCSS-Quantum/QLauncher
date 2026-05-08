@@ -73,40 +73,53 @@ class EducatedGuess(Algorithm[Hamiltonian, QiskitBackend]):
         self.manager.stop()
         return result
 
-    def _get_param_constraints(self, p: int, problem: Hamiltonian) -> np.ndarray:
+    def _get_param_constraints(self, p: int, problem: Hamiltonian, digits: int = 5) -> np.ndarray:
         """
-        The educated guess algorithm looks for parameters which are monotonic and in a specific range.
-        Restricting the optimizer is essential for educated guess algorithm to work properly.
+        The educated guess algorithm looks for monotonic parameters within a bounded range.
+        Restricting the optimizer is essential for the educated guess algorithm to work properly.
 
-        The ranges np.pi for beta parameters and 2*np.pi for gamma parameters were empirically found to work well for
-        problems already existing within QLauncher.
-        For different problems periodicity based on Hamiltonian needs to be found or calculated analytically.
+        The gamma period is estimated as follows:
+            1) translate the Hamiltonian to binary form using :math:`Z = 1 - 2x`
+            2) compute the GCD of the binary-form coefficients, ignoring the constant offset
+            3) compute the period factor as :math:`2 / g`, so the gamma upper bound is
+               :math:`(2 / g) \\pi`
+
+        The coefficients are quantized to the given number of significant digits before
+        computing the GCD. The quantization scale is derived from the median absolute
+        coefficient.
+
+        Args:
+            p (int): QAOA depth.
+            problem (Hamiltonian): QAOA problem Hamiltonian.
+            digits (int, optional): Significant digits used to quantize the Hamiltonian coefficients. Defaults to 5.
         """
 
         Hc = problem.hamiltonian
 
         n = Hc.num_qubits
-        x = sp.symbols(f"x0:{n}")
+        x = sp.symbols(f'x0:{n}')
 
         expr = 0
         for label, coeff in Hc.to_list():
             term = sp.Float(coeff.real)
-            for i, p in enumerate(reversed(label)):
-                if p == "Z":
-                    term *= (1 - 2 * x[i])
+            for i, pauli in enumerate(reversed(label)):
+                if pauli == 'Z':
+                    term *= 1 - 2 * x[i]
             expr += term
 
         expr = sp.expand(expr)
         poly = sp.Poly(expr, *x)
-        coeffs = [float(term[1]) for term in poly.terms()]
+        coeffs = np.asarray([float(coeff) for powers, coeff in poly.terms() if any(powers)])
 
-
-        a = 1
+        med = np.median(np.abs(coeffs))
+        scale = 10 ** (np.floor(np.log10(med)) - digits + 1)
+        g = np.gcd.reduce(np.abs(np.round(coeffs / scale).astype(int))) * scale
+        period_factor = 2 / g
 
         constraints = np.zeros((2 * p, 2))
 
-        #constraints[:p, 1] = beta_constraint
-        #constraints[p:, 1] = gamma_constraint
+        constraints[:p, 1] = np.pi
+        constraints[p:, 1] = period_factor * np.pi
 
         return constraints
 
