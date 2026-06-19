@@ -190,7 +190,7 @@ class BQM(Model):
     def to_hamiltonian(self) -> Hamiltonian:
         """Returns Hamiltonian function"""
 
-        bqm = self.model.to_bqm()
+        bqm = self.bqm
         variables, new_offset = bqm.variables, bqm.offset
         variables = list(variables)
         variables.sort()
