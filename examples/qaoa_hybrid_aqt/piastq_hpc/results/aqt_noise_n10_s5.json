@@ -1,0 +1,50 @@
+{
+  "config": {
+    "backend": "aqt_noise",
+    "n": 10,
+    "density": 0.5,
+    "seed": 5,
+    "p": [
+      1,
+      2,
+      3
+    ],
+    "shots": 2000,
+    "outdir": "results"
+  },
+  "exact_optimum": 15.0,
+  "schedule": {
+    "p": 3,
+    "gamma_scale": -2.5179619990533073,
+    "beta_scale": 0.647494358649506
+  },
+  "score": {
+    "mean_ratio": 0.8691000000000002,
+    "mean_ratio_normalised": 0.6073000000000006,
+    "mean_ratio_ci95": [
+      0.8639,
+      0.8738
+    ],
+    "p_good": 0.4655,
+    "p_good_ci95": [
+      0.445,
+      0.4865
+    ],
+    "p_opt": 0.2775,
+    "best_ratio": 1.0,
+    "random_cut_ratio": 0.6666666666666666,
+    "gw_ratio": 0.878,
+    "optimum": 15.0,
+    "num_of_samples": 2000
+  },
+  "integration_cost": {
+    "qpu_submissions": 1,
+    "naive_submissions": 140,
+    "submissions_saved_vs_naive": 139,
+    "t_classical_s": 0.8421,
+    "t_quantum_s": 1.8663,
+    "t_total_s": 2.7084,
+    "quantum_duty": 0.6891,
+    "est_wall_saved_vs_naive_s": 259.416
+  }
+}
